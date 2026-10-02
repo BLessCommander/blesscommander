@@ -175,6 +175,28 @@ export const SCHEMAS = {
     },
     ['decks', 'games', 'standings', 'updatedAt'],
   ),
+  'derived/notifications': object(
+    {
+      items: {
+        type: 'array',
+        items: object(
+          { id: str, type: str, createdAt: date, params: { type: 'object' }, actions: bool },
+          ['id', 'type', 'createdAt'],
+        ),
+      },
+    },
+    ['items'],
+  ),
+  'user/notifications': object(
+    {
+      readIds: strings,
+      answers: {
+        type: 'object',
+        additionalProperties: { enum: ['yes', 'no'] },
+      },
+    },
+    ['readIds', 'answers'],
+  ),
   'derived/errors': {
     type: 'array',
     items: object({ path: str, reason: str, author: { type: 'string' } }, ['path', 'reason']),

@@ -45,6 +45,26 @@ describe('useDataStore (modalità demo)', () => {
     expect(data.refreshing).toBe(false);
   });
 
+  it('notifiche: contatore dei non letti e pausa durante una partita (regola 1)', async () => {
+    const data = useDataStore();
+    await data.load();
+    const login = data.user.login;
+    expect(data.unreadCount).toBe(data.notifications.length);
+    expect(data.unreadCount).toBeGreaterThan(0);
+
+    await data.markNotificationsRead([data.notifications[0].id]);
+    expect(data.unreadCount).toBe(data.notifications.length - 1);
+
+    const game = { status: 'in_corso', recorderLogin: 'altro', players: [{ login }] };
+    data.snapshot = { ...data.snapshot, games: [...data.snapshot.games, game] };
+    expect(data.notificationsPaused).toBe(true);
+    expect(data.unreadCount).toBe(0);
+
+    data.snapshot = { ...data.snapshot, games: [{ ...game, status: 'ufficiale' }] };
+    expect(data.notificationsPaused).toBe(false);
+    expect(data.unreadCount).toBeGreaterThan(0);
+  });
+
   it("dismissDropped svuota l'avviso", () => {
     const data = useDataStore();
     data.dropped = [{ method: 'saveDeck', message: 'no' }];

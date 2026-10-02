@@ -14,6 +14,7 @@ const SCREENS = [
   { name: 'segnaposto', path: '/#/partite' },
   { name: 'menu-aperto', path: '/#/mazzi?overlay=menu' },
   { name: 'finestra', path: '/#/profilo?overlay=about' },
+  { name: 'notifiche', path: '/#/notifiche' },
   { name: 'gruppo', path: '/#/gruppo' },
   { name: 'gruppo-nuovo-membro', path: '/#/gruppo?overlay=member-form' },
 ];
@@ -75,6 +76,26 @@ for (const theme of THEMES) {
     await mkdir('review-screenshots', { recursive: true });
     await page.screenshot({
       path: `review-screenshots/modalita-prova-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+  });
+}
+
+// Elenco con notifiche miste (lette e non lette).
+for (const theme of THEMES) {
+  test(`screenshot notifiche-miste ${theme} @review`, async ({ page }, testInfo) => {
+    test.skip(
+      !['iphone', 'desktop-chrome'].includes(testInfo.project.name),
+      'solo iphone e desktop',
+    );
+    await page.emulateMedia({ colorScheme: theme });
+    await page.goto('/#/notifiche');
+    await page.getByTestId('answer-yes').click();
+    await page.getByTestId('mark-read').first().click();
+    await page.waitForLoadState('networkidle');
+    await mkdir('review-screenshots', { recursive: true });
+    await page.screenshot({
+      path: `review-screenshots/notifiche-miste-${testInfo.project.name}-${theme}.png`,
       fullPage: true,
     });
   });

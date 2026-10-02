@@ -111,3 +111,4 @@ Mobile non significa "versione ridotta": **ogni funzione disponibile su desktop 
 | Regolamento | Fasce e parametri attuali |
 | Gruppo | Membri, ruoli, inviti, parametri motore, formati e varianti, stagioni (admin) |
 | Profilo | Dati utente, preferenze, export |
+| Notifiche (`/notifiche`, non nei menu) | Raggiunta dalla campanella con contatore nell'header (desktop e telefono). Elenco con non lette evidenziate, "Segna tutte come lette", pulsanti d'azione dentro la notifica (es. Sì/No). Con una partita in corso o in lobby: contatore nascosto e messaggio "Notifiche in pausa durante la partita" (§6.4b) |

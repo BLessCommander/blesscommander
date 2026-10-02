@@ -534,6 +534,77 @@
   }
 }
 
+.bell {
+  position: relative;
+
+  &__count {
+    position: absolute;
+    top: 4px;
+    right: 2px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 10px;
+    background: var(--danger);
+    color: var(--surface);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+  }
+}
+
+.notification {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: var(--space);
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: var(--radius);
+  background: var(--surface);
+
+  &--unread {
+    border-left-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  p {
+    margin: 0;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  // Sullo sfondo evidenziato il contorno dei bottoni secondari deve restare ben visibile.
+  .btn--secondary {
+    box-shadow: inset 0 0 0 1px var(--text-muted);
+  }
+
+  // "Segna come letta" pesa meno di Sì/No: solo testo, staccato dalle risposte.
+  &__read.btn {
+    justify-content: flex-start;
+    padding: 0;
+    box-shadow: none;
+    color: var(--text);
+    text-decoration: underline;
+    font-weight: 500;
+  }
+}
+
+.notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 720px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .user-card {
   display: flex;
   align-items: center;

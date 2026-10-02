@@ -29,10 +29,26 @@ export const useDataStore = defineStore('data', {
     actingAsOptions: { enabled: false, testMode: false, members: [], current: null },
     /** @type {Record<string, any>} login → membro (pagina Gruppo) */
     members: {},
+    /** @type {import('../data/data-provider.js').Notification[]} */
+    notifications: [],
   }),
   getters: {
     /** Il ricalcolo delle fasce non ha ancora letto le ultime modifiche. */
     refreshing: (state) => state.snapshot?.pending === true,
+    /** Chi ha una partita in lobby o in corso non riceve notifiche (regola 1). */
+    notificationsPaused: (state) =>
+      Boolean(
+        state.user &&
+        state.snapshot?.games.some(
+          (g) =>
+            (g.status === 'lobby' || g.status === 'in_corso') &&
+            (g.recorderLogin === state.user.login ||
+              g.players.some((p) => p.login === state.user.login)),
+        ),
+      ),
+    unreadCount() {
+      return this.notificationsPaused ? 0 : this.notifications.filter((n) => !n.read).length;
+    },
   },
   actions: {
     async load() {
@@ -54,6 +70,7 @@ export const useDataStore = defineStore('data', {
           this.syncStatus();
         });
         await this.loadActingAs();
+        await this.loadNotifications();
         this.syncStatus();
       } catch (error) {
         this.error = message(error);
@@ -114,6 +131,28 @@ export const useDataStore = defineStore('data', {
       await this.refreshUser();
     },
 
+    /** Un errore qui non deve bloccare l'app: le notifiche restano vuote. */
+    async loadNotifications() {
+      if (!provider) return;
+      try {
+        this.notifications = await provider.getNotifications();
+      } catch {
+        this.notifications = [];
+      }
+    },
+
+    /** @param {string[]} ids */
+    async markNotificationsRead(ids) {
+      if (!provider) throw new Error('Dati non ancora caricati');
+      this.notifications = await provider.markNotificationsRead(ids);
+    },
+
+    /** @param {string} id @param {'yes' | 'no'} answer */
+    async answerNotification(id, answer) {
+      if (!provider) throw new Error('Dati non ancora caricati');
+      this.notifications = await provider.answerNotification(id, answer);
+    },
+
     /** Dopo un cambio di ruolo il proprio ruolo può essere cambiato: si rilegge. */
     async refreshUser() {
       try {
@@ -137,6 +176,7 @@ export const useDataStore = defineStore('data', {
     async setActingAs(login) {
       await provider?.setActingAs?.(login);
       await this.loadActingAs();
+      await this.loadNotifications();
     },
   },
 });

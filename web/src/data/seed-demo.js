@@ -11,6 +11,28 @@ export const DEMO_LOGINS = Object.freeze({
   player3: 'demo-giocatore3',
 });
 
+const demoNotifications = () => [
+  {
+    id: 'demo-n1',
+    type: 'tier-change',
+    createdAt: '2026-02-02T09:00:00Z',
+    params: { deck: 'Mazzo Ottimizzato', from: 'F3', to: 'F4' },
+  },
+  {
+    id: 'demo-n2',
+    type: 'admin-replacement',
+    createdAt: '2026-02-03T09:00:00Z',
+    params: { requester: 'Giocatore 1' },
+    actions: true,
+  },
+  {
+    id: 'demo-n3',
+    type: 'info',
+    createdAt: '2026-02-01T09:00:00Z',
+    params: { text: 'Benvenuto nel centro notifiche.' },
+  },
+];
+
 /** @returns {import('./mock-provider.js').MockState} */
 export function createDemoState() {
   const members = {
@@ -88,5 +110,9 @@ export function createDemoState() {
     games: { [game.id]: game },
     votes: {},
     requests: {},
+    notifications: Object.fromEntries(
+      Object.values(DEMO_LOGINS).map((login) => [login, demoNotifications()]),
+    ),
+    userState: {},
   };
 }

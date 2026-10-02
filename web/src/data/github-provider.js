@@ -3,6 +3,12 @@ import { DataError, DATA_ERROR } from './errors.js';
 import { assertValid } from './validate.js';
 import { ulid } from './ulid.js';
 import { withMember, withoutMember } from './members-rules.js';
+import {
+  emptyNotificationState,
+  mergeNotifications,
+  withAnswer,
+  withRead,
+} from './notifications-rules.js';
 import { isOnline as platformIsOnline, watchNetwork } from '../platform/network.js';
 import { readStorage, writeStorage } from '../platform/storage.js';
 
@@ -577,6 +583,45 @@ export class GitHubProvider extends DataProvider {
     if (user.role !== 'admin') {
       throw new DataError(DATA_ERROR.forbidden, 'Solo un admin può gestire i membri');
     }
+  }
+
+  async getNotifications() {
+    const user = await this.#actor();
+    const [items, state] = await Promise.all([
+      this.#readFile(`derived/notifications/${user.login}.json`),
+      this.#readFile(`users/${user.login}/notifications.json`),
+    ]);
+    return mergeNotifications(items?.json.items ?? [], state?.json ?? emptyNotificationState());
+  }
+
+  async markNotificationsRead(ids) {
+    return this.#updateNotificationState((state) => withRead(state, ids), 'Notifiche lette');
+  }
+
+  async answerNotification(id, answer) {
+    const user = await this.#actor();
+    const items = await this.#readFile(`derived/notifications/${user.login}.json`);
+    if (!items?.json.items.some((n) => n.id === id && n.actions)) {
+      throw new DataError(DATA_ERROR.invalid, 'Questa notifica non prevede risposte');
+    }
+    return this.#updateNotificationState(
+      (state) => withAnswer(state, id, answer),
+      `Risposta ${id}`,
+    );
+  }
+
+  async #updateNotificationState(change, message) {
+    const user = await this.#actor();
+    await this.#update(
+      `users/${user.login}/notifications.json`,
+      (current) => {
+        const next = change(current ?? emptyNotificationState());
+        assertValid('user/notifications', next);
+        return next;
+      },
+      message,
+    );
+    return this.getNotifications();
   }
 
   onSnapshotChange(callback) {

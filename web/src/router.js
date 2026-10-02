@@ -28,6 +28,12 @@ routes.push({
   component: () => import('./views/AccessView.vue'),
   meta: { title: it.pages.access.title },
 });
+routes.push({
+  path: '/notifiche',
+  name: 'notifications',
+  component: () => import('./views/NotificationsView.vue'),
+  meta: { title: it.pages.notifications.title },
+});
 routes.push({ path: '/:pathMatch(.*)*', redirect: '/' });
 
 // Routing in modalità hash: funziona su GitHub Pages e dentro le app Capacitor.

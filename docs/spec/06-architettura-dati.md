@@ -82,6 +82,8 @@ derived/                          SCRITTO SOLO DALLE ACTIONS
   events.json                     eventi di fascia con spiegazioni
   stats.json                      statistiche e classifiche
   errors.json                     file non validi o modifiche non autorizzate rilevate
+  notifications/<login>.json      notifiche di ogni giocatore (generate dalle Actions)
+users/<login>/notifications.json  stato personale: notifiche lette e risposte date (scritto solo da quel giocatore)
 .github/workflows/                recalc.yml, import.yml
 schemas/                          schema JSON di ogni tipo di file
 ```
@@ -89,6 +91,8 @@ schemas/                          schema JSON di ogni tipo di file
 **Un file per partita e un file per voto:** scritture contemporanee di persone diverse non si scontrano mai. Gli identificativi sono generati sul dispositivo (ULID), quindi unici anche offline.
 
 I campi di ogni file sono quelli del modello dati in §6.6.
+
+**Notifiche (§6.4b):** le notifiche sono eventi creati dalle Actions in `derived/notifications/<login>.json` (`{ items: [{ id, type, createdAt, params, actions? }] }`; `type` è estendibile: `tier-change`, `reopen`, `dispute`, `admin-replacement`, `info`). Lo stato personale sta in `users/<login>/notifications.json` (`{ readIds: [id], answers: { id: "yes"|"no" } }`), scritto solo dal giocatore stesso (e da lui "agendo come" in modalità prova). L'app unisce i due file; un file mancante vale "nessuna notifica / nessuna letta". L'Action `recalc` ignora `users/`. Chi ha una partita in `lobby` o `in_corso` non vede contatore né elenco finché non la chiude (regola 1).
 
 ### 6.5 Come funzionano letture e scritture (stadio 1)
 

@@ -9,7 +9,8 @@ import { checkScreen } from './checks.js';
  * - `allowedFailures`: elenco di frammenti di URL la cui richiesta può fallire (richieste previste).
  */
 export const test = base.extend({
-  allowedFailures: [[], { option: true }],
+  // I file delle notifiche non esistono finché nessuno ne ha: il 404 è previsto (SPEC §6.4b).
+  allowedFailures: [['derived/notifications/', '/notifications.json'], { option: true }],
 
   uiChecks: [
     async ({ page, allowedFailures }, use, testInfo) => {
@@ -17,6 +18,9 @@ export const test = base.extend({
         Boolean(testInfo.project.use.isMobile) || testInfo.project.name === 'mobile-small';
       const runtimeProblems = [];
       page.on('console', (message) => {
+        // Il browser scrive in console anche i 404 delle richieste previste (`allowedFailures`).
+        const url = message.location().url ?? '';
+        if (allowedFailures.some((part) => url.includes(part))) return;
         if (message.type() === 'error')
           runtimeProblems.push(`Errore in console: ${message.text()}`);
       });

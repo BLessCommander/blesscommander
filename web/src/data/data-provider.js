@@ -6,6 +6,7 @@ import { DataError, DATA_ERROR } from './errors.js';
  * @typedef {Record<string, any>} Doc documento JSON del modello dati (SPEC §6.6)
  * @typedef {{ decks: Doc[], games: Doc[], standings: Doc[], updatedAt: string, pending: boolean }} Snapshot
  * @typedef {'riapertura' | 'contestazione'} VoteKind
+ * @typedef {{ id: string, type: string, createdAt: string, params: Record<string, any>, actions?: boolean, read: boolean, answer?: 'yes' | 'no' }} Notification
  */
 
 /** Nomi delle operazioni dell'interfaccia (SPEC §6.3); il test di contratto li controlla tutti. */
@@ -24,6 +25,9 @@ export const PROVIDER_METHODS = Object.freeze([
   'getMembers',
   'saveMember',
   'removeMember',
+  'getNotifications',
+  'markNotificationsRead',
+  'answerNotification',
   'onSnapshotChange',
 ]);
 
@@ -144,6 +148,32 @@ export class DataProvider {
    */
   removeMember(login) {
     return notImplemented('removeMember')(login);
+  }
+
+  /**
+   * Notifiche di chi accede (o di chi si sta impersonando), dalla più recente, con lo stato personale.
+   * @returns {Promise<Notification[]>}
+   */
+  getNotifications() {
+    return notImplemented('getNotifications')();
+  }
+
+  /**
+   * @param {string[]} ids
+   * @returns {Promise<Notification[]>} l'elenco aggiornato
+   */
+  markNotificationsRead(ids) {
+    return notImplemented('markNotificationsRead')(ids);
+  }
+
+  /**
+   * Registra la risposta a una notifica con azioni e la segna come letta.
+   * @param {string} id
+   * @param {'yes' | 'no'} answer
+   * @returns {Promise<Notification[]>} l'elenco aggiornato
+   */
+  answerNotification(id, answer) {
+    return notImplemented('answerNotification')(id, answer);
   }
 
   /**

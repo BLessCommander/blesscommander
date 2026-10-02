@@ -148,6 +148,33 @@ export function runProviderContract(name, make, logins) {
       expect(request.status).toBe('pending');
     });
 
+    it('notifiche: elenco, lette e risposta restano salvate per utente', async () => {
+      const provider = make(logins.player1);
+      const list = await provider.getNotifications();
+      expect(list.length).toBeGreaterThanOrEqual(2);
+      expect(list.every((n) => n.read === false)).toBe(true);
+      // la più recente per prima
+      expect(list[0].createdAt >= list[1].createdAt).toBe(true);
+
+      const plain = list.find((n) => !n.actions);
+      const afterRead = await provider.markNotificationsRead([plain.id]);
+      expect(afterRead.find((n) => n.id === plain.id).read).toBe(true);
+
+      const question = list.find((n) => n.actions);
+      await expect(provider.answerNotification(plain.id, 'yes')).rejects.toMatchObject({
+        code: 'invalid',
+      });
+      const afterAnswer = await provider.answerNotification(question.id, 'yes');
+      expect(afterAnswer.find((n) => n.id === question.id)).toMatchObject({
+        read: true,
+        answer: 'yes',
+      });
+
+      // lo stato è personale: un altro utente non ha nulla di letto
+      const other = await make(logins.player2).getNotifications();
+      expect(other.every((n) => n.read === false)).toBe(true);
+    });
+
     it('avvisa chi ascolta quando i dati cambiano, e smette dopo la disiscrizione', async () => {
       const provider = make(logins.player1);
       const seen = [];

@@ -4,6 +4,12 @@ import { assertValid } from './validate.js';
 import { ulid } from './ulid.js';
 import { createDemoState, DEMO_LOGINS } from './seed-demo.js';
 import { withMember, withoutMember } from './members-rules.js';
+import {
+  emptyNotificationState,
+  mergeNotifications,
+  withAnswer,
+  withRead,
+} from './notifications-rules.js';
 
 /**
  * @typedef {object} MockState
@@ -14,6 +20,8 @@ import { withMember, withoutMember } from './members-rules.js';
  * @property {Record<string, any>} games
  * @property {Record<string, Record<string, any>>} votes targetId → login → voto
  * @property {Record<string, any>} requests
+ * @property {Record<string, any[]>} [notifications] login → notifiche create dalle Actions
+ * @property {Record<string, any>} [userState] login → stato letto/risposte
  */
 
 const clone = (value) => structuredClone(value);
@@ -189,6 +197,38 @@ export class MockProvider extends DataProvider {
     this.state.members = clone(next);
     this.#notify();
     return clone(next);
+  }
+
+  async getNotifications() {
+    const user = await this.getCurrentUser();
+    return clone(
+      mergeNotifications(this.state.notifications?.[user.login] ?? [], this.#userState(user.login)),
+    );
+  }
+
+  async markNotificationsRead(ids) {
+    const user = await this.getCurrentUser();
+    return this.#saveUserState(user.login, withRead(this.#userState(user.login), ids));
+  }
+
+  async answerNotification(id, answer) {
+    const user = await this.getCurrentUser();
+    const known = (this.state.notifications?.[user.login] ?? []).find((n) => n.id === id);
+    if (!known?.actions) {
+      throw new DataError(DATA_ERROR.invalid, 'Questa notifica non prevede risposte');
+    }
+    return this.#saveUserState(user.login, withAnswer(this.#userState(user.login), id, answer));
+  }
+
+  #userState(login) {
+    return this.state.userState?.[login] ?? emptyNotificationState();
+  }
+
+  async #saveUserState(login, next) {
+    assertValid('user/notifications', next);
+    this.state.userState ??= {};
+    this.state.userState[login] = clone(next);
+    return this.getNotifications();
   }
 
   async #assertAdmin() {

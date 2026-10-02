@@ -102,6 +102,26 @@ export function buildSeed() {
     ]),
   );
 
+  for (const login of LOGINS) {
+    files[`derived/notifications/${login}.json`] = {
+      items: [
+        {
+          id: 'seed-n1',
+          type: 'tier-change',
+          createdAt: '2026-02-02T09:00:00Z',
+          params: { deck: 'Mazzo di prova', from: 'F2', to: 'F3' },
+        },
+        {
+          id: 'seed-n2',
+          type: 'admin-replacement',
+          createdAt: '2026-02-03T09:00:00Z',
+          params: { requester: 'Giocatore 1' },
+          actions: true,
+        },
+      ],
+    };
+  }
+
   const decks = DECK_SPECS.map(([name, tier, gameChangers, note], i) => {
     const id = fakeUlid('D', i);
     const owner = LOGINS[i % LOGINS.length];

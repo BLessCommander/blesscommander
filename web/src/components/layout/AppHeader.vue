@@ -40,6 +40,24 @@ const themeLabel = computed(() =>
     </nav>
     <div class="header__actions">
       <ActingAsSelect />
+      <RouterLink
+        to="/notifiche"
+        class="icon-btn bell"
+        data-testid="bell"
+        :aria-label="
+          data.unreadCount ? it.notifications.bellUnread(data.unreadCount) : it.notifications.bell
+        "
+      >
+        <AppIcon name="bell" />
+        <span
+          v-if="data.unreadCount"
+          class="bell__count"
+          data-testid="bell-count"
+          aria-hidden="true"
+        >
+          {{ data.unreadCount > 9 ? '9+' : data.unreadCount }}
+        </span>
+      </RouterLink>
       <button type="button" class="icon-btn" :aria-label="themeLabel" @click="theme.toggle()">
         <AppIcon :name="theme.effective === 'dark' ? 'sun' : 'moon'" />
       </button>
