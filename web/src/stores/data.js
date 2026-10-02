@@ -7,6 +7,8 @@ let provider = null;
 /** @type {(() => void) | null} */
 let unsubscribe = null;
 
+const message = (error) => (error instanceof Error ? error.message : String(error));
+
 /** Unico punto di accesso ai dati per le pagine: passa sempre da `DataProvider` (SPEC §6.3). */
 export const useDataStore = defineStore('data', {
   state: () => ({
@@ -17,23 +19,86 @@ export const useDataStore = defineStore('data', {
     loading: false,
     /** @type {string | null} */
     error: null,
+    /** Scritture salvate sul dispositivo in attesa di rete. */
+    pendingWrites: 0,
+    /** @type {{ method: string, message: string }[]} scritture rifiutate al rilancio della coda */
+    dropped: [],
+    /** @type {{ enabled: boolean, members: { login: string, displayName: string }[], current: string | null }} */
+    actingAsOptions: { enabled: false, members: [], current: null },
   }),
+  getters: {
+    /** Il ricalcolo delle fasce non ha ancora letto le ultime modifiche. */
+    refreshing: (state) => state.snapshot?.pending === true,
+  },
   actions: {
     async load() {
       this.loading = true;
       this.error = null;
       try {
-        provider ??= createDataProvider();
+        provider ??= createDataProvider({
+          onQueueEvent: (event) => {
+            if (event.type !== 'dropped') return;
+            this.dropped.push({ method: event.write.method, message: message(event.error) });
+            this.syncStatus();
+          },
+        });
         this.user = await provider.getCurrentUser();
         this.snapshot = await provider.getSnapshot();
         unsubscribe ??= provider.onSnapshotChange((snapshot) => {
           this.snapshot = snapshot;
+          this.syncStatus();
         });
+        await this.loadActingAs();
+        this.syncStatus();
       } catch (error) {
-        this.error = error instanceof Error ? error.message : String(error);
+        this.error = message(error);
       } finally {
         this.loading = false;
       }
+    },
+
+    /** Aggiorna il numero di scritture in coda (solo i provider con coda offline ce l'hanno). */
+    syncStatus() {
+      this.pendingWrites = provider?.pendingWrites?.() ?? 0;
+    },
+
+    /** Rilancia la coda (di solito lo fa da sola quando torna la rete). */
+    async flushQueue() {
+      await provider?.flushQueue?.();
+      this.syncStatus();
+    },
+
+    dismissDropped() {
+      this.dropped = [];
+    },
+
+    /**
+     * Esegue una scrittura del provider e aggiorna lo stato della coda.
+     * @param {'saveDeck' | 'saveDeckVersion' | 'createGame' | 'updateGame' | 'vote' | 'requestImport'} method
+     * @param {...unknown} args
+     */
+    async write(method, ...args) {
+      if (!provider) throw new Error('Dati non ancora caricati');
+      try {
+        return await provider[method](...args);
+      } finally {
+        this.syncStatus();
+      }
+    },
+
+    async loadActingAs() {
+      const none = { enabled: false, members: [], current: null };
+      try {
+        this.actingAsOptions = (await provider?.actingAsOptions?.()) ?? none;
+      } catch {
+        this.actingAsOptions = none;
+      }
+    },
+
+    /** @param {string | null} login utente di prova, o `null` per tornare a sé stessi */
+    async setActingAs(login) {
+      await provider?.setActingAs?.(login);
+      await this.loadActingAs();
     },
   },
 });

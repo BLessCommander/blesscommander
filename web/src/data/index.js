@@ -5,8 +5,11 @@ import { readToken } from '../platform/secure-storage.js';
 import { GitHubProvider } from './github-provider.js';
 import { MockProvider } from './mock-provider.js';
 
-/** @returns {import('./data-provider.js').DataProvider} */
-export function createDataProvider() {
+/**
+ * @param {{ onQueueEvent?: (event: { type: 'dropped', write: { method: string }, error: unknown }) => void }} [options]
+ * @returns {import('./data-provider.js').DataProvider}
+ */
+export function createDataProvider({ onQueueEvent } = {}) {
   if (ENVIRONMENT.mode === 'fake-github') {
     return new GitHubProvider({
       owner: ORG,
@@ -14,10 +17,17 @@ export function createDataProvider() {
       baseUrl: ENVIRONMENT.fakeGithubUrl,
       token: `token-${ENVIRONMENT.fakeLogin}`,
       autoFlush: true,
+      onQueueEvent,
     });
   }
   if (ENVIRONMENT.mode === 'github') {
-    return new GitHubProvider({ owner: ORG, repo: DATA_REPO, token: readToken(), autoFlush: true });
+    return new GitHubProvider({
+      owner: ORG,
+      repo: DATA_REPO,
+      token: readToken(),
+      autoFlush: true,
+      onQueueEvent,
+    });
   }
   return new MockProvider();
 }

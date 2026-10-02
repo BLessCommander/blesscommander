@@ -7,6 +7,7 @@ import { NAV_ITEMS } from './navigation.js';
 // usano il segnaposto finché non arriva la loro voce del piano.
 const views = {
   dashboard: () => import('./views/DashboardView.vue'),
+  decks: () => import('./views/DecksView.vue'),
   rules: () => import('./views/RulesView.vue'),
   profile: () => import('./views/ProfileView.vue'),
   environment: () => import('./views/EnvironmentView.vue'),

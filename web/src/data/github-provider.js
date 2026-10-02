@@ -109,6 +109,8 @@ export class GitHubProvider extends DataProvider {
     this.timer = null;
     this.flushing = null;
     this.replaying = false;
+    /** @type {string | null} utente di prova scelto con "Agisci come" (solo testMode) */
+    this.actingAs = null;
     this.queueKey = `blesscommander.queue.${owner}/${repo}`;
     if (autoFlush) watchNetwork((online) => online && this.flushQueue());
   }
@@ -288,6 +290,53 @@ export class GitHubProvider extends DataProvider {
     return { ...optimistic, queued: true };
   }
 
+  // ---------- "Agisci come" (solo repository di prova, SPEC §6.7) ----------
+
+  #stamp() {
+    return this.actingAs ? { actingAs: this.actingAs } : {};
+  }
+
+  /** L'utente che firma le scritture: quello di prova se scelto, altrimenti chi ha fatto l'accesso. */
+  async #actor() {
+    const user = await this.getCurrentUser();
+    if (!this.actingAs) return user;
+    const members = await this.#readFile('config/members.json');
+    const member = members?.json[this.actingAs];
+    if (!member) throw new DataError(DATA_ERROR.forbidden, 'Utente di prova non trovato');
+    return { login: this.actingAs, ...member };
+  }
+
+  /**
+   * Il selettore è ammesso solo se il repository è in `testMode` e chi ha fatto l'accesso è un
+   * `testOperator`: sul repository reale `enabled` è sempre falso.
+   * @returns {Promise<{ enabled: boolean, members: { login: string, displayName: string }[], current: string | null }>}
+   */
+  async actingAsOptions() {
+    const [config, user] = await Promise.all([this.getConfig(), this.getCurrentUser()]);
+    const enabled = config.testMode === true && (config.testOperators ?? []).includes(user.login);
+    if (!enabled) return { enabled: false, members: [], current: null };
+    const members = await this.#readFile('config/members.json');
+    return {
+      enabled: true,
+      members: Object.entries(members?.json ?? {}).map(([login, m]) => ({
+        login,
+        displayName: m.displayName,
+      })),
+      current: this.actingAs,
+    };
+  }
+
+  /** @param {string | null} login `null` torna a firmare con il proprio utente */
+  async setActingAs(login) {
+    if (login !== null) {
+      const options = await this.actingAsOptions();
+      if (!options.enabled || !options.members.some((m) => m.login === login)) {
+        throw new DataError(DATA_ERROR.forbidden, '"Agisci come" non è ammesso qui');
+      }
+    }
+    this.actingAs = login;
+  }
+
   // ---------- Operazioni di DataProvider ----------
 
   async getCurrentUser() {
@@ -329,9 +378,9 @@ export class GitHubProvider extends DataProvider {
   }
 
   async saveDeck(deck) {
-    const user = await this.getCurrentUser();
+    const user = await this.#actor();
     const id = deck.id ?? this.newId();
-    const withId = { ...deck, id };
+    const withId = { ...deck, id, ...this.#stamp() };
     return this.#write('saveDeck', [withId], withId, async () => {
       let saved;
       await this.#update(
@@ -354,7 +403,7 @@ export class GitHubProvider extends DataProvider {
   }
 
   async saveDeckVersion(id, version) {
-    const user = await this.getCurrentUser();
+    const user = await this.#actor();
     return this.#write('saveDeckVersion', [id, version], { ...version }, async () => {
       const { deck } = await this.getDeck(id);
       if (deck.ownerLogin !== user.login && user.role !== 'admin') {
@@ -378,13 +427,14 @@ export class GitHubProvider extends DataProvider {
   }
 
   async createGame(game) {
-    const user = await this.getCurrentUser();
+    const user = await this.#actor();
     const saved = {
       status: 'lobby',
       revision: 0,
       createdBy: user.login,
       recorderLogin: user.login,
       ...game,
+      ...this.#stamp(),
       id: game.id ?? this.newId(),
       createdAt: game.createdAt ?? this.now(),
     };
@@ -401,8 +451,9 @@ export class GitHubProvider extends DataProvider {
   }
 
   async updateGame(id, patch) {
-    const user = await this.getCurrentUser();
-    return this.#write('updateGame', [id, patch], { id, ...patch }, async () => {
+    const user = await this.#actor();
+    const stamped = { ...patch, ...this.#stamp() };
+    return this.#write('updateGame', [id, stamped], { id, ...stamped }, async () => {
       const path = await this.#findGame(id);
       let saved;
       await this.#update(
@@ -410,13 +461,13 @@ export class GitHubProvider extends DataProvider {
         (current) => {
           const game = { ...current, id };
           // Solo il registratore chiude una partita (SPEC §3): lo controlla anche il provider.
-          if (patch.status === 'ufficiale' && game.recorderLogin !== user.login) {
+          if (stamped.status === 'ufficiale' && game.recorderLogin !== user.login) {
             throw new DataError(
               DATA_ERROR.forbidden,
               'Solo il registratore può chiudere la partita',
             );
           }
-          saved = { ...game, ...patch, id, revision: game.revision + 1 };
+          saved = { ...game, ...stamped, id, revision: game.revision + 1 };
           assertValid('game', saved);
           return withoutId(saved);
         },
@@ -427,8 +478,8 @@ export class GitHubProvider extends DataProvider {
   }
 
   async vote(kind, targetId, value) {
-    const user = await this.getCurrentUser();
-    const saved = { kind, value, createdAt: this.now() };
+    const user = await this.#actor();
+    const saved = { kind, value, createdAt: this.now(), ...this.#stamp() };
     return this.#write('vote', [kind, targetId, value], saved, async () => {
       await this.#findGame(targetId);
       assertValid('vote', saved);
@@ -442,7 +493,7 @@ export class GitHubProvider extends DataProvider {
   }
 
   async requestImport(source, url) {
-    const user = await this.getCurrentUser();
+    const user = await this.#actor();
     const request = {
       id: this.newId(),
       source,
@@ -450,6 +501,7 @@ export class GitHubProvider extends DataProvider {
       requestedBy: user.login,
       status: 'pending',
       createdAt: this.now(),
+      ...this.#stamp(),
     };
     return this.#write('requestImport', [source, url], request, async () => {
       assertValid('request', request);

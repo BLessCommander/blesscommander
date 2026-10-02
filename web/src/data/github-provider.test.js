@@ -253,3 +253,54 @@ describe('UT-GH GitHubProvider', () => {
     });
   });
 });
+
+describe('UT-GH "Agisci come" (solo repository di prova)', () => {
+  it("l'operatore di prova vede il selettore con i membri finti", async () => {
+    const options = await make('test-owner').actingAsOptions();
+    expect(options.enabled).toBe(true);
+    expect(options.members.map((m) => m.login)).toEqual(LOGINS);
+  });
+
+  it('un membro che non è operatore non lo vede e non può usarlo', async () => {
+    const provider = make('test-giocatore1');
+    expect((await provider.actingAsOptions()).enabled).toBe(false);
+    await expect(provider.setActingAs('test-giocatore2')).rejects.toMatchObject({
+      code: 'forbidden',
+    });
+  });
+
+  it("senza testMode il selettore è spento anche per l'operatore", async () => {
+    const group = await readJson('config/group.json');
+    await writeFile(join(dir, 'config/group.json'), JSON.stringify({ ...group, testMode: false }));
+    try {
+      const provider = make('test-owner');
+      expect((await provider.actingAsOptions()).enabled).toBe(false);
+      await expect(provider.setActingAs('test-giocatore2')).rejects.toMatchObject({
+        code: 'forbidden',
+      });
+    } finally {
+      await writeFile(join(dir, 'config/group.json'), JSON.stringify(group));
+    }
+  });
+
+  it("le scritture portano l'utente di prova e il campo actingAs; senza scelta niente campo", async () => {
+    const provider = make('test-owner');
+    const plain = await provider.requestImport('text', 'senza');
+    expect(plain.requestedBy).toBe('test-owner');
+    expect(plain.actingAs).toBeUndefined();
+
+    await provider.setActingAs('test-giocatore2');
+    const acted = await provider.requestImport('text', 'con');
+    expect(acted.requestedBy).toBe('test-giocatore2');
+    expect((await readJson(`requests/${acted.id}.json`)).actingAs).toBe('test-giocatore2');
+
+    await provider.setActingAs(null);
+    expect((await provider.requestImport('text', 'dopo')).requestedBy).toBe('test-owner');
+  });
+
+  it('rifiuta un utente che non è tra i membri', async () => {
+    await expect(make('test-owner').setActingAs('test-sconosciuto')).rejects.toMatchObject({
+      code: 'forbidden',
+    });
+  });
+});

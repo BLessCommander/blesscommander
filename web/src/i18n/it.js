@@ -40,15 +40,55 @@ export const it = {
   dashboard: {
     intro: 'Le fasce Commander del nostro gruppo, aggiornate dalle partite vere.',
     kpiMatches: 'Partite',
+    kpiMatchesHint: 'chiuse in totale',
     kpiWinRate: 'Percentuale di vittorie',
+    kpiWinRateHint: (wins, games) =>
+      `${wins} ${wins === 1 ? 'vittoria' : 'vittorie'} su ${games} ${games === 1 ? 'partita tua' : 'partite tue'}`,
     kpiTmv: 'TMV personale',
+    kpiTmvHint: 'media dei tuoi mazzi',
     kpiDecks: 'Mazzi per fascia',
+    kpiDecksHint: (perTier) =>
+      Object.entries(perTier)
+        .map(([tier, n]) => `${tier}: ${n}`)
+        .join(' · '),
     noData: 'Nessun dato ancora',
     recentTitle: 'Ultime partite',
     recentEmpty: 'Quando registrerete le prime partite le vedrete qui.',
+    recentWon: 'Vince',
+    loading: 'Caricamento dei dati…',
+    loadFailed: 'Non riesco a leggere i dati.',
     rule: 'Zero interazioni durante la partita',
     ruleText:
       "L'app si usa solo prima (lobby) e dopo (chiusura in 3 tocchi). Mentre si gioca, l'unica cosa da fare è girare un dado fisico per contare i turni.",
+  },
+  decks: {
+    intro: 'Tutti i mazzi del gruppo, dalla fascia più alta.',
+    empty: 'Nessun mazzo ancora. Importane uno dalla pagina Importa.',
+    owner: 'Di',
+    tier: 'Fascia',
+    declared: 'Dichiarata',
+    games: 'Partite',
+    wins: 'Vittorie',
+    tmv: 'TMV',
+    list: 'Elenco dei mazzi',
+  },
+  sync: {
+    updating: 'In aggiornamento: sto ricalcolando le fasce con le ultime modifiche.',
+    pending: (n) =>
+      n === 1
+        ? '1 modifica è in attesa di connessione e verrà inviata appena torna la rete.'
+        : `${n} modifiche sono in attesa di connessione e verranno inviate appena torna la rete.`,
+    retry: 'Riprova ora',
+    dropped: (n) =>
+      n === 1
+        ? 'Una modifica salvata offline è stata rifiutata e non è stata inviata.'
+        : `${n} modifiche salvate offline sono state rifiutate e non sono state inviate.`,
+    dismiss: 'Ho capito',
+  },
+  actingAs: {
+    label: 'Agisci come',
+    self: 'Me stesso',
+    help: 'Solo in prova: le modifiche vengono firmate dall’utente scelto.',
   },
   rules: { tiersTitle: 'Le cinque fasce', turn: 'Turno' },
   profile: {

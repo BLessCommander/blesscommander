@@ -42,6 +42,8 @@ test.describe('collegamento al repository reale @core', () => {
       if (path === '/user') return reply({ login });
       if (path.endsWith('/config/members.json')) return reply(file(members));
       if (path.endsWith('/config/group.json')) return reply(file(group));
+      if (path.endsWith('/derived/snapshot.json'))
+        return reply(file({ decks: [], games: [], standings: [], updatedAt: '2026-01-01' }));
       return reply({ message: 'Not Found' }, 404);
     });
     return hosts;

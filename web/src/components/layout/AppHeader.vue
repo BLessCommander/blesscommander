@@ -6,6 +6,7 @@ import { useOverlay } from '../../composables/use-overlay.js';
 import { it } from '../../i18n/it.js';
 import { useThemeStore } from '../../stores/theme.js';
 import AppIcon from '../ui/AppIcon.vue';
+import ActingAsSelect from './ActingAsSelect.vue';
 
 const route = useRoute();
 const theme = useThemeStore();
@@ -35,6 +36,7 @@ const themeLabel = computed(() =>
       </ol>
     </nav>
     <div class="header__actions">
+      <ActingAsSelect />
       <button type="button" class="icon-btn" :aria-label="themeLabel" @click="theme.toggle()">
         <AppIcon :name="theme.effective === 'dark' ? 'sun' : 'moon'" />
       </button>
