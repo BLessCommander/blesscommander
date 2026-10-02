@@ -66,7 +66,7 @@ Gli screenshot servono quando un controllo automatico non basta a dire se una sc
 
 **Quando si fanno**
 - sempre in caso di test fallito (`screenshot: 'only-on-failure'`, `trace: 'retain-on-failure'`);
-- a fine funzionalità, per le schermate toccate, sui profili `iphone` e `desktop-chrome`, in tema chiaro e scuro (comando `npm run test:visual-review`, che salva le immagini in `test-results/review/`);
+- a fine funzionalità, per le schermate toccate, sui profili `iphone` e `desktop-chrome`, in tema chiaro e scuro (comando `npm run test:visual-review`, che salva le immagini in `review-screenshots/`);
 - quando un test passa ma c'è un dubbio (per esempio un testo lungo, un nome di carta molto lungo, una tabella con tante colonne).
 
 **Chi li analizza**

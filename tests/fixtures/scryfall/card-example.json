@@ -1,0 +1,8 @@
+{
+  "object": "card",
+  "id": "00000000-0000-4000-8000-000000000001",
+  "name": "Carta di esempio",
+  "type_line": "Legendary Creature — Test",
+  "color_identity": ["G"],
+  "game_changer": false
+}

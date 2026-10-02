@@ -2,6 +2,7 @@ node_modules
 dist
 coverage
 test-results
+review-screenshots
 playwright-report
 android
 ios

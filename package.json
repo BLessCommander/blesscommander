@@ -19,10 +19,11 @@
     "preview": "npm run preview -w web",
     "build": "npm run build -w web",
     "test": "vitest run",
-    "test:e2e": "node -e \"console.log('test:e2e sarà disponibile dopo la voce B-03 (Playwright sui 6 profili).')\"",
-    "seed:test": "node -e \"console.log('seed:test sarà disponibile dopo la voce B-03.')\"",
+    "test:e2e": "playwright test",
+    "seed:test": "node tests/seed/seed.js",
     "lint": "eslint . && prettier --check .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test:visual-review": "playwright test visual-review --project=iphone --project=desktop-chrome"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

@@ -10,6 +10,7 @@ export default [
       '**/dist/**',
       '**/coverage/**',
       '**/test-results/**',
+      'review-screenshots/**',
       '**/playwright-report/**',
       'android/**',
       'ios/**',

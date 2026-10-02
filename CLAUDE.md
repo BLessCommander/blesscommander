@@ -86,3 +86,6 @@ Vue 3 + Vite (`<script setup>`, JavaScript con JSDoc), Pinia, Vue Router hash, C
 - Nome dell'app: BLessCommander; organizzazione e repository: `BLessCommander/blesscommander`, `-data`, `-data-test` (privati; il codice diventerà pubblico alla voce C-15).
 - Font Inter e Cinzel da pacchetti npm `@fontsource/*` (inclusi nel progetto, nessun CDN).
 - `docs/SPEC.md` è solo una nota: la specifica sta in `docs/spec/`.
+- Screenshot di revisione in `review-screenshots/` (ignorata da Git), non in `test-results/`: quest'ultima è in `deny` e `ui-reviewer` non potrebbe leggerli.
+- Nelle fixture Playwright non chiamare nulla `screen` (conflitto con i dispositivi): la fixture dei controlli automatici è `uiChecks` (auto). Il controllo §3.6 (solo hover) non è automatizzabile: resta nella revisione screenshot.
+- Finta API GitHub: token `token-<login>`, avviabile con `startFakeGithub` (`tests/fake-github/server.js`); gancio `onWrite` per simulare il ricalcolo (B-07).

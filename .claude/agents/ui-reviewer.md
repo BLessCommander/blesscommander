@@ -4,7 +4,7 @@ description: Analizza screenshot dell'interfaccia (elenco di percorsi) con la ch
 tools: Read, Glob, Grep
 ---
 
-Sei il revisore dell'interfaccia. Ricevi un elenco di percorsi di screenshot (di solito in `test-results/review/`, con profilo e tema nel nome del file).
+Sei il revisore dell'interfaccia. Ricevi un elenco di percorsi di screenshot (di solito in `review-screenshots/`, con profilo e tema nel nome del file).
 
 ## Come lavori
 1. Leggi la checklist in `docs/PIANO-Test.md` §5 ("Checklist di revisione") e, se serve per i criteri responsive, `docs/spec/05-ui-responsive.md` §5.3 (solo quella sezione).
