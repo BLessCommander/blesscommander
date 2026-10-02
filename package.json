@@ -1,0 +1,36 @@
+{
+  "name": "blesscommander",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "packages/*",
+    "web",
+    "data-actions",
+    "tests"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w web",
+    "dev:lan": "npm run dev:lan -w web",
+    "dev:fake-github": "node -e \"console.log('dev:fake-github sarà disponibile dopo la voce B-08 (serve la finta API GitHub di B-03).')\"",
+    "preview": "npm run preview -w web",
+    "build": "npm run build -w web",
+    "test": "vitest run",
+    "test:e2e": "node -e \"console.log('test:e2e sarà disponibile dopo la voce B-03 (Playwright sui 6 profili).')\"",
+    "seed:test": "node -e \"console.log('seed:test sarà disponibile dopo la voce B-03.')\"",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^10.0.0",
+    "eslint-plugin-vue": "^10.0.0",
+    "globals": "^16.0.0",
+    "prettier": "^3.0.0",
+    "vitest": "^3.0.0"
+  }
+}

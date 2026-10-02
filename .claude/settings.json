@@ -3,7 +3,20 @@
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)",
-      "Read(./node_modules/**)"
+      "Read(./**/.env)",
+      "Read(./**/.env.*)",
+      "Read(./node_modules/**)",
+      "Read(./**/node_modules/**)",
+      "Read(./dist/**)",
+      "Read(./**/dist/**)",
+      "Read(./coverage/**)",
+      "Read(./**/coverage/**)",
+      "Read(./test-results/**)",
+      "Read(./**/test-results/**)",
+      "Read(./playwright-report/**)",
+      "Read(./**/playwright-report/**)",
+      "Read(./android/**)",
+      "Read(./ios/**)"
     ]
   }
 }

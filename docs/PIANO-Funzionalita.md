@@ -17,11 +17,11 @@
 | ID | Stato | Funzionalità | Dip. | Spec | Test |
 |---|---|---|---|---|---|
 | B-00 | [x] | Configurazione guidata: strumenti sul PC, account GitHub, organizzazione, repository, permessi (comando `/avvio`) | — | SETUP | — |
-| B-01 | [ ] | Monorepo, Vite + Vue, ESLint/Prettier, script npm, prima pagina visibile con `npm run dev` | B-00 | 06 | — |
-| B-02 | [ ] | Suddivisione della specifica in moduli `docs/spec/` e `CLAUDE.md` snello | — | tutta (una volta sola) | — |
+| B-01 | [x] | Monorepo, Vite + Vue, ESLint/Prettier, script npm, prima pagina visibile con `npm run dev` | B-00 | 06 | — |
+| B-02 | [x] | Suddivisione della specifica in moduli `docs/spec/` e `CLAUDE.md` snello | — | tutta (una volta sola) | — |
 | B-03 | [ ] | Infrastruttura di test: Vitest, Playwright con 6 profili, finta API GitHub su cartella locale, fixture API esterne, helper responsive e accessibilità, dati di prova | B-01 | 07 | TP §2–§5 |
 | B-04 | [ ] | Design system e layout responsive (sidebar, header, bottom nav, temi, breakpoint) | B-01 | 05 | UC-30, UC-31, UC-32 |
-| B-05 | [ ] | Subagent e comandi personalizzati in `.claude/` | B-03 | — | — |
+| B-05 | [~] | Subagent e comandi personalizzati in `.claude/` | B-03 | — | — |
 | B-06 | [ ] | Livello dati: interfaccia `DataProvider`, `MockProvider`, schemi JSON dei file, adattatori di piattaforma in `web/src/platform/` (versione web) | B-01 | 06 | UT-DATA-* |
 | B-08 | [ ] | Versione locale completa: modalità demo con dati di prova, `dev:lan` per il telefono, `dev:fake-github`, `preview` con il percorso di GitHub Pages, schermata Ambiente | B-06, B-03 | 06 (§6.11) | UC-27 |
 | B-07 | [ ] | Repository dati: struttura cartelle, `config/` iniziale, Action `recalc` (validazione, autorizzazioni da autore commit, ricalcolo da zero, scrittura `derived/`), pubblicazione del motore compilato dal repo codice | B-06, C-01 | 06 | UT-ACT-* |
@@ -90,9 +90,9 @@
 
 > Aggiornato da Claude a fine sessione. Massimo 15 righe: è ciò che la sessione successiva legge per ripartire senza rileggere tutto.
 
-- **Ultima voce lavorata:** —
-- **Stato:** —
-- **File principali toccati:** —
-- **Problemi aperti / test rossi:** —
-- **Decisioni prese (dettaglio in CLAUDE.md → Decisioni):** —
-- **Prossimo passo consigliato:** B-01, B-02, B-05 (Parte 2 di `/avvio`)
+- **Ultima voce lavorata:** B-01, B-02, B-05 (sessione di avvio).
+- **Stato:** B-01 e B-02 fatte. B-05 `[~]`: subagent, comandi e settings creati, ma non provati e dipendenti da B-03.
+- **File principali toccati:** `package.json` (workspaces), `web/` (Vite, Vue, router, SCSS), `eslint.config.js`, `.prettierrc.json`, `docs/spec/*`, `docs/SPEC.md` (ora solo nota), `CLAUDE.md`, `.claude/agents/*`, `.claude/commands/*`, `.claude/settings.json`.
+- **Problemi aperti / test rossi:** nessun test rosso (lint, 2 test Vitest e build verdi). `test:e2e`, `seed:test`, `dev:fake-github` sono segnaposto; `test:visual-review` non esiste ancora (B-03). Subagent e comandi non ancora provati in una sessione nuova.
+- **Decisioni prese (dettaglio in CLAUDE.md → Decisioni):** nome app BLessCommander; font da `@fontsource`; Playwright rimandato a B-03; `docs/spec/04` contiene una copia delle righe di §3.2 sul rilevamento.
+- **Prossimo passo consigliato:** B-03 (infrastruttura di test, completa anche B-05); poi B-04 e B-06.
