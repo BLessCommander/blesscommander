@@ -73,6 +73,33 @@ test('UC-31 il tasto indietro chiude il menu a scomparsa prima di cambiare pagin
   await expect(page.getByRole('heading', { level: 1, name: 'Mazzi' })).toBeVisible();
 });
 
+test('UC-30 il menu a scomparsa copre tutto lo schermo, barra in basso compresa @ui', async ({
+  page,
+}) => {
+  test.skip(!isPhone(page), 'solo telefono');
+  await page.goto('/#/mazzi');
+  await page.getByRole('button', { name: 'Apri il menu' }).click();
+  const panel = page.locator('.drawer__panel');
+  await expect(panel).toBeVisible();
+  const { width, height } = page.viewportSize();
+  const box = await panel.boundingBox();
+  expect(box.y).toBe(0);
+  expect(box.y + box.height).toBe(height);
+  // Sopra la barra in basso e sopra l'intestazione c'è la maschera, non l'app.
+  const covered = await page.evaluate(
+    ({ x, y }) => document.elementFromPoint(x, y)?.className ?? '',
+    { x: width - 4, y: height - 4 },
+  );
+  expect(covered).toContain('drawer__backdrop');
+  const top = await page.evaluate(({ x }) => document.elementFromPoint(x, 4)?.className ?? '', {
+    x: width - 4,
+  });
+  expect(top).toContain('drawer__backdrop');
+  // Il contenuto del cassetto rispetta l'area sicura in alto.
+  const padding = await panel.evaluate((el) => getComputedStyle(el).paddingTop);
+  expect(padding).toBe('0px'); // nei browser di prova non c'è notch: vale env(...) = 0
+});
+
 test('UC-31 dal menu a scomparsa si raggiungono le voci secondarie @ui', async ({ page }) => {
   test.skip(!isPhone(page), 'solo telefono');
   await page.goto('/');

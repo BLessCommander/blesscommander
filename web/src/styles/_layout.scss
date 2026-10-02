@@ -450,6 +450,7 @@
     padding-bottom: env(safe-area-inset-bottom);
     padding-left: env(safe-area-inset-left);
     background: var(--surface);
+    border-right: 1px solid var(--border);
     box-shadow: var(--shadow);
     overflow-y: auto;
 

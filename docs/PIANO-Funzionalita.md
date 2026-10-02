@@ -28,7 +28,7 @@
 | B-09 | [x] | Pulizia avvisi Sass: sostituire `map-get` con `map.get` (`@use 'sass:map'`) in `web/src/styles/_mixins.scss`, controllare che non restino altri avvisi di deprecazione | B-04 | 05 | UC-30 |
 | B-10 | [x] | `GitHubProvider` (lettura/scrittura via API REST, ETag, conflitti) collegato a `dev:fake-github`; collegamento facoltativo al repository reale dalla schermata Ambiente (token in `platform/secure-storage`, bloccato in modalità prova) | B-06, B-08 | 06 | UT-GH-*, UC-27 |
 | B-11 | [x] | Usare lo store dati nelle pagine (dashboard, mazzi) al posto dei dati fissi; banner "in aggiornamento" e avviso delle scritture in coda scartate; selettore "Agisci come" in modalità prova (`actingAs`) | B-10 | 05, 06 (§6.7) | UC-27 |
-| B-12 | [ ] | Cassetto del menu su telefono: padding sotto il notch (`env(safe-area-inset-top)`), maschera che copre anche la barra in basso, cassetto fino al bordo inferiore (emerso dalla revisione screenshot di B-11) | B-04 | 05 | UC-30 |
+| B-12 | [x] | Cassetto del menu su telefono: padding sotto il notch (`env(safe-area-inset-top)`), maschera che copre anche la barra in basso, cassetto fino al bordo inferiore (emerso dalla revisione screenshot di B-11) | B-04 | 05 | UC-30 |
 
 ---
 
@@ -37,7 +37,7 @@
 | ID | Stato | Funzionalità | Dip. | Spec | Test |
 |---|---|---|---|---|---|
 | C-01 | [x] | Motore fasce `packages/tier-engine` (pavimento, TMV, D, decisioni, formati, determinismo, ricalcolo) | B-03 | 01, 02 | UT-ENG-* |
-| C-02 | [ ] | `GitHubProvider`: lettura snapshot con richieste condizionali, scrittura file con gestione conflitti, coda offline | B-06, B-07 | 06 | UT-GH-*, UC-23, UC-24 |
+| C-02 | [x] | `GitHubProvider`: lettura snapshot con richieste condizionali, scrittura file con gestione conflitti, coda offline | B-06, B-07 | 06 | UT-GH-*, UC-23, UC-24 |
 | C-03 | [ ] | Accesso con token GitHub (guida passo passo nella schermata), verifica membro e ruolo, profilo, uscita | C-02, B-04 | 06 | UC-01, UC-02 |
 | C-04 | [ ] | Gestione membri e ruoli dalla pagina Gruppo (admin), autorizzazioni verificate dall'Action | C-03 | 06 | UC-03, UC-19 |
 | C-04b | [ ] | Modalità prova: repository `bracketeer-data-test`, 4 utenti finti, selettore "Agisci come" per i `testOperators`, `actingAs` accettato dall'Action solo con `testMode`, banner di ambiente | C-04 | 06 (§6.7) | UC-25, UC-26, UT-ACT-TEST |
@@ -94,9 +94,9 @@
 
 > Aggiornato da Claude a fine sessione. Massimo 15 righe: è ciò che la sessione successiva legge per ripartire senza rileggere tutto.
 
-- **Ultima voce lavorata:** B-11 (dashboard e mazzi dallo store dati, banner di sincronizzazione, "Agisci come").
-- **Stato:** B-01–B-11 e C-01 fatte. Vitest 146 verdi; Playwright 162 verdi (6 profili); lint verde. Revisione screenshot: nessun problema alto/medio; restano rifiniture basse (card "Ultime partite" stirata, "F5: 0" a capo nella dashboard desktop).
-- **File principali:** `web/src/stores/data.js` (coda, scartate, `refreshing`, `actingAs`, `write`), `web/src/data/github-provider.js` (`actingAsOptions`, `setActingAs`, `#actor`, `#stamp`), `web/src/domain/snapshot-stats.js`, viste `DashboardView`/`DecksView`, `SyncBanner`, `ActingAsSelect`, test `tests/e2e/data-pages.spec.js`.
-- **Scelte:** `actingAs` solo con `testMode` e utente in `testOperators` (il provider lo verifica, non solo l'interfaccia); le scritture sono firmate dall'utente di prova. I test Vitest ora ricevono le costanti `__APP_NAME__` ecc. da `vitest.config.js`.
-- **Problemi aperti:** il cassetto del menu su telefono va sotto il notch e la maschera non copre la barra in basso (nuova voce B-12). Mazzo e partite non hanno ancora scritture dall'interfaccia: `write` dello store è pronto ma inutilizzato. "Agisci come" non si ricorda dopo il ricaricamento (scelta voluta).
-- **Prossimo passo consigliato:** B-12 (piccola) poi C-03 (accesso con token). C-02 coincide con B-10 già fatta: spuntarla o toglierla dal piano.
+- **Ultima voce lavorata:** B-12 (cassetto del menu su telefono). C-02 spuntata: coincideva con B-10.
+- **Stato:** B-01–B-12, C-01 e C-02 fatte. Vitest 146 verdi; Playwright verde sui 6 profili (un fallimento isolato su iphone, font non caricato in `environment.spec.js`, non si è ripetuto); lint verde. Revisione screenshot: nessun problema alto/medio.
+- **File principali:** `web/src/styles/_layout.scss` (bordo del cassetto), `tests/e2e/layout.spec.js` (nuovo test UC-30 sulla geometria del menu a scomparsa).
+- **Scelte:** il difetto del piano non c'era: il CSS aveva già area sicura, livello sopra la barra e altezza piena. Provato sul telefono vero dell'utente (Android, senza notch): tutto corretto. Aggiunto solo il bordo destro per il tema scuro.
+- **Problemi aperti:** il padding sotto un notch vero non è verificato (i browser di prova non lo simulano). Restano rifiniture basse della dashboard desktop (card "Ultime partite" stirata, "F5: 0" a capo). Mazzi e partite non hanno ancora scritture dall'interfaccia: `write` dello store è pronto ma inutilizzato.
+- **Prossimo passo consigliato:** C-03 (accesso con token GitHub).
