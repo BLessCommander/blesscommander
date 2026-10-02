@@ -24,20 +24,24 @@ export async function checkFakeGithub(baseUrl, login) {
 
 /**
  * Verifica un token sul repository dati reale prima di salvarlo (SPEC §6.7).
- * Rifiuta un repository in modalità prova: i dati veri e quelli di prova non si mescolano.
+ * I dati veri e quelli di prova non si mescolano: con `testRepo` il repository DEVE essere in
+ * modalità prova, senza `testRepo` NON deve esserlo.
  * @param {object} options
  * @param {string} options.token
  * @param {string} options.owner
  * @param {string} options.repo
+ * @param {boolean} [options.testRepo] si sta collegando il repository di prova
  * @param {typeof fetch} [options.fetch]
- * @returns {Promise<{ ok: true, login: string, user: import('./data-provider.js').CurrentUser } | { ok: false, reason: 'auth' | 'no-access' | 'not-member' | 'test-mode' | 'network' }>}
+ * @returns {Promise<{ ok: true, login: string, user: import('./data-provider.js').CurrentUser } | { ok: false, reason: 'auth' | 'no-access' | 'not-member' | 'test-mode' | 'not-test-repo' | 'network' }>}
  */
-export async function checkRepository({ token, owner, repo, fetch: fetchImpl }) {
+export async function checkRepository({ token, owner, repo, testRepo = false, fetch: fetchImpl }) {
   const provider = new GitHubProvider({ owner, repo, token, fetch: fetchImpl });
   try {
     const user = await provider.getCurrentUser();
     const config = await provider.getConfig();
-    if (config.testMode === true) return { ok: false, reason: 'test-mode' };
+    const isTest = config.testMode === true;
+    if (testRepo && !isTest) return { ok: false, reason: 'not-test-repo' };
+    if (!testRepo && isTest) return { ok: false, reason: 'test-mode' };
     return { ok: true, login: user.login, user };
   } catch (error) {
     if (error.code === DATA_ERROR.network) return { ok: false, reason: 'network' };

@@ -35,6 +35,17 @@ describe('resolveEnvironment', () => {
     expect(resolveEnvironment({}, { token: null }).mode).toBe('demo');
   });
 
+  it('con il flag del repository di prova usa il modo github con etichetta di prova', () => {
+    expect(resolveEnvironment({}, { token: 'ghp_x', testRepo: true })).toMatchObject({
+      mode: 'github',
+      label: 'REPOSITORY DI PROVA',
+      testRepo: true,
+    });
+    expect(resolveEnvironment({}, { token: 'ghp_x' }).testRepo).toBe(false);
+    // senza token il flag non basta
+    expect(resolveEnvironment({}, { token: null, testRepo: true }).mode).toBe('demo');
+  });
+
   it('la finta API ha la precedenza e non usa mai un token reale', () => {
     const env = resolveEnvironment(
       { VITE_DATA_MODE: 'fake-github', VITE_FAKE_GITHUB_URL: 'http://localhost:4500' },

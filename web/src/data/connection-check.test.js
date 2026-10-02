@@ -51,6 +51,29 @@ describe('checkRepository (repository reale simulato dalla finta API)', () => {
     expect(await check('test-owner')).toEqual({ ok: false, reason: 'test-mode' });
   });
 
+  it('con testRepo accetta solo un repository in modalità prova', async () => {
+    const asTest = (login) =>
+      checkRepository({
+        token: `token-${login}`,
+        owner: fake.owner,
+        repo: fake.repo,
+        testRepo: true,
+        fetch: viaFake,
+      });
+    expect(await asTest('test-owner')).toMatchObject({ ok: true, login: 'test-owner' });
+
+    const path = join(dir, 'config/group.json');
+    const original = await readFile(path, 'utf8');
+    const config = JSON.parse(original);
+    delete config.testMode;
+    await writeFile(path, JSON.stringify(config));
+    try {
+      expect(await asTest('test-owner')).toEqual({ ok: false, reason: 'not-test-repo' });
+    } finally {
+      await writeFile(path, original);
+    }
+  });
+
   it('accetta un membro di un repository senza modalità prova', async () => {
     const path = join(dir, 'config/group.json');
     const original = await readFile(path, 'utf8');

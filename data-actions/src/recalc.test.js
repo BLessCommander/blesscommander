@@ -162,6 +162,21 @@ describe('UT-ACT: Action recalc', () => {
     expect(notOperator.errors.map((e) => e.path)).toEqual([path]);
   });
 
+  it('in modalità prova un operatore che agisce come non-registratore non può chiudere', () => {
+    const files = seedFiles();
+    const path = foreignGame(files);
+    const game = JSON.parse(files[path]);
+    const other = Object.keys(JSON.parse(files['config/members.json'])).find(
+      (login) => login !== game.recorderLogin,
+    );
+    const { errors } = runRecalc({
+      files: edit(files, path, { actingAs: other }),
+      authors: { [path]: OWNER_LOGIN },
+      unknownAuthor: 'allow',
+    });
+    expect(errors.map((e) => e.path)).toEqual([path]);
+  });
+
   it('senza testMode ignora actingAs', () => {
     const files = edit(seedFiles(), 'config/group.json', { testMode: false });
     const path = foreignGame(files);

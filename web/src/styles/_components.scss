@@ -386,8 +386,9 @@
   select {
     min-height: var(--tap);
     min-width: 0;
-    max-width: 96px;
+    max-width: 132px;
     padding: 0 8px;
+    text-overflow: ellipsis;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     background: var(--surface);

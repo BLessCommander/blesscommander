@@ -70,6 +70,38 @@ test.describe('accesso con token @core', () => {
     await expect(page.locator('.env-banner')).toHaveText('DEMO LOCALE');
   });
 
+  test('repository di prova: con la casella si collega, con banner e "Agisci come"', async ({
+    page,
+  }) => {
+    const testers = { amico: { displayName: 'Amico', role: 'admin' }, 'test-uno': member.amico };
+    const hosts = await fakeApi(page, {
+      members: testers,
+      group: { ...group, testMode: true, testOperators: ['amico'] },
+    });
+    await page.goto('/#/accesso');
+    await page.getByLabel('Collega il repository di prova').check();
+    await page.getByLabel('Token personale').fill('ghp_x');
+    await page.getByRole('button', { name: 'Entra' }).click();
+    await expect(page.getByTestId('test-banner')).toHaveText('MODALITÀ PROVA');
+    await expect(page.getByTestId('access-linked')).toContainText('blesscommander-data-test');
+    await expect(page.getByLabel('Agisci come')).toBeVisible();
+    expect([...hosts]).toEqual(['api.github.com']);
+
+    await page.getByRole('button', { name: 'Esci' }).click();
+    await expect(page.locator('.env-banner')).toHaveText('DEMO LOCALE');
+    expect(await page.evaluate(() => localStorage.getItem('blesscommander.test-repo'))).toBeFalsy();
+  });
+
+  test('la casella di prova su un repository senza testMode: rifiutato', async ({ page }) => {
+    await fakeApi(page, { members: member, group });
+    await page.goto('/#/accesso');
+    await page.getByLabel('Collega il repository di prova').check();
+    await page.getByLabel('Token personale').fill('ghp_x');
+    await page.getByRole('button', { name: 'Entra' }).click();
+    await expect(page.getByTestId('access-error')).toContainText('non è il repository di prova');
+    await expect(page.locator('.env-banner')).toHaveText('DEMO LOCALE');
+  });
+
   test('utente fuori dall’elenco membri: rifiutato', async ({ page }) => {
     await fakeApi(page, { members: {}, group });
     await connect(page, 'ghp_x');

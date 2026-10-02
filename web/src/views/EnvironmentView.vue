@@ -3,8 +3,8 @@ import { onMounted, ref } from 'vue';
 import {
   APP_NAME,
   BASE_PATH,
-  DATA_REPO,
   ENVIRONMENT,
+  LINKED_REPO,
   ORG,
   TEST_REPO,
 } from '../config/environment.js';
@@ -30,7 +30,8 @@ onMounted(() => {
 
 function dataText() {
   if (ENVIRONMENT.mode === 'demo') return t.dataDemo;
-  if (ENVIRONMENT.mode === 'github') return `${ORG}/${DATA_REPO} (${t.dataReal})`;
+  if (ENVIRONMENT.mode === 'github')
+    return `${ORG}/${LINKED_REPO} (${ENVIRONMENT.testRepo ? t.dataTest : t.dataReal})`;
   return `${TEST_REPO} (${t.dataFake})`;
 }
 
@@ -74,7 +75,7 @@ const rows = [
         {{ t.realLocked }}
       </p>
       <template v-else-if="ENVIRONMENT.mode === 'github'">
-        <p data-testid="real-linked">{{ t.linked }} {{ ORG }}/{{ DATA_REPO }}</p>
+        <p data-testid="real-linked">{{ t.linked }} {{ ORG }}/{{ LINKED_REPO }}</p>
         <button type="button" class="btn" @click="signOut()">{{ t.disconnect }}</button>
       </template>
       <template v-else>

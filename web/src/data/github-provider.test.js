@@ -258,12 +258,15 @@ describe('UT-GH "Agisci come" (solo repository di prova)', () => {
   it("l'operatore di prova vede il selettore con i membri finti", async () => {
     const options = await make('test-owner').actingAsOptions();
     expect(options.enabled).toBe(true);
+    expect(options.testMode).toBe(true);
     expect(options.members.map((m) => m.login).sort()).toEqual([...LOGINS].sort());
   });
 
   it('un membro che non è operatore non lo vede e non può usarlo', async () => {
     const provider = make('test-giocatore1');
-    expect((await provider.actingAsOptions()).enabled).toBe(false);
+    const options = await provider.actingAsOptions();
+    expect(options.enabled).toBe(false);
+    expect(options.testMode).toBe(true); // il banner si vede comunque
     await expect(provider.setActingAs('test-giocatore2')).rejects.toMatchObject({
       code: 'forbidden',
     });
@@ -274,7 +277,8 @@ describe('UT-GH "Agisci come" (solo repository di prova)', () => {
     await writeFile(join(dir, 'config/group.json'), JSON.stringify({ ...group, testMode: false }));
     try {
       const provider = make('test-owner');
-      expect((await provider.actingAsOptions()).enabled).toBe(false);
+      const options = await provider.actingAsOptions();
+      expect(options).toMatchObject({ enabled: false, testMode: false });
       await expect(provider.setActingAs('test-giocatore2')).rejects.toMatchObject({
         code: 'forbidden',
       });

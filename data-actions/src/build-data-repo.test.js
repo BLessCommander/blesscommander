@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { buildSeed } from '../../tests/seed/seed.js';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { buildDataRepo } from './build-data-repo.js';
+import { buildDataRepo, testRepoConfig } from './build-data-repo.js';
 
 describe('UT-ACT: repository dati iniziale', () => {
   it('contiene template, schemi e motore, e l’Action compilata gira da sola', async () => {
@@ -41,6 +41,39 @@ describe('UT-ACT: repository dati iniziale', () => {
       }
     } finally {
       await rm(dir, { recursive: true, force: true });
+    }
+  }, 30_000);
+});
+
+describe('UT-ACT-TEST: repository di prova iniziale', () => {
+  it('ha testMode, il proprietario come operatore e admin, e 4 utenti finti', () => {
+    const { group, members } = testRepoConfig('G-E-M');
+    expect(group).toMatchObject({ testMode: true, testOperators: ['G-E-M'] });
+    expect(members['G-E-M'].role).toBe('admin');
+    const fake = Object.keys(members).filter((l) => l.startsWith('test-'));
+    expect(fake.sort()).toEqual([
+      'test-admin',
+      'test-giocatore1',
+      'test-giocatore2',
+      'test-giocatore3',
+    ]);
+  });
+
+  it('con test: true scrive i file di prova; senza, il template reale resta senza testMode', async () => {
+    const real = await mkdtemp(join(tmpdir(), 'bc-real-'));
+    const test = await mkdtemp(join(tmpdir(), 'bc-test-'));
+    try {
+      await buildDataRepo(real);
+      await buildDataRepo(test, { test: true });
+      const realGroup = JSON.parse(await readFile(join(real, 'config/group.json'), 'utf8'));
+      const testGroup = JSON.parse(await readFile(join(test, 'config/group.json'), 'utf8'));
+      expect(realGroup.testMode).toBeUndefined();
+      expect(testGroup.testMode).toBe(true);
+      const members = JSON.parse(await readFile(join(test, 'config/members.json'), 'utf8'));
+      expect(Object.keys(members)).toContain('test-giocatore1');
+    } finally {
+      await rm(real, { recursive: true, force: true });
+      await rm(test, { recursive: true, force: true });
     }
   }, 30_000);
 });

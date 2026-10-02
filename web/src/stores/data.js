@@ -25,8 +25,8 @@ export const useDataStore = defineStore('data', {
     pendingWrites: 0,
     /** @type {{ method: string, message: string }[]} scritture rifiutate al rilancio della coda */
     dropped: [],
-    /** @type {{ enabled: boolean, members: { login: string, displayName: string }[], current: string | null }} */
-    actingAsOptions: { enabled: false, members: [], current: null },
+    /** @type {{ enabled: boolean, testMode: boolean, members: { login: string, displayName: string }[], current: string | null }} */
+    actingAsOptions: { enabled: false, testMode: false, members: [], current: null },
     /** @type {Record<string, any>} login → membro (pagina Gruppo) */
     members: {},
   }),
@@ -125,7 +125,7 @@ export const useDataStore = defineStore('data', {
     },
 
     async loadActingAs() {
-      const none = { enabled: false, members: [], current: null };
+      const none = { enabled: false, testMode: false, members: [], current: null };
       try {
         this.actingAsOptions = (await provider?.actingAsOptions?.()) ?? none;
       } catch {

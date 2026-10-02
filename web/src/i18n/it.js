@@ -89,6 +89,7 @@ export const it = {
   actingAs: {
     label: 'Agisci come',
     self: 'Me stesso',
+    banner: 'MODALITÀ PROVA',
     help: 'Solo in prova: le modifiche vengono firmate dall’utente scelto.',
   },
   rules: { tiersTitle: 'Le cinque fasce', turn: 'Turno' },
@@ -123,6 +124,9 @@ export const it = {
     notOrgMember:
       'Se non vedi l’organizzazione, controlla di aver accettato l’invito che ti è arrivato via email.',
     tokenLabel: 'Token personale',
+    testRepoLabel: 'Collega il repository di prova (solo per fare prove con utenti finti)',
+    testRepoHelp:
+      'Il token deve avere accesso anche al repository di prova. I dati veri del gruppo non vengono toccati.',
     submit: 'Entra',
     checking: 'Verifica in corso…',
     failed: {
@@ -143,6 +147,10 @@ export const it = {
       'test-mode': {
         title: 'Questo repository è in modalità prova',
         action: 'Non si può usare come repository reale.',
+      },
+      'not-test-repo': {
+        title: 'Questo non è il repository di prova',
+        action: 'Il repository non è in modalità prova: usa l’accesso normale, senza la casella.',
       },
       network: {
         title: 'Nessuna connessione a GitHub',
@@ -172,6 +180,7 @@ export const it = {
     failed: 'Connessione non riuscita. Controlla che il comando sia ancora in esecuzione.',
     retry: 'Riprova',
     dataReal: 'repository reale',
+    dataTest: 'repository di prova',
     realHelp: "L'app legge e scrive i dati veri del gruppo sul repository GitHub.",
     realTitle: 'Repository reale',
     realIntro: 'Facoltativo: accedi con il tuo token personale per usare i dati veri del gruppo.',

@@ -1,6 +1,6 @@
 // Unico punto in cui si sceglie l'implementazione di DataProvider (SPEC §6.3):
 // demo → MockProvider; finta API locale o repository reale collegato → GitHubProvider.
-import { DATA_REPO, ENVIRONMENT, ORG, TEST_REPO } from '../config/environment.js';
+import { ENVIRONMENT, LINKED_REPO, ORG, TEST_REPO } from '../config/environment.js';
 import { readToken } from '../platform/secure-storage.js';
 import { GitHubProvider } from './github-provider.js';
 import { MockProvider } from './mock-provider.js';
@@ -23,7 +23,7 @@ export function createDataProvider({ onQueueEvent } = {}) {
   if (ENVIRONMENT.mode === 'github') {
     return new GitHubProvider({
       owner: ORG,
-      repo: DATA_REPO,
+      repo: LINKED_REPO,
       token: readToken(),
       autoFlush: true,
       onQueueEvent,

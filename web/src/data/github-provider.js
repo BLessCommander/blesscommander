@@ -310,15 +310,18 @@ export class GitHubProvider extends DataProvider {
   /**
    * Il selettore è ammesso solo se il repository è in `testMode` e chi ha fatto l'accesso è un
    * `testOperator`: sul repository reale `enabled` è sempre falso.
-   * @returns {Promise<{ enabled: boolean, members: { login: string, displayName: string }[], current: string | null }>}
+   * `testMode` dice solo se il repository è di prova (serve al banner, anche per chi non è operatore).
+   * @returns {Promise<{ enabled: boolean, testMode: boolean, members: { login: string, displayName: string }[], current: string | null }>}
    */
   async actingAsOptions() {
     const [config, user] = await Promise.all([this.getConfig(), this.getCurrentUser()]);
-    const enabled = config.testMode === true && (config.testOperators ?? []).includes(user.login);
-    if (!enabled) return { enabled: false, members: [], current: null };
+    const testMode = config.testMode === true;
+    const enabled = testMode && (config.testOperators ?? []).includes(user.login);
+    if (!enabled) return { enabled: false, testMode, members: [], current: null };
     const members = await this.#readFile('config/members.json');
     return {
       enabled: true,
+      testMode,
       members: Object.entries(members?.json ?? {}).map(([login, m]) => ({
         login,
         displayName: m.displayName,

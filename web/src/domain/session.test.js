@@ -4,7 +4,12 @@ const checkRepository = vi.fn();
 const saveToken = vi.fn();
 const clearToken = vi.fn();
 vi.mock('../data/connection-check.js', () => ({ checkRepository }));
-vi.mock('../platform/secure-storage.js', () => ({ saveToken, clearToken, readToken: () => null }));
+vi.mock('../platform/secure-storage.js', () => ({
+  saveToken,
+  clearToken,
+  readToken: () => null,
+  readTestRepoFlag: () => false,
+}));
 
 const { signIn, signOut } = await import('./session.js');
 
@@ -17,11 +22,21 @@ describe('signIn', () => {
     const result = await signIn('  ghp_abc \n', { reload });
     expect(result.ok).toBe(true);
     expect(checkRepository).toHaveBeenCalledWith(expect.objectContaining({ token: 'ghp_abc' }));
-    expect(saveToken).toHaveBeenCalledWith('ghp_abc');
+    expect(saveToken).toHaveBeenCalledWith('ghp_abc', false);
     expect(reload).toHaveBeenCalledOnce();
   });
 
-  it.each(['auth', 'no-access', 'not-member', 'test-mode', 'network'])(
+  it('con testRepo verifica il repository di prova e ricorda la scelta', async () => {
+    checkRepository.mockResolvedValue({ ok: true, login: 'amico' });
+    const reload = vi.fn();
+    await signIn('ghp_abc', { testRepo: true, reload });
+    expect(checkRepository).toHaveBeenCalledWith(
+      expect.objectContaining({ repo: expect.stringContaining('test'), testRepo: true }),
+    );
+    expect(saveToken).toHaveBeenCalledWith('ghp_abc', true);
+  });
+
+  it.each(['auth', 'no-access', 'not-member', 'test-mode', 'not-test-repo', 'network'])(
     'con esito "%s" non salva nulla e non riavvia',
     async (reason) => {
       checkRepository.mockResolvedValue({ ok: false, reason });

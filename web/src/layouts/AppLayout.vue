@@ -18,7 +18,16 @@ onMounted(() => data.load());
 
 <template>
   <div class="shell" :class="{ 'is-collapsed': ui.sidebarCollapsed }">
-    <div class="env-banner" role="status">{{ ENVIRONMENT.label }}</div>
+    <div
+      class="env-banner"
+      :class="{ 'env-banner--test': data.actingAsOptions.testMode }"
+      role="status"
+    >
+      <strong v-if="data.actingAsOptions.testMode" data-testid="test-banner">
+        {{ it.actingAs.banner }}
+      </strong>
+      <span v-else>{{ ENVIRONMENT.label }}</span>
+    </div>
     <div class="shell__body">
       <AppSidebar />
       <div class="shell__main">

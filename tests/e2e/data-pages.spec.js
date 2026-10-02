@@ -111,7 +111,10 @@ test.describe('"Agisci come" @core', () => {
       return reply({ message: 'Not Found' }, 404);
     });
     await page.goto('/#/');
-    await expect(page.locator('.env-banner')).toHaveText('REPOSITORY REALE');
+    // In un repository di prova l'etichetta diventa "MODALITÀ PROVA".
+    await expect(page.locator('.env-banner')).toContainText(
+      group.testMode ? 'MODALITÀ PROVA' : 'REPOSITORY REALE',
+    );
   }
   const base = { name: 'Gruppo', settings: {}, formats: [] };
 
@@ -121,12 +124,15 @@ test.describe('"Agisci come" @core', () => {
     await open(page, { ...base, testOperators: ['amico'] });
     await expect(page.locator('.kpi').first()).toBeVisible();
     await expect(page.getByLabel('Agisci come')).toHaveCount(0);
+    await expect(page.getByTestId('test-banner')).toHaveCount(0);
   });
 
   test('repository di prova con operatore: il selettore compare e funziona @ui', async ({
     page,
   }) => {
     await open(page, { ...base, testMode: true, testOperators: ['amico'] });
+    await expect(page.getByTestId('test-banner')).toBeVisible();
+    await expect(page.getByTestId('test-banner')).toHaveText('MODALITÀ PROVA');
     const select = page.getByLabel('Agisci come');
     await expect(select).toBeVisible();
     await expect(select.locator('option')).toHaveText(['Me stesso', 'Amico', 'Utente uno']);
@@ -138,5 +144,6 @@ test.describe('"Agisci come" @core', () => {
     await open(page, { ...base, testMode: true, testOperators: ['altro'] });
     await expect(page.locator('.kpi').first()).toBeVisible();
     await expect(page.getByLabel('Agisci come')).toHaveCount(0);
+    await expect(page.getByTestId('test-banner')).toBeVisible();
   });
 });

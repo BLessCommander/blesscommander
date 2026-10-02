@@ -1,4 +1,4 @@
-import { readToken } from '../platform/secure-storage.js';
+import { readTestRepoFlag, readToken } from '../platform/secure-storage.js';
 import { resolveEnvironment } from './environment-mode.js';
 
 /** Nome dell'app, da docs/progetto.json (iniettato da Vite). */
@@ -11,4 +11,9 @@ export const DATA_REPO = __DATA_REPO__;
 /** Percorso di base dell'app (`/` in sviluppo, `/<repository>/` su GitHub Pages). */
 export const BASE_PATH = import.meta.env.BASE_URL;
 
-export const ENVIRONMENT = resolveEnvironment(import.meta.env, { token: readToken() });
+export const ENVIRONMENT = resolveEnvironment(import.meta.env, {
+  token: readToken(),
+  testRepo: readTestRepoFlag(),
+});
+/** Repository collegato con il token (nel modo `github`): dei dati veri o quello di prova. */
+export const LINKED_REPO = ENVIRONMENT.testRepo ? TEST_REPO : DATA_REPO;
