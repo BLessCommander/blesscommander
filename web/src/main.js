@@ -6,5 +6,9 @@ import '@fontsource/cinzel/600.css';
 import './styles/main.scss';
 import App from './App.vue';
 import { router } from './router';
+import { useThemeStore } from './stores/theme.js';
 
-createApp(App).use(createPinia()).use(router).mount('#app');
+const pinia = createPinia();
+const app = createApp(App).use(pinia).use(router);
+useThemeStore(pinia).init();
+app.mount('#app');

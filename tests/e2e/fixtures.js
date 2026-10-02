@@ -44,7 +44,8 @@ export const test = base.extend({
       };
       await use(uiChecks);
 
-      if (testInfo.title.includes('@ui') && testInfo.status === testInfo.expectedStatus) {
+      // Solo se il test è passato: un test saltato non ha aperto nessuna pagina.
+      if (testInfo.title.includes('@ui') && testInfo.status === 'passed') {
         await uiChecks.check();
       }
     },

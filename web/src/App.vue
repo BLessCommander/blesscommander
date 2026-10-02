@@ -1,10 +1,7 @@
 <script setup>
-import { ENVIRONMENT } from './config/environment.js';
+import AppLayout from './layouts/AppLayout.vue';
 </script>
 
 <template>
-  <div class="app">
-    <div class="env-banner" role="status">{{ ENVIRONMENT.label }}</div>
-    <RouterView />
-  </div>
+  <AppLayout />
 </template>

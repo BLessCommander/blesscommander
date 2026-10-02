@@ -1,8 +1,33 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
-import HomeView from './views/HomeView.vue';
+import { APP_NAME } from './config/environment.js';
+import { it } from './i18n/it.js';
+import { NAV_ITEMS } from './navigation.js';
+
+// Le pagine si caricano a richiesta (SPEC 05 §5.3, criterio 9). Quelle senza vista dedicata
+// usano il segnaposto finché non arriva la loro voce del piano.
+const views = {
+  dashboard: () => import('./views/DashboardView.vue'),
+  rules: () => import('./views/RulesView.vue'),
+  profile: () => import('./views/ProfileView.vue'),
+};
+const placeholder = () => import('./views/PlaceholderView.vue');
+
+const routes = NAV_ITEMS.map((item) => ({
+  path: item.path,
+  name: item.name,
+  component: views[item.name] ?? placeholder,
+  meta: { title: it.pages[item.name].title },
+}));
+routes.push({ path: '/:pathMatch(.*)*', redirect: '/' });
 
 // Routing in modalità hash: funziona su GitHub Pages e dentro le app Capacitor.
 export const router = createRouter({
   history: createWebHashHistory(),
-  routes: [{ path: '/', name: 'home', component: HomeView }],
+  routes,
+});
+
+router.afterEach((to) => {
+  if (globalThis.document) {
+    document.title = to.meta.title ? `${to.meta.title} · ${APP_NAME}` : APP_NAME;
+  }
 });

@@ -89,3 +89,5 @@ Vue 3 + Vite (`<script setup>`, JavaScript con JSDoc), Pinia, Vue Router hash, C
 - Screenshot di revisione in `review-screenshots/` (ignorata da Git), non in `test-results/`: quest'ultima è in `deny` e `ui-reviewer` non potrebbe leggerli.
 - Nelle fixture Playwright non chiamare nulla `screen` (conflitto con i dispositivi): la fixture dei controlli automatici è `uiChecks` (auto). Il controllo §3.6 (solo hover) non è automatizzabile: resta nella revisione screenshot.
 - Finta API GitHub: token `token-<login>`, avviabile con `startFakeGithub` (`tests/fake-github/server.js`); gancio `onWrite` per simulare il ricalcolo (B-07).
+- Menu a scomparsa e finestre sono "ancorati" alla cronologia con `?overlay=<nome>` (`useOverlay`): il tasto indietro li chiude prima di cambiare pagina. Tema in `useThemeStore` (system/chiaro/scuro), salvato tramite `web/src/platform/`.
+- Fixture `uiChecks`: il controllo finale automatico gira solo se il test è passato (i test saltati non aprono pagine).

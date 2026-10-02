@@ -20,7 +20,7 @@
 | B-01 | [x] | Monorepo, Vite + Vue, ESLint/Prettier, script npm, prima pagina visibile con `npm run dev` | B-00 | 06 | — |
 | B-02 | [x] | Suddivisione della specifica in moduli `docs/spec/` e `CLAUDE.md` snello | — | tutta (una volta sola) | — |
 | B-03 | [x] | Infrastruttura di test: Vitest, Playwright con 6 profili, finta API GitHub su cartella locale, fixture API esterne, helper responsive e accessibilità, dati di prova | B-01 | 07 | TP §2–§5 |
-| B-04 | [ ] | Design system e layout responsive (sidebar, header, bottom nav, temi, breakpoint) | B-01 | 05 | UC-30, UC-31, UC-32 |
+| B-04 | [x] | Design system e layout responsive (sidebar, header, bottom nav, temi, breakpoint) | B-01 | 05 | UC-30, UC-31, UC-32 |
 | B-05 | [x] | Subagent e comandi personalizzati in `.claude/` | B-03 | — | — |
 | B-06 | [ ] | Livello dati: interfaccia `DataProvider`, `MockProvider`, schemi JSON dei file, adattatori di piattaforma in `web/src/platform/` (versione web) | B-01 | 06 | UT-DATA-* |
 | B-08 | [ ] | Versione locale completa: modalità demo con dati di prova, `dev:lan` per il telefono, `dev:fake-github`, `preview` con il percorso di GitHub Pages, schermata Ambiente | B-06, B-03 | 06 (§6.11) | UC-27 |
@@ -90,9 +90,9 @@
 
 > Aggiornato da Claude a fine sessione. Massimo 15 righe: è ciò che la sessione successiva legge per ripartire senza rileggere tutto.
 
-- **Ultima voce lavorata:** B-03 (chiude anche B-05).
-- **Stato:** B-01, B-02, B-03, B-05 fatte. Vitest 19 test verdi; Playwright 11 passati e 0 falliti (smoke `@ui` sui 6 profili, `@api` su desktop-chrome, 4 screenshot di revisione); lint verde; revisione screenshot senza problemi gravi.
-- **File principali toccati:** `playwright.config.js`, `vitest.config.js`, `tests/e2e/*` (fixtures, checks, smoke, fake-github, visual-review), `tests/fake-github/server.js`, `tests/seed/seed.js`, `tests/fixtures/`, script npm `test:e2e`/`seed:test`/`test:visual-review`, colori F1/F2/F4 in `web/src/styles/main.scss` (contrasto).
-- **Problemi aperti:** `dev:fake-github` è ancora un segnaposto (B-08). Palette e griglia delle fasce provvisorie fino a B-04. Nella finta API il ricalcolo è solo un gancio `onWrite` (B-07). Fixture API esterne: solo struttura ed esempio Scryfall.
-- **Decisioni prese (dettaglio in CLAUDE.md → Decisioni):** screenshot in `review-screenshots/` (non in `test-results/`, che è in deny); fixture dei controlli chiamata `uiChecks`; token della finta API `token-<login>`.
-- **Prossimo passo consigliato:** B-04 (design system e layout) e B-06 (livello dati); poi B-08.
+- **Ultima voce lavorata:** B-04 (design system e layout responsive).
+- **Stato:** B-01–B-05 fatte. Vitest 26 test verdi; Playwright 75 passati e 0 falliti sui 6 profili (UC-30, UC-31, UC-32); lint e build verdi; revisione screenshot senza problemi gravi.
+- **File principali toccati:** `web/src/styles/` (tokens, base, layout, components), `web/src/layouts/AppLayout.vue`, `web/src/components/{layout,ui}/`, `web/src/stores/{theme,ui}.js`, `web/src/composables/{use-overlay,use-dialog}.js`, `web/src/platform/{storage,appearance}.js`, `web/src/{router,navigation}.js`, `web/src/i18n/it.js`, `web/src/views/*`, `tests/e2e/layout.spec.js`.
+- **Problemi aperti:** le pagine Mazzi, Importa, Nuovo tavolo, Partite, Statistiche, Gruppo sono segnaposto (arrivano con le loro voci). Nell'intestazione mancano le notifiche (non c'è ancora nulla da notificare). Da 768px il menu a scomparsa aperto via URL non si vede ma blocca lo scorrimento: caso raro, da sistemare. `dev:fake-github` è ancora un segnaposto (B-08); ricalcolo della finta API solo come gancio `onWrite` (B-07).
+- **Decisioni prese (dettaglio in CLAUDE.md → Decisioni):** menu e finestre si aprono con `?overlay=nome` nell'URL, così il tasto indietro li chiude; la fixture `uiChecks` controlla la schermata finale solo se il test è passato.
+- **Prossimo passo consigliato:** B-06 (livello dati); poi B-08.

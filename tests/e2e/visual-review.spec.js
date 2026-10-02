@@ -4,7 +4,14 @@ import { test } from './fixtures.js';
 // Screenshot per la revisione del subagent `ui-reviewer` (PIANO-Test §5).
 // Si lancia con `npm run test:visual-review` (profili iphone e desktop-chrome, tema chiaro e scuro).
 // Aggiungere qui le schermate toccate da ogni nuova voce.
-const SCREENS = [{ name: 'home', path: '/' }];
+const SCREENS = [
+  { name: 'dashboard', path: '/' },
+  { name: 'regolamento', path: '/#/regolamento' },
+  { name: 'profilo', path: '/#/profilo' },
+  { name: 'segnaposto', path: '/#/mazzi' },
+  { name: 'menu-aperto', path: '/#/mazzi?overlay=menu' },
+  { name: 'finestra', path: '/#/profilo?overlay=about' },
+];
 const THEMES = ['light', 'dark'];
 
 for (const screen of SCREENS) {
