@@ -8,6 +8,7 @@ const SCREENS = [
   { name: 'dashboard', path: '/' },
   { name: 'regolamento', path: '/#/regolamento' },
   { name: 'profilo', path: '/#/profilo' },
+  { name: 'ambiente', path: '/#/ambiente' },
   { name: 'segnaposto', path: '/#/mazzi' },
   { name: 'menu-aperto', path: '/#/mazzi?overlay=menu' },
   { name: 'finestra', path: '/#/profilo?overlay=about' },

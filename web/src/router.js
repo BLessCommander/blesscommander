@@ -9,6 +9,7 @@ const views = {
   dashboard: () => import('./views/DashboardView.vue'),
   rules: () => import('./views/RulesView.vue'),
   profile: () => import('./views/ProfileView.vue'),
+  environment: () => import('./views/EnvironmentView.vue'),
 };
 const placeholder = () => import('./views/PlaceholderView.vue');
 

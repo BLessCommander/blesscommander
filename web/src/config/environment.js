@@ -1,10 +1,10 @@
-/**
- * @typedef {'demo'} EnvironmentMode
- * In B-01 esiste solo la modalità demo locale (SPEC §6.11); le altre arrivano con B-08.
- */
+import { resolveEnvironment } from './environment-mode.js';
 
 /** Nome dell'app, da docs/progetto.json (iniettato da Vite). */
 export const APP_NAME = __APP_NAME__;
+/** Nome del repository dati di prova, da docs/progetto.json (iniettato da Vite). */
+export const TEST_REPO = __TEST_REPO__;
+/** Percorso di base dell'app (`/` in sviluppo, `/<repository>/` su GitHub Pages). */
+export const BASE_PATH = import.meta.env.BASE_URL;
 
-/** @type {{ mode: EnvironmentMode, label: string }} */
-export const ENVIRONMENT = { mode: 'demo', label: 'DEMO LOCALE' };
+export const ENVIRONMENT = resolveEnvironment(import.meta.env);

@@ -23,9 +23,10 @@
 | B-04 | [x] | Design system e layout responsive (sidebar, header, bottom nav, temi, breakpoint) | B-01 | 05 | UC-30, UC-31, UC-32 |
 | B-05 | [x] | Subagent e comandi personalizzati in `.claude/` | B-03 | — | — |
 | B-06 | [x] | Livello dati: interfaccia `DataProvider`, `MockProvider`, schemi JSON dei file, adattatori di piattaforma in `web/src/platform/` (versione web) | B-01 | 06 | UT-DATA-* |
-| B-08 | [ ] | Versione locale completa: modalità demo con dati di prova, `dev:lan` per il telefono, `dev:fake-github`, `preview` con il percorso di GitHub Pages, schermata Ambiente | B-06, B-03 | 06 (§6.11) | UC-27 |
+| B-08 | [x] | Versione locale completa: modalità demo con dati di prova, `dev:lan` per il telefono, `dev:fake-github`, `preview` con il percorso di GitHub Pages, schermata Ambiente | B-06, B-03 | 06 (§6.11) | UC-27 |
 | B-07 | [ ] | Repository dati: struttura cartelle, `config/` iniziale, Action `recalc` (validazione, autorizzazioni da autore commit, ricalcolo da zero, scrittura `derived/`), pubblicazione del motore compilato dal repo codice | B-06, C-01 | 06 | UT-ACT-* |
 | B-09 | [x] | Pulizia avvisi Sass: sostituire `map-get` con `map.get` (`@use 'sass:map'`) in `web/src/styles/_mixins.scss`, controllare che non restino altri avvisi di deprecazione | B-04 | 05 | UC-30 |
+| B-10 | [ ] | `GitHubProvider` (lettura/scrittura via API REST, ETag, conflitti) collegato a `dev:fake-github`; collegamento facoltativo al repository reale dalla schermata Ambiente (token in `platform/secure-storage`, bloccato in modalità prova) | B-06, B-08 | 06 | UT-GH-*, UC-27 |
 
 ---
 
@@ -91,8 +92,8 @@
 
 > Aggiornato da Claude a fine sessione. Massimo 15 righe: è ciò che la sessione successiva legge per ripartire senza rileggere tutto.
 
-- **Ultima voce lavorata:** B-09 (pulizia avvisi Sass: `map.get` con `@use 'sass:map'` in `_mixins.scss`).
-- **Stato:** B-01–B-06 e B-09 fatte. Vitest 44 test verdi; Playwright 75 passati e 0 falliti sui 6 profili; lint e build verdi, nessun avviso Sass. Nessuna schermata cambiata, quindi nessuna revisione screenshot.
-- **File principali toccati:** `web/src/data/` (data-provider, mock-provider, schemas, validate, ulid, errors, seed-demo, index), `web/src/platform/{secure-storage,share,haptics,external-link,network}.js`, `web/src/stores/data.js`; dipendenza `ajv` 8 in `web`.
-- **Problemi aperti:** lo store `useDataStore` non è ancora usato da nessuna pagina (arriva con B-08 e le voci delle pagine). Il MockProvider non ricalcola le fasce: nello snapshot usa quella dichiarata. `GitHubProvider` non esiste ancora (UT-GH da fare con lui). Gli schemi sono in `schemas.js`: B-07 li scriverà anche in `schemas/` del repository dati. Restano i problemi di B-04 (menu a scomparsa da 768px aperto via URL; notifiche assenti).
-- **Prossimo passo consigliato:** B-08 (versione locale completa); poi B-07 (serve C-01).
+- **Ultima voce lavorata:** B-08 (versione locale completa).
+- **Stato:** B-01–B-06, B-08, B-09 fatte. Vitest 50 verdi; Playwright 86 passati, 0 falliti sui 6 profili; lint e build verdi. Revisione screenshot (Ambiente e menu, iphone e desktop, chiaro e scuro): solo 2 note di gravità bassa (lo screenshot del menu aperto è sulla pagina Mazzi, non su Ambiente).
+- **File principali toccati:** `web/src/config/{environment,environment-mode}.js`, `web/src/views/EnvironmentView.vue`, `web/src/data/connection-check.js`, `web/vite.config.js` (base anche per `preview`), `tests/dev/fake-github-dev.js`, `tests/e2e/{environment,preview}.spec.js`; voce "Ambiente" in `navigation.js`, `router.js`, `i18n`.
+- **Problemi aperti:** con `dev:fake-github` l'app fa solo il test di connessione (utente): i dati restano quelli demo finché non c'è `GitHubProvider` (nuova voce B-10, con il collegamento facoltativo al repository reale). Lo store `useDataStore` non è ancora usato da nessuna pagina. Il MockProvider non ricalcola le fasce. Restano i problemi di B-04 (menu a scomparsa da 768px aperto via URL; notifiche assenti).
+- **Prossimo passo consigliato:** B-10; B-07 richiede prima C-01.

@@ -22,6 +22,7 @@ export const it = {
     rules: { title: 'Regolamento', nav: 'Regolamento' },
     group: { title: 'Gruppo', nav: 'Gruppo' },
     profile: { title: 'Profilo', nav: 'Profilo' },
+    environment: { title: 'Ambiente', nav: 'Ambiente' },
   },
   theme: {
     toLight: 'Passa al tema chiaro',
@@ -55,6 +56,23 @@ export const it = {
     aboutTitle: 'Informazioni',
     aboutEnvironment: 'Ambiente',
     close: 'Chiudi',
+  },
+  environment: {
+    info: "Dove sta girando l'app",
+    mode: 'Modalità',
+    app: 'App',
+    data: 'Dati',
+    dataDemo: 'Dati di prova nel browser (nessuna connessione)',
+    dataFake: 'finta API locale',
+    basePath: 'Percorso di base',
+    demoHelp: 'Nessun token richiesto: i dati sono finti e restano nel tuo browser.',
+    fakeHelp:
+      "L'app è collegata alla finta API GitHub sul tuo computer. Nessun servizio reale viene toccato.",
+    connection: 'Connessione',
+    checking: 'Controllo in corso…',
+    connected: 'Connesso come',
+    failed: 'Connessione non riuscita. Controlla che il comando sia ancora in esecuzione.',
+    retry: 'Riprova',
   },
   modal: { close: 'Chiudi la finestra' },
 };

@@ -30,5 +30,6 @@ export const NAV_ITEMS = Object.freeze(
     { name: 'rules', path: '/regolamento', icon: 'book', group: 'more' },
     { name: 'group', path: '/gruppo', icon: 'group', group: 'more' },
     { name: 'profile', path: '/profilo', icon: 'user', group: 'more', quick: true },
+    { name: 'environment', path: '/ambiente', icon: 'settings', group: 'more' },
   ].map((item) => ({ ...item, label: it.pages[item.name].nav })),
 );
