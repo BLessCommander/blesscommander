@@ -91,3 +91,4 @@ Vue 3 + Vite (`<script setup>`, JavaScript con JSDoc), Pinia, Vue Router hash, C
 - Finta API GitHub: token `token-<login>`, avviabile con `startFakeGithub` (`tests/fake-github/server.js`); gancio `onWrite` per simulare il ricalcolo (B-07).
 - Menu a scomparsa e finestre sono "ancorati" alla cronologia con `?overlay=<nome>` (`useOverlay`): il tasto indietro li chiude prima di cambiare pagina. Tema in `useThemeStore` (system/chiaro/scuro), salvato tramite `web/src/platform/`.
 - Fixture `uiChecks`: il controllo finale automatico gira solo se il test è passato (i test saltati non aprono pagine).
+- Livello dati: `DataProvider` in `web/src/data/`; schemi JSON in `schemas.js` validati con `ajv` 8 (non 6: npm può scegliere la 6 dall'ESLint, verificare con `npm ls ajv`). Il provider sta fuori dallo store Pinia (un proxy reattivo non regge i campi privati `#`). Utenti demo `demo-…`; un solo punto di scelta del provider: `web/src/data/index.js`.

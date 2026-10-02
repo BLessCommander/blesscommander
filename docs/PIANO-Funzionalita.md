@@ -22,9 +22,10 @@
 | B-03 | [x] | Infrastruttura di test: Vitest, Playwright con 6 profili, finta API GitHub su cartella locale, fixture API esterne, helper responsive e accessibilità, dati di prova | B-01 | 07 | TP §2–§5 |
 | B-04 | [x] | Design system e layout responsive (sidebar, header, bottom nav, temi, breakpoint) | B-01 | 05 | UC-30, UC-31, UC-32 |
 | B-05 | [x] | Subagent e comandi personalizzati in `.claude/` | B-03 | — | — |
-| B-06 | [ ] | Livello dati: interfaccia `DataProvider`, `MockProvider`, schemi JSON dei file, adattatori di piattaforma in `web/src/platform/` (versione web) | B-01 | 06 | UT-DATA-* |
+| B-06 | [x] | Livello dati: interfaccia `DataProvider`, `MockProvider`, schemi JSON dei file, adattatori di piattaforma in `web/src/platform/` (versione web) | B-01 | 06 | UT-DATA-* |
 | B-08 | [ ] | Versione locale completa: modalità demo con dati di prova, `dev:lan` per il telefono, `dev:fake-github`, `preview` con il percorso di GitHub Pages, schermata Ambiente | B-06, B-03 | 06 (§6.11) | UC-27 |
 | B-07 | [ ] | Repository dati: struttura cartelle, `config/` iniziale, Action `recalc` (validazione, autorizzazioni da autore commit, ricalcolo da zero, scrittura `derived/`), pubblicazione del motore compilato dal repo codice | B-06, C-01 | 06 | UT-ACT-* |
+| B-09 | [ ] | Pulizia avvisi Sass: sostituire `map-get` con `map.get` (`@use 'sass:map'`) in `web/src/styles/_mixins.scss`, controllare che non restino altri avvisi di deprecazione | B-04 | 05 | UC-30 |
 
 ---
 
@@ -90,9 +91,8 @@
 
 > Aggiornato da Claude a fine sessione. Massimo 15 righe: è ciò che la sessione successiva legge per ripartire senza rileggere tutto.
 
-- **Ultima voce lavorata:** B-04 (design system e layout responsive).
-- **Stato:** B-01–B-05 fatte. Vitest 26 test verdi; Playwright 75 passati e 0 falliti sui 6 profili (UC-30, UC-31, UC-32); lint e build verdi; revisione screenshot senza problemi gravi.
-- **File principali toccati:** `web/src/styles/` (tokens, base, layout, components), `web/src/layouts/AppLayout.vue`, `web/src/components/{layout,ui}/`, `web/src/stores/{theme,ui}.js`, `web/src/composables/{use-overlay,use-dialog}.js`, `web/src/platform/{storage,appearance}.js`, `web/src/{router,navigation}.js`, `web/src/i18n/it.js`, `web/src/views/*`, `tests/e2e/layout.spec.js`.
-- **Problemi aperti:** le pagine Mazzi, Importa, Nuovo tavolo, Partite, Statistiche, Gruppo sono segnaposto (arrivano con le loro voci). Nell'intestazione mancano le notifiche (non c'è ancora nulla da notificare). Da 768px il menu a scomparsa aperto via URL non si vede ma blocca lo scorrimento: caso raro, da sistemare. `dev:fake-github` è ancora un segnaposto (B-08); ricalcolo della finta API solo come gancio `onWrite` (B-07).
-- **Decisioni prese (dettaglio in CLAUDE.md → Decisioni):** menu e finestre si aprono con `?overlay=nome` nell'URL, così il tasto indietro li chiude; la fixture `uiChecks` controlla la schermata finale solo se il test è passato.
-- **Prossimo passo consigliato:** B-06 (livello dati); poi B-08.
+- **Ultima voce lavorata:** B-06 (livello dati).
+- **Stato:** B-01–B-06 fatte. Vitest 44 test verdi (UT-DATA: contratto DataProvider, schemi, ULID); Playwright 75 passati e 0 falliti sui 6 profili; lint e build verdi. Nessuna schermata nuova, quindi nessuna revisione screenshot.
+- **File principali toccati:** `web/src/data/` (data-provider, mock-provider, schemas, validate, ulid, errors, seed-demo, index), `web/src/platform/{secure-storage,share,haptics,external-link,network}.js`, `web/src/stores/data.js`; dipendenza `ajv` 8 in `web`.
+- **Problemi aperti:** lo store `useDataStore` non è ancora usato da nessuna pagina (arriva con B-08 e le voci delle pagine). Il MockProvider non ricalcola le fasce: nello snapshot usa quella dichiarata. `GitHubProvider` non esiste ancora (UT-GH da fare con lui). Gli schemi sono in `schemas.js`: B-07 li scriverà anche in `schemas/` del repository dati. Restano i problemi di B-04 (menu a scomparsa da 768px aperto via URL; notifiche assenti).
+- **Prossimo passo consigliato:** B-09 (piccola pulizia avvisi Sass), poi B-08 (versione locale completa); poi B-07 (serve C-01).
