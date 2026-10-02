@@ -30,7 +30,7 @@ export async function checkFakeGithub(baseUrl, login) {
  * @param {string} options.owner
  * @param {string} options.repo
  * @param {typeof fetch} [options.fetch]
- * @returns {Promise<{ ok: true, login: string } | { ok: false, reason: 'auth' | 'not-member' | 'test-mode' | 'network' }>}
+ * @returns {Promise<{ ok: true, login: string, user: import('./data-provider.js').CurrentUser } | { ok: false, reason: 'auth' | 'no-access' | 'not-member' | 'test-mode' | 'network' }>}
  */
 export async function checkRepository({ token, owner, repo, fetch: fetchImpl }) {
   const provider = new GitHubProvider({ owner, repo, token, fetch: fetchImpl });
@@ -38,12 +38,13 @@ export async function checkRepository({ token, owner, repo, fetch: fetchImpl }) 
     const user = await provider.getCurrentUser();
     const config = await provider.getConfig();
     if (config.testMode === true) return { ok: false, reason: 'test-mode' };
-    return { ok: true, login: user.login };
+    return { ok: true, login: user.login, user };
   } catch (error) {
     if (error.code === DATA_ERROR.network) return { ok: false, reason: 'network' };
-    // Utente fuori dall'elenco, repository non visibile o configurazione mancante: non si entra.
-    if (error.code === DATA_ERROR.auth && /non presente/.test(error.message)) {
-      return { ok: false, reason: 'not-member' };
+    if (error.details?.reason === 'not-member') return { ok: false, reason: 'not-member' };
+    // Token valido ma senza permesso sul repository dati (o repository non visibile).
+    if (error.code === DATA_ERROR.forbidden || error.code === DATA_ERROR.notFound) {
+      return { ok: false, reason: 'no-access' };
     }
     return { ok: false, reason: 'auth' };
   }

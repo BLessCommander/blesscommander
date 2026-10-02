@@ -9,6 +9,7 @@ const SCREENS = [
   { name: 'regolamento', path: '/#/regolamento' },
   { name: 'profilo', path: '/#/profilo' },
   { name: 'ambiente', path: '/#/ambiente' },
+  { name: 'accesso', path: '/#/accesso' },
   { name: 'mazzi', path: '/#/mazzi' },
   { name: 'segnaposto', path: '/#/partite' },
   { name: 'menu-aperto', path: '/#/mazzi?overlay=menu' },

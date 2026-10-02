@@ -38,7 +38,7 @@
 |---|---|---|---|---|---|
 | C-01 | [x] | Motore fasce `packages/tier-engine` (pavimento, TMV, D, decisioni, formati, determinismo, ricalcolo) | B-03 | 01, 02 | UT-ENG-* |
 | C-02 | [x] | `GitHubProvider`: lettura snapshot con richieste condizionali, scrittura file con gestione conflitti, coda offline | B-06, B-07 | 06 | UT-GH-*, UC-23, UC-24 |
-| C-03 | [ ] | Accesso con token GitHub (guida passo passo nella schermata), verifica membro e ruolo, profilo, uscita | C-02, B-04 | 06 | UC-01, UC-02 |
+| C-03 | [x] | Accesso con token GitHub (guida passo passo nella schermata), verifica membro e ruolo, profilo, uscita | C-02, B-04 | 06 | UC-01, UC-02 |
 | C-04 | [ ] | Gestione membri e ruoli dalla pagina Gruppo (admin), autorizzazioni verificate dall'Action | C-03 | 06 | UC-03, UC-19 |
 | C-04b | [ ] | Modalità prova: repository `bracketeer-data-test`, 4 utenti finti, selettore "Agisci come" per i `testOperators`, `actingAs` accettato dall'Action solo con `testMode`, banner di ambiente | C-04 | 06 (§6.7) | UC-25, UC-26, UT-ACT-TEST |
 | C-05 | [ ] | Import mazzo da testo + arricchimento Scryfall + rilevamento game changer | C-04 | 04 | UC-04 |
@@ -94,9 +94,9 @@
 
 > Aggiornato da Claude a fine sessione. Massimo 15 righe: è ciò che la sessione successiva legge per ripartire senza rileggere tutto.
 
-- **Ultima voce lavorata:** B-12 (cassetto del menu su telefono). C-02 spuntata: coincideva con B-10.
-- **Stato:** B-01–B-12, C-01 e C-02 fatte. Vitest 146 verdi; Playwright verde sui 6 profili (un fallimento isolato su iphone, font non caricato in `environment.spec.js`, non si è ripetuto); lint verde. Revisione screenshot: nessun problema alto/medio.
-- **File principali:** `web/src/styles/_layout.scss` (bordo del cassetto), `tests/e2e/layout.spec.js` (nuovo test UC-30 sulla geometria del menu a scomparsa).
-- **Scelte:** il difetto del piano non c'era: il CSS aveva già area sicura, livello sopra la barra e altezza piena. Provato sul telefono vero dell'utente (Android, senza notch): tutto corretto. Aggiunto solo il bordo destro per il tema scuro.
-- **Problemi aperti:** il padding sotto un notch vero non è verificato (i browser di prova non lo simulano). Restano rifiniture basse della dashboard desktop (card "Ultime partite" stirata, "F5: 0" a capo). Mazzi e partite non hanno ancora scritture dall'interfaccia: `write` dello store è pronto ma inutilizzato.
-- **Prossimo passo consigliato:** C-03 (accesso con token GitHub).
+- **Ultima voce lavorata:** C-03 (accesso con token GitHub).
+- **Stato:** B-01–B-12 e C-01–C-03 fatte. Vitest 153 verdi; Playwright verde sui 6 profili; lint verde. Revisione screenshot: nessun problema alto/medio (corrette etichetta del pulsante e larghezza del testo; il resto basso: pulsanti a larghezza naturale su telefono).
+- **File principali:** `web/src/views/AccessView.vue` (guida + token, rotta `/accesso`), `web/src/domain/session.js` (`signIn`/`signOut`), `web/src/data/connection-check.js` (motivi `auth`, `no-access`, `not-member`, `test-mode`, `network`), `UserAvatar.vue`, header/Profilo con utente, `tests/e2e/access.spec.js`.
+- **Scelte:** la demo resta senza login (regola 10); l'accesso è una pagina a parte, raggiungibile da Profilo e Ambiente. Dopo accesso/uscita l'app si riavvia. Se il token scade, un avviso in alto rimanda a `/accesso`.
+- **Problemi aperti:** la guida non ha ancora immagini (solo passi scritti). Accesso al repository vero provato dall'utente: funziona. Il repository `blesscommander-data` è stato inizializzato il 2026-10-02 (template, schemi, motore; primo membro `G-E-M` = MASTER, admin). Lo stato di errore non è negli screenshot di revisione. Avatar nell'header solo da desktop (su telefono sta nel Profilo).
+- **Prossimo passo consigliato:** C-04 (gestione membri e ruoli dalla pagina Gruppo).

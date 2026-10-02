@@ -8,37 +8,14 @@ import {
   ORG,
   TEST_REPO,
 } from '../config/environment.js';
-import { checkFakeGithub, checkRepository } from '../data/connection-check.js';
-import { reloadApp } from '../platform/app-lifecycle.js';
-import { clearToken, saveToken } from '../platform/secure-storage.js';
+import { checkFakeGithub } from '../data/connection-check.js';
+import { signOut } from '../domain/session.js';
 import { it } from '../i18n/it.js';
 
 const t = it.environment;
 /** @type {import('vue').Ref<'idle' | 'checking' | 'ok' | 'error'>} */
 const connection = ref(ENVIRONMENT.mode === 'fake-github' ? 'checking' : 'idle');
 const connectedLogin = ref('');
-const token = ref('');
-/** @type {import('vue').Ref<'idle' | 'checking' | 'error'>} */
-const realState = ref('idle');
-const realReason = ref('auth');
-
-async function connectReal() {
-  realState.value = 'checking';
-  const result = await checkRepository({ token: token.value.trim(), owner: ORG, repo: DATA_REPO });
-  if (!result.ok) {
-    realReason.value = result.reason;
-    realState.value = 'error';
-    return;
-  }
-  saveToken(token.value.trim());
-  token.value = '';
-  reloadApp();
-}
-
-function disconnectReal() {
-  clearToken();
-  reloadApp();
-}
 
 async function test() {
   connection.value = 'checking';
@@ -98,30 +75,12 @@ const rows = [
       </p>
       <template v-else-if="ENVIRONMENT.mode === 'github'">
         <p data-testid="real-linked">{{ t.linked }} {{ ORG }}/{{ DATA_REPO }}</p>
-        <button type="button" class="btn" @click="disconnectReal">{{ t.disconnect }}</button>
+        <button type="button" class="btn" @click="signOut()">{{ t.disconnect }}</button>
       </template>
-      <form v-else class="stack" @submit.prevent="connectReal">
+      <template v-else>
         <p class="muted">{{ t.realIntro }}</p>
-        <label class="token-field">
-          <span>{{ t.tokenLabel }}</span>
-          <input
-            v-model="token"
-            type="password"
-            name="token"
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-            required
-          />
-        </label>
-        <p v-if="realState === 'error'" role="alert" data-testid="real-error">
-          {{ t.realFailed[realReason] }}
-        </p>
-        <p v-else-if="realState === 'checking'" role="status">{{ t.connecting }}</p>
-        <button type="submit" class="btn" :disabled="realState === 'checking' || !token.trim()">
-          {{ t.connect }}
-        </button>
-      </form>
+        <RouterLink to="/accesso" class="btn">{{ t.goAccess }}</RouterLink>
+      </template>
     </section>
   </div>
 </template>
@@ -144,20 +103,6 @@ const rows = [
   .env-list dd {
     margin-bottom: 0.5rem;
   }
-}
-.token-field {
-  display: grid;
-  gap: 0.375rem;
-  font-weight: 600;
-}
-.token-field input {
-  min-height: var(--tap);
-  padding: 0 0.75rem;
-  font: inherit;
-  color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
 }
 .env-list dd {
   margin: 0;

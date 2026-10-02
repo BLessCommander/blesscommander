@@ -19,6 +19,8 @@ export const useDataStore = defineStore('data', {
     loading: false,
     /** @type {string | null} */
     error: null,
+    /** @type {string | null} codice `DATA_ERROR` dell'ultimo errore di caricamento */
+    errorCode: null,
     /** Scritture salvate sul dispositivo in attesa di rete. */
     pendingWrites: 0,
     /** @type {{ method: string, message: string }[]} scritture rifiutate al rilancio della coda */
@@ -34,6 +36,7 @@ export const useDataStore = defineStore('data', {
     async load() {
       this.loading = true;
       this.error = null;
+      this.errorCode = null;
       try {
         provider ??= createDataProvider({
           onQueueEvent: (event) => {
@@ -52,6 +55,7 @@ export const useDataStore = defineStore('data', {
         this.syncStatus();
       } catch (error) {
         this.error = message(error);
+        this.errorCode = error?.code ?? null;
       } finally {
         this.loading = false;
       }

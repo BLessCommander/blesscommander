@@ -344,8 +344,14 @@ export class GitHubProvider extends DataProvider {
     const response = await this.#request('GET', '/user');
     const { login } = await response.json();
     const members = await this.#readFile('config/members.json');
-    const member = members?.json[login];
-    if (!member) throw new DataError(DATA_ERROR.auth, 'Utente non presente nel gruppo');
+    // Un token che non vede il repository riceve 404 anche sull'elenco membri.
+    if (!members) throw new DataError(DATA_ERROR.forbidden, 'Il token non ha accesso ai dati');
+    const member = members.json[login];
+    if (!member) {
+      throw new DataError(DATA_ERROR.auth, 'Utente non presente nel gruppo', {
+        reason: 'not-member',
+      });
+    }
     this.user = { login, ...member };
     return clone(this.user);
   }

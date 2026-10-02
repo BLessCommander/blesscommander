@@ -23,6 +23,7 @@ export const it = {
     group: { title: 'Gruppo', nav: 'Gruppo' },
     profile: { title: 'Profilo', nav: 'Profilo' },
     environment: { title: 'Ambiente', nav: 'Ambiente' },
+    access: { title: 'Accesso', nav: 'Accesso' },
   },
   theme: {
     toLight: 'Passa al tema chiaro',
@@ -96,6 +97,63 @@ export const it = {
     aboutTitle: 'Informazioni',
     aboutEnvironment: 'Ambiente',
     close: 'Chiudi',
+    account: 'Il tuo account',
+    roleAdmin: 'Amministratore',
+    rolePlayer: 'Giocatore',
+    demoUser:
+      'Stai usando la demo: i dati sono finti. Per entrare con il tuo account GitHub accedi.',
+    signIn: 'Accedi con GitHub',
+    signOut: 'Esci',
+    signedOut: 'Esci da questo dispositivo: il token viene cancellato da qui.',
+  },
+  access: {
+    intro:
+      'Per usare i dati veri del gruppo serve un token personale di GitHub. È una password speciale che crei tu, vale solo per il repository dei dati e scade da sola. Resta salvato solo su questo dispositivo.',
+    guideTitle: 'Come creare il token',
+    guideSteps: (org, repo) => [
+      'Accedi a GitHub con il tuo account e apri la pagina per creare un token (pulsante qui sotto).',
+      'In "Token name" scrivi un nome a piacere, per esempio "BLessCommander".',
+      'In "Expiration" scegli una scadenza (per esempio 90 giorni): alla scadenza ne crei uno nuovo.',
+      `In "Resource owner" scegli l’organizzazione ${org}.`,
+      `In "Repository access" scegli "Only select repositories" e seleziona solo ${repo}.`,
+      'In "Permissions" apri "Repository permissions", cerca "Contents" e imposta "Read and write".',
+      'Premi "Generate token", copia il token e incollalo qui sotto.',
+    ],
+    openGithub: 'Crea il token su GitHub',
+    notOrgMember:
+      'Se non vedi l’organizzazione, controlla di aver accettato l’invito che ti è arrivato via email.',
+    tokenLabel: 'Token personale',
+    submit: 'Entra',
+    checking: 'Verifica in corso…',
+    failed: {
+      auth: {
+        title: 'Token non valido o scaduto',
+        action:
+          'Controlla di aver copiato tutto il token. Se è scaduto, creane uno nuovo con i passi qui sopra.',
+      },
+      'no-access': {
+        title: 'Il token non vede i dati del gruppo',
+        action:
+          'Controlla "Resource owner", "Repository access" e il permesso "Contents" (lettura e scrittura). Se è tutto giusto, il repository dei dati potrebbe non essere ancora stato preparato: chiedi a chi gestisce il gruppo.',
+      },
+      'not-member': {
+        title: 'Il tuo account non è nell’elenco dei membri',
+        action: 'Chiedi a un amministratore del gruppo di aggiungerti, poi riprova.',
+      },
+      'test-mode': {
+        title: 'Questo repository è in modalità prova',
+        action: 'Non si può usare come repository reale.',
+      },
+      network: {
+        title: 'Nessuna connessione a GitHub',
+        action: 'Controlla la rete e riprova tra poco.',
+      },
+    },
+    linked: 'Sei collegato al repository',
+    signOut: 'Esci',
+    fakeLocked: 'Con la finta API di prova l’accesso è automatico: non serve nessun token.',
+    expired: 'Il tuo accesso non è più valido. Accedi di nuovo con un token nuovo.',
+    expiredAction: 'Accedi di nuovo',
   },
   environment: {
     info: "Dove sta girando l'app",
@@ -116,19 +174,10 @@ export const it = {
     dataReal: 'repository reale',
     realHelp: "L'app legge e scrive i dati veri del gruppo sul repository GitHub.",
     realTitle: 'Repository reale',
-    realIntro:
-      'Facoltativo: incolla il token personale creato su GitHub per usare i dati veri del gruppo. Il token resta solo su questo dispositivo.',
-    tokenLabel: 'Token personale',
-    connect: 'Collega',
-    connecting: 'Verifica in corso…',
-    disconnect: 'Scollega',
+    realIntro: 'Facoltativo: accedi con il tuo token personale per usare i dati veri del gruppo.',
+    goAccess: 'Vai alla pagina Accesso',
+    disconnect: 'Esci',
     linked: 'Collegato al repository',
-    realFailed: {
-      auth: 'Token non valido o scaduto, oppure senza accesso al repository dei dati.',
-      'not-member': 'Il tuo account non è nell’elenco dei membri del gruppo.',
-      'test-mode': 'Questo repository è in modalità prova: non si può usare come repository reale.',
-      network: 'Nessuna connessione a GitHub. Riprova tra poco.',
-    },
     realLocked: 'Il collegamento al repository reale è bloccato mentre usi la finta API di prova.',
   },
   modal: { close: 'Chiudi la finestra' },

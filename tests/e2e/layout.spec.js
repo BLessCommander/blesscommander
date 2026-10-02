@@ -141,7 +141,9 @@ test('UC-32 il tema scelto resta dopo il ricaricamento, con contrasto valido @ui
   uiChecks,
 }) => {
   await page.goto('/#/profilo');
-  await page.getByLabel('Scuro', { exact: true }).check({ force: true });
+  // Aspetto che arrivi l'utente: il profilo si sposta, e su telefono la barra in basso copre il punto.
+  await expect(page.getByTestId('profile-user')).toBeVisible();
+  await page.getByLabel('Scuro', { exact: true }).check();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await uiChecks.check();
   await page.reload();

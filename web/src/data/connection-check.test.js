@@ -58,7 +58,9 @@ describe('checkRepository (repository reale simulato dalla finta API)', () => {
     delete config.testMode;
     await writeFile(path, JSON.stringify(config));
     try {
-      expect(await check('test-giocatore1')).toEqual({ ok: true, login: 'test-giocatore1' });
+      const result = await check('test-giocatore1');
+      expect(result).toMatchObject({ ok: true, login: 'test-giocatore1' });
+      expect(result.user.role).toBe('giocatore');
     } finally {
       await writeFile(path, original);
     }
@@ -71,6 +73,12 @@ describe('checkRepository (repository reale simulato dalla finta API)', () => {
     await writeFile(members, '{}');
     try {
       expect(await check('test-owner')).toEqual({ ok: false, reason: 'not-member' });
+    } finally {
+      await writeFile(members, original);
+    }
+    await rm(members);
+    try {
+      expect(await check('test-owner')).toEqual({ ok: false, reason: 'no-access' });
     } finally {
       await writeFile(members, original);
     }

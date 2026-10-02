@@ -20,6 +20,13 @@ const routes = NAV_ITEMS.map((item) => ({
   component: views[item.name] ?? placeholder,
   meta: { title: it.pages[item.name].title },
 }));
+// La pagina di accesso non sta nei menu: ci si arriva dal Profilo, dall'Ambiente e dall'avviso.
+routes.push({
+  path: '/accesso',
+  name: 'access',
+  component: () => import('./views/AccessView.vue'),
+  meta: { title: it.pages.access.title },
+});
 routes.push({ path: '/:pathMatch(.*)*', redirect: '/' });
 
 // Routing in modalità hash: funziona su GitHub Pages e dentro le app Capacitor.
