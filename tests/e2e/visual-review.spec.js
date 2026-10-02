@@ -14,6 +14,8 @@ const SCREENS = [
   { name: 'segnaposto', path: '/#/partite' },
   { name: 'menu-aperto', path: '/#/mazzi?overlay=menu' },
   { name: 'finestra', path: '/#/profilo?overlay=about' },
+  { name: 'gruppo', path: '/#/gruppo' },
+  { name: 'gruppo-nuovo-membro', path: '/#/gruppo?overlay=member-form' },
 ];
 const THEMES = ['light', 'dark'];
 

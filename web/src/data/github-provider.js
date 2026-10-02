@@ -2,6 +2,7 @@ import { DataProvider } from './data-provider.js';
 import { DataError, DATA_ERROR } from './errors.js';
 import { assertValid } from './validate.js';
 import { ulid } from './ulid.js';
+import { withMember, withoutMember } from './members-rules.js';
 import { isOnline as platformIsOnline, watchNetwork } from '../platform/network.js';
 import { readStorage, writeStorage } from '../platform/storage.js';
 
@@ -534,6 +535,45 @@ export class GitHubProvider extends DataProvider {
     assertValid('config/group', config);
     await this.#update('config/group.json', () => config, 'Configurazione del gruppo');
     return clone(config);
+  }
+
+  async getMembers() {
+    const file = await this.#readFile('config/members.json');
+    if (!file) throw new DataError(DATA_ERROR.notFound, 'Elenco membri non trovato');
+    return clone(file.json);
+  }
+
+  async saveMember(login, member) {
+    await this.#assertAdmin();
+    const saved = await this.#update(
+      'config/members.json',
+      (current) => {
+        const next = withMember(current ?? {}, login, member, this.now());
+        assertValid('config/members', next);
+        return next;
+      },
+      `Membro ${login}`,
+    );
+    this.user = null;
+    return clone(saved.json);
+  }
+
+  async removeMember(login) {
+    await this.#assertAdmin();
+    const saved = await this.#update(
+      'config/members.json',
+      (current) => withoutMember(current ?? {}, login),
+      `Rimosso ${login}`,
+    );
+    this.user = null;
+    return clone(saved.json);
+  }
+
+  async #assertAdmin() {
+    const user = await this.getCurrentUser();
+    if (user.role !== 'admin') {
+      throw new DataError(DATA_ERROR.forbidden, 'Solo un admin può gestire i membri');
+    }
   }
 
   onSnapshotChange(callback) {

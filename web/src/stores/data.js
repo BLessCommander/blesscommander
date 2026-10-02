@@ -27,6 +27,8 @@ export const useDataStore = defineStore('data', {
     dropped: [],
     /** @type {{ enabled: boolean, members: { login: string, displayName: string }[], current: string | null }} */
     actingAsOptions: { enabled: false, members: [], current: null },
+    /** @type {Record<string, any>} login → membro (pagina Gruppo) */
+    members: {},
   }),
   getters: {
     /** Il ricalcolo delle fasce non ha ancora letto le ultime modifiche. */
@@ -87,6 +89,38 @@ export const useDataStore = defineStore('data', {
         return await provider[method](...args);
       } finally {
         this.syncStatus();
+      }
+    },
+
+    async loadMembers() {
+      if (!provider) throw new Error('Dati non ancora caricati');
+      this.members = await provider.getMembers();
+    },
+
+    /**
+     * @param {string} login
+     * @param {{ displayName: string, role: 'admin' | 'giocatore' }} member
+     */
+    async saveMember(login, member) {
+      if (!provider) throw new Error('Dati non ancora caricati');
+      this.members = await provider.saveMember(login, member);
+      await this.refreshUser();
+    },
+
+    /** @param {string} login */
+    async removeMember(login) {
+      if (!provider) throw new Error('Dati non ancora caricati');
+      this.members = await provider.removeMember(login);
+      await this.refreshUser();
+    },
+
+    /** Dopo un cambio di ruolo il proprio ruolo può essere cambiato: si rilegge. */
+    async refreshUser() {
+      try {
+        this.user = await provider.getCurrentUser();
+      } catch {
+        // Se non siamo più membri, il prossimo caricamento mostrerà l'errore di accesso.
+        this.user = null;
       }
     },
 

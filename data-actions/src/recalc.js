@@ -98,6 +98,13 @@ export function runRecalc({ files, authors = {}, unknownAuthor = 'deny', baselin
   if (members0 && !allowedConfig('config/members.json')) {
     reject('config/members.json', 'Modifica ignorata: solo gli admin possono cambiare i membri');
     members = baseline.members;
+  } else if (
+    members0 &&
+    baseline.members &&
+    !Object.values(members0).some((m) => m.role === 'admin')
+  ) {
+    reject('config/members.json', 'Modifica ignorata: deve restare almeno un admin');
+    members = baseline.members;
   }
   const memberList = members ?? {};
 

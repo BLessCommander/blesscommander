@@ -21,6 +21,9 @@ export const PROVIDER_METHODS = Object.freeze([
   'requestImport',
   'getConfig',
   'saveConfig',
+  'getMembers',
+  'saveMember',
+  'removeMember',
   'onSnapshotChange',
 ]);
 
@@ -117,6 +120,30 @@ export class DataProvider {
    */
   saveConfig(config) {
     return notImplemented('saveConfig')(config);
+  }
+
+  /** @returns {Promise<Record<string, Doc>>} login → membro */
+  getMembers() {
+    return notImplemented('getMembers')();
+  }
+
+  /**
+   * Aggiunge un membro o ne modifica nome e ruolo. Solo admin; deve restare almeno un admin.
+   * @param {string} login
+   * @param {{ displayName: string, role: Role, avatarUrl?: string }} member
+   * @returns {Promise<Doc>} i membri aggiornati
+   */
+  saveMember(login, member) {
+    return notImplemented('saveMember')(login, member);
+  }
+
+  /**
+   * Solo admin; deve restare almeno un admin.
+   * @param {string} login
+   * @returns {Promise<Doc>} i membri aggiornati
+   */
+  removeMember(login) {
+    return notImplemented('removeMember')(login);
   }
 
   /**

@@ -39,15 +39,16 @@
 | C-01 | [x] | Motore fasce `packages/tier-engine` (pavimento, TMV, D, decisioni, formati, determinismo, ricalcolo) | B-03 | 01, 02 | UT-ENG-* |
 | C-02 | [x] | `GitHubProvider`: lettura snapshot con richieste condizionali, scrittura file con gestione conflitti, coda offline | B-06, B-07 | 06 | UT-GH-*, UC-23, UC-24 |
 | C-03 | [x] | Accesso con token GitHub (guida passo passo nella schermata), verifica membro e ruolo, profilo, uscita | C-02, B-04 | 06 | UC-01, UC-02 |
-| C-04 | [ ] | Gestione membri e ruoli dalla pagina Gruppo (admin), autorizzazioni verificate dall'Action | C-03 | 06 | UC-03, UC-19 |
+| C-04 | [x] | Gestione membri e ruoli dalla pagina Gruppo (admin), autorizzazioni verificate dall'Action | C-03 | 06 | UC-03, UC-19 |
 | C-04b | [ ] | Modalità prova: repository `bracketeer-data-test`, 4 utenti finti, selettore "Agisci come" per i `testOperators`, `actingAs` accettato dall'Action solo con `testMode`, banner di ambiente | C-04 | 06 (§6.7) | UC-25, UC-26, UT-ACT-TEST |
+| C-04c | [ ] | Centro notifiche in-app: pagina `/notifiche` e campanella con contatore nell'header (desktop e telefono), elenco con letto/non letto e azioni dentro la notifica (es. rispondi sì/no a una richiesta), tipi estendibili (cambi fascia, riapertura, contestazione, richiesta di sostituzione admin). Silenziate per chi è in una partita in corso (regola 1). Stesso stile della UI esistente; da decidere in spec 06 dove si salva lo stato letto/non letto | C-04 | 05, 06, 03 | da definire (UC-65) |
 | C-05 | [ ] | Import mazzo da testo + arricchimento Scryfall + rilevamento game changer | C-04 | 04 | UC-04 |
 | C-06 | [ ] | Import da Archidekt (diretto dal browser o tramite Action `import`) | C-05, B-07 | 04, 06 | UC-05 |
 | C-07 | [ ] | Wizard di autovalutazione e calcolo pavimento | C-05, C-01 | 01, 04 | UC-07 |
 | C-08 | [ ] | Lista mazzi e scheda mazzo (metriche, storico fasce, grafici base) | C-07 | 04, 05 | UC-18 |
 | C-09 | [ ] | Lobby: formato (tutti contro tutti 3/4/5–6, 1v1), giocatori, mazzi, registratore, "Inizia" con promemoria dado | C-08 | 03, 02 | UC-09 |
 | C-10 | [ ] | Chiusura partita in 3 tocchi (turno da dado o stima), solo registratore, anteprima locale e stato "in aggiornamento" fino al ricalcolo dell'Action | C-09, C-01, B-07 | 03 | UC-10, UC-11, UC-12, UC-13, UC-14 |
-| C-11 | [ ] | Eventi di fascia con spiegazione leggibile + notifiche in-app (silenziate in partita) | C-10 | 01, 03 | UC-15, UC-16, UC-20 |
+| C-11 | [ ] | Eventi di fascia con spiegazione leggibile + notifiche dei cambi di fascia (usa il centro notifiche C-04c) | C-10, C-04c | 01, 03 | UC-15, UC-16, UC-20 |
 | C-12 | [ ] | Dashboard (KPI, andamento, ultime partite, partita in corso) | C-10 | 05 | UC-17 |
 | C-13 | [ ] | Storico partite con filtri | C-10 | 03 | UC-21 |
 | C-14 | [ ] | Pagina Regolamento generata dai parametri + pagina Gruppo con parametri del motore | C-03, C-01 | 01, 02 | UC-22 |
@@ -85,8 +86,9 @@
 | E-01 | [ ] | App Android e iOS con Capacitor: adattatori di piattaforma nativi, archivio sicuro del token, icone e schermata di avvio, build di prova | C-15, S-11 | 06 (§6.9) | UC-60 |
 | E-02 | [ ] | `FirebaseProvider`, script di migrazione JSON → Firestore, regole Firestore | C-15 | 06 (§6.10) | UC-61 |
 | E-03 | [ ] | Backend per validazione, ricalcolo e import (spostato dalle Actions) | E-02 | 06 (§6.10) | UC-62 |
-| E-04 | [ ] | Login pubblico (email, Google, Apple) e gruppi multipli con codice invito | E-02 | 06, 04 | UC-63 |
+| E-04 | [ ] | Login pubblico con **Google** (versione finale; il token GitHub resta solo per lo sviluppo) e **gruppi multipli**: ogni utente può stare in più gruppi, ogni gruppo con codice invito | E-02 | 06, 04 | UC-63 |
 | E-05 | [ ] | Preparazione store: requisiti Wizards Fan Content Policy, Scryfall, privacy policy, schede store | E-01, E-04 | 06 (§6.9) | — |
+| E-06 | [ ] | Governance dell'admin di gruppo: alla creazione del gruppo si designa l'admin; da lì solo l'admin può dare il ruolo admin. Sostituzione: se **tutti** i giocatori tranne l'admin fanno richiesta e rispondono sì, l'ultimo che dà il consenso diventa admin. Regola verificata dall'Action/backend, non solo dall'interfaccia | E-04, C-04c | 06, 03 | da definire (UC-64) |
 
 ---
 
@@ -94,9 +96,9 @@
 
 > Aggiornato da Claude a fine sessione. Massimo 15 righe: è ciò che la sessione successiva legge per ripartire senza rileggere tutto.
 
-- **Ultima voce lavorata:** C-03 (accesso con token GitHub).
-- **Stato:** B-01–B-12 e C-01–C-03 fatte. Vitest 153 verdi; Playwright verde sui 6 profili; lint verde. Revisione screenshot: nessun problema alto/medio (corrette etichetta del pulsante e larghezza del testo; il resto basso: pulsanti a larghezza naturale su telefono).
-- **File principali:** `web/src/views/AccessView.vue` (guida + token, rotta `/accesso`), `web/src/domain/session.js` (`signIn`/`signOut`), `web/src/data/connection-check.js` (motivi `auth`, `no-access`, `not-member`, `test-mode`, `network`), `UserAvatar.vue`, header/Profilo con utente, `tests/e2e/access.spec.js`.
-- **Scelte:** la demo resta senza login (regola 10); l'accesso è una pagina a parte, raggiungibile da Profilo e Ambiente. Dopo accesso/uscita l'app si riavvia. Se il token scade, un avviso in alto rimanda a `/accesso`.
-- **Problemi aperti:** la guida non ha ancora immagini (solo passi scritti). Accesso al repository vero provato dall'utente: funziona. Il repository `blesscommander-data` è stato inizializzato il 2026-10-02 (template, schemi, motore; primo membro `G-E-M` = MASTER, admin). Lo stato di errore non è negli screenshot di revisione. Avatar nell'header solo da desktop (su telefono sta nel Profilo).
-- **Prossimo passo consigliato:** C-04 (gestione membri e ruoli dalla pagina Gruppo).
+- **Ultima voce lavorata:** C-04 (gestione membri e ruoli dalla pagina Gruppo).
+- **Stato:** B-01–B-12 e C-01–C-04 fatte. Vitest 159 verdi; Playwright 219 verdi sui 6 profili; lint verde. Revisione screenshot superata (corretti stile pulsanti, campo Ruolo, segnaposto); restano solo note basse (pulsante "Rimuovi" disabilitato poco contrastato, azioni a capo su telefono).
+- **File principali:** `web/src/views/GroupView.vue`, `web/src/data/members-rules.js` (regole comuni), `getMembers`/`saveMember`/`removeMember` in `data-provider.js`, mock e `github-provider.js`, store `useDataStore` (`members`, `saveMember`, `removeMember`), `data-actions/src/recalc.js` (ultimo admin), `tests/e2e/group-members.spec.js`.
+- **Scelte:** scrittura per singolo membro (rilegge e riapplica, non sovrascrive l'elenco); non si toglie né si retrocede l'ultimo admin (UI, provider e Action); da sé stessi non ci si rimuove. Nuove varianti `.btn--secondary` e `.btn--danger`, token `--danger`.
+- **Problemi aperti:** il motore compilato nel repository dati (`engine/recalc.mjs`) è vecchio: per avere il controllo "ultimo admin" va ricompilato e ripubblicato (`npm run build:data-repo`, poi aggiornare `blesscommander-data`: chiede conferma, regola 11). Gli inviti all'organizzazione GitHub restano manuali (spiegato nella finestra "Nuovo membro").
+- **Prossimo passo consigliato:** C-04b (modalità prova: repository di prova, utenti finti, "Agisci come" e banner), poi C-04c (centro notifiche), poi C-05. Visione finale (Google, gruppi, admin) in E-04 ed E-06.

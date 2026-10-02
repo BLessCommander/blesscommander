@@ -74,6 +74,47 @@ export function runProviderContract(name, make, logins) {
       expect((await provider.getConfig()).name).toBe('Nuovo nome');
     });
 
+    it("l'admin aggiunge, cambia e rimuove un membro; il giocatore no (UC-03)", async () => {
+      const admin = make(logins.admin);
+      await admin.saveMember('nuovo-amico', { displayName: 'Nuovo', role: 'giocatore' });
+      expect((await admin.getMembers())['nuovo-amico']).toMatchObject({ role: 'giocatore' });
+      await admin.saveMember('nuovo-amico', { displayName: 'Nuovo', role: 'admin' });
+      expect((await admin.getMembers())['nuovo-amico'].role).toBe('admin');
+      await admin.removeMember('nuovo-amico');
+      expect((await admin.getMembers())['nuovo-amico']).toBeUndefined();
+
+      const player = make(logins.player1);
+      const member = { displayName: 'X', role: 'admin' };
+      await expect(player.saveMember('altro', member)).rejects.toMatchObject({ code: 'forbidden' });
+      await expect(player.removeMember(logins.player2)).rejects.toMatchObject({
+        code: 'forbidden',
+      });
+    });
+
+    it("non si toglie né si retrocede l'ultimo admin; il login deve essere valido", async () => {
+      const admin = make(logins.admin);
+      const members = await admin.getMembers();
+      const others = Object.entries(members).filter(
+        ([login, member]) => member.role === 'admin' && login !== logins.admin,
+      );
+      for (const [login] of others) await admin.removeMember(login);
+      try {
+        await expect(admin.removeMember(logins.admin)).rejects.toMatchObject({ code: 'invalid' });
+        await expect(
+          admin.saveMember(logins.admin, { displayName: 'A', role: 'giocatore' }),
+        ).rejects.toMatchObject({ code: 'invalid' });
+        await expect(
+          admin.saveMember('login non valido!', { displayName: 'A', role: 'giocatore' }),
+        ).rejects.toMatchObject({ code: 'invalid' });
+        await expect(admin.removeMember('non-esiste')).rejects.toMatchObject({
+          code: 'not-found',
+        });
+      } finally {
+        // La finta API è condivisa tra le prove: si rimettono gli admin tolti.
+        for (const [login, member] of others) await admin.saveMember(login, member);
+      }
+    });
+
     it('solo il registratore chiude la partita', async () => {
       const admin = make(logins.admin);
       const players = (await admin.getSnapshot()).games[0].players;

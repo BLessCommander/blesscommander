@@ -3,6 +3,7 @@ import { DataError, DATA_ERROR } from './errors.js';
 import { assertValid } from './validate.js';
 import { ulid } from './ulid.js';
 import { createDemoState, DEMO_LOGINS } from './seed-demo.js';
+import { withMember, withoutMember } from './members-rules.js';
 
 /**
  * @typedef {object} MockState
@@ -167,6 +168,34 @@ export class MockProvider extends DataProvider {
     this.state.config = clone(config);
     this.#notify();
     return clone(config);
+  }
+
+  async getMembers() {
+    return clone(this.state.members);
+  }
+
+  async saveMember(login, member) {
+    await this.#assertAdmin();
+    const next = withMember(this.state.members, login, member, this.now());
+    assertValid('config/members', next);
+    this.state.members = clone(next);
+    this.#notify();
+    return clone(next);
+  }
+
+  async removeMember(login) {
+    await this.#assertAdmin();
+    const next = withoutMember(this.state.members, login);
+    this.state.members = clone(next);
+    this.#notify();
+    return clone(next);
+  }
+
+  async #assertAdmin() {
+    const user = await this.getCurrentUser();
+    if (user.role !== 'admin') {
+      throw new DataError(DATA_ERROR.forbidden, 'Solo un admin può gestire i membri');
+    }
   }
 
   onSnapshotChange(callback) {

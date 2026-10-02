@@ -258,7 +258,7 @@ describe('UT-GH "Agisci come" (solo repository di prova)', () => {
   it("l'operatore di prova vede il selettore con i membri finti", async () => {
     const options = await make('test-owner').actingAsOptions();
     expect(options.enabled).toBe(true);
-    expect(options.members.map((m) => m.login)).toEqual(LOGINS);
+    expect(options.members.map((m) => m.login).sort()).toEqual([...LOGINS].sort());
   });
 
   it('un membro che non è operatore non lo vede e non può usarlo', async () => {

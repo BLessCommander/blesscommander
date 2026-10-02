@@ -115,6 +115,32 @@ describe('UT-ACT: Action recalc', () => {
     expect(errors[0].reason).toMatch(/admin/);
   });
 
+  it('ignora un giocatore che si promuove admin in config/members.json (UC-19)', () => {
+    const original = seedFiles();
+    const baseline = { members: JSON.parse(original['config/members.json']) };
+    const forged = { ...baseline.members };
+    forged['test-giocatore1'] = { ...forged['test-giocatore1'], role: 'admin' };
+    const files = { ...original, 'config/members.json': JSON.stringify(forged) };
+    const authors = { 'config/members.json': 'test-giocatore1' };
+    const { errors } = runRecalc({ files, authors, baseline, unknownAuthor: 'allow' });
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatchObject({ path: 'config/members.json' });
+    expect(errors[0].reason).toMatch(/solo gli admin/);
+  });
+
+  it('ignora un elenco membri senza nessun admin, anche se scritto da un admin', () => {
+    const original = seedFiles();
+    const baseline = { members: JSON.parse(original['config/members.json']) };
+    const noAdmin = Object.fromEntries(
+      Object.entries(baseline.members).map(([login, m]) => [login, { ...m, role: 'giocatore' }]),
+    );
+    const files = { ...original, 'config/members.json': JSON.stringify(noAdmin) };
+    const authors = { 'config/members.json': OWNER_LOGIN };
+    const { errors } = runRecalc({ files, authors, baseline, unknownAuthor: 'allow' });
+    expect(errors).toHaveLength(1);
+    expect(errors[0].reason).toMatch(/almeno un admin/);
+  });
+
   it('in modalità prova accetta actingAs solo da un testOperator', () => {
     const files = seedFiles();
     const path = foreignGame(files);
