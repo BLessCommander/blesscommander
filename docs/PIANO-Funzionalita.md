@@ -16,7 +16,7 @@
 
 | ID | Stato | Funzionalità | Dip. | Spec | Test |
 |---|---|---|---|---|---|
-| B-00 | [ ] | Configurazione guidata: strumenti sul PC, account GitHub, organizzazione, repository, permessi (comando `/avvio`) | — | SETUP | — |
+| B-00 | [x] | Configurazione guidata: strumenti sul PC, account GitHub, organizzazione, repository, permessi (comando `/avvio`) | — | SETUP | — |
 | B-01 | [ ] | Monorepo, Vite + Vue, ESLint/Prettier, script npm, prima pagina visibile con `npm run dev` | B-00 | 06 | — |
 | B-02 | [ ] | Suddivisione della specifica in moduli `docs/spec/` e `CLAUDE.md` snello | — | tutta (una volta sola) | — |
 | B-03 | [ ] | Infrastruttura di test: Vitest, Playwright con 6 profili, finta API GitHub su cartella locale, fixture API esterne, helper responsive e accessibilità, dati di prova | B-01 | 07 | TP §2–§5 |
@@ -95,4 +95,4 @@
 - **File principali toccati:** —
 - **Problemi aperti / test rossi:** —
 - **Decisioni prese (dettaglio in CLAUDE.md → Decisioni):** —
-- **Prossimo passo consigliato:** B-00 (comando `/avvio`)
+- **Prossimo passo consigliato:** B-01, B-02, B-05 (Parte 2 di `/avvio`)
