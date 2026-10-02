@@ -25,4 +25,21 @@ describe('resolveEnvironment', () => {
       expect(env.fakeGithubUrl).toBeNull();
     }
   });
+
+  it('con un token salvato usa il repository reale', () => {
+    expect(resolveEnvironment({}, { token: 'ghp_x' })).toMatchObject({
+      mode: 'github',
+      label: 'REPOSITORY REALE',
+      fakeGithubUrl: null,
+    });
+    expect(resolveEnvironment({}, { token: null }).mode).toBe('demo');
+  });
+
+  it('la finta API ha la precedenza e non usa mai un token reale', () => {
+    const env = resolveEnvironment(
+      { VITE_DATA_MODE: 'fake-github', VITE_FAKE_GITHUB_URL: 'http://localhost:4500' },
+      { token: 'ghp_x' },
+    );
+    expect(env.mode).toBe('fake-github');
+  });
 });

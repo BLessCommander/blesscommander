@@ -15,6 +15,8 @@ export default defineConfig(({ command, isPreview }) => ({
   plugins: [vue()],
   define: {
     __APP_NAME__: JSON.stringify(progetto.appName || 'Bracketeer'),
+    __ORG__: JSON.stringify(progetto.org || 'BLessCommander'),
+    __DATA_REPO__: JSON.stringify(progetto.repos?.data || 'blesscommander-data'),
     __TEST_REPO__: JSON.stringify(progetto.repos?.test || 'blesscommander-data-test'),
   },
   server: { port: 5173 },

@@ -26,6 +26,8 @@ export default [
         ...globals.browser,
         ...globals.node,
         __APP_NAME__: 'readonly',
+        __ORG__: 'readonly',
+        __DATA_REPO__: 'readonly',
         __TEST_REPO__: 'readonly',
       },
     },

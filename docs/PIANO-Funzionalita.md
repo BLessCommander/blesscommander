@@ -26,7 +26,8 @@
 | B-08 | [x] | Versione locale completa: modalità demo con dati di prova, `dev:lan` per il telefono, `dev:fake-github`, `preview` con il percorso di GitHub Pages, schermata Ambiente | B-06, B-03 | 06 (§6.11) | UC-27 |
 | B-07 | [ ] | Repository dati: struttura cartelle, `config/` iniziale, Action `recalc` (validazione, autorizzazioni da autore commit, ricalcolo da zero, scrittura `derived/`), pubblicazione del motore compilato dal repo codice | B-06, C-01 | 06 | UT-ACT-* |
 | B-09 | [x] | Pulizia avvisi Sass: sostituire `map-get` con `map.get` (`@use 'sass:map'`) in `web/src/styles/_mixins.scss`, controllare che non restino altri avvisi di deprecazione | B-04 | 05 | UC-30 |
-| B-10 | [ ] | `GitHubProvider` (lettura/scrittura via API REST, ETag, conflitti) collegato a `dev:fake-github`; collegamento facoltativo al repository reale dalla schermata Ambiente (token in `platform/secure-storage`, bloccato in modalità prova) | B-06, B-08 | 06 | UT-GH-*, UC-27 |
+| B-10 | [x] | `GitHubProvider` (lettura/scrittura via API REST, ETag, conflitti) collegato a `dev:fake-github`; collegamento facoltativo al repository reale dalla schermata Ambiente (token in `platform/secure-storage`, bloccato in modalità prova) | B-06, B-08 | 06 | UT-GH-*, UC-27 |
+| B-11 | [ ] | Usare lo store dati nelle pagine (dashboard, mazzi) al posto dei dati fissi; banner "in aggiornamento" e avviso delle scritture in coda scartate; selettore "Agisci come" in modalità prova (`actingAs`) | B-10 | 05, 06 (§6.7) | UC-27 |
 
 ---
 
@@ -92,8 +93,8 @@
 
 > Aggiornato da Claude a fine sessione. Massimo 15 righe: è ciò che la sessione successiva legge per ripartire senza rileggere tutto.
 
-- **Ultima voce lavorata:** B-08 (versione locale completa).
-- **Stato:** B-01–B-06, B-08, B-09 fatte. Vitest 50 verdi; Playwright 86 passati, 0 falliti sui 6 profili; lint e build verdi. Revisione screenshot (Ambiente e menu, iphone e desktop, chiaro e scuro): solo 2 note di gravità bassa (lo screenshot del menu aperto è sulla pagina Mazzi, non su Ambiente).
-- **File principali toccati:** `web/src/config/{environment,environment-mode}.js`, `web/src/views/EnvironmentView.vue`, `web/src/data/connection-check.js`, `web/vite.config.js` (base anche per `preview`), `tests/dev/fake-github-dev.js`, `tests/e2e/{environment,preview}.spec.js`; voce "Ambiente" in `navigation.js`, `router.js`, `i18n`.
-- **Problemi aperti:** con `dev:fake-github` l'app fa solo il test di connessione (utente): i dati restano quelli demo finché non c'è `GitHubProvider` (nuova voce B-10, con il collegamento facoltativo al repository reale). Lo store `useDataStore` non è ancora usato da nessuna pagina. Il MockProvider non ricalcola le fasce. Restano i problemi di B-04 (menu a scomparsa da 768px aperto via URL; notifiche assenti).
-- **Prossimo passo consigliato:** B-10; B-07 richiede prima C-01.
+- **Ultima voce lavorata:** B-10 (`GitHubProvider` e collegamento al repository reale).
+- **Stato:** B-01–B-06, B-08–B-10 fatte. Vitest 77 verdi; Playwright 110 passati, 0 falliti sui 6 profili; lint e build verdi. Revisione screenshot Ambiente: la sovrapposizione della barra in basso era un artefatto dello screenshot a pagina intera (`main` ha il padding); sistemata la nota bassa (elenco in colonna su telefono). Non ancora fotografati gli stati errore/verifica del form token.
+- **File principali toccati:** nuovi `web/src/data/{github-provider,provider-contract}.js` e `web/src/platform/app-lifecycle.js`; `data/{index,connection-check}.js` (`checkRepository`), `config/{environment,environment-mode}.js` (modalità `github`), `EnvironmentView.vue`, `vite.config.js` (`__ORG__`, `__DATA_REPO__`), `tests/seed/seed.js` (fasce `F3`, snapshot valido per lo schema), `tests/e2e/environment.spec.js`.
+- **Problemi aperti:** nessuna pagina usa ancora `useDataStore` (voce B-11). Senza Action di ricalcolo (B-07) lo snapshot reale non esiste: il provider restituisce uno snapshot vuoto "in aggiornamento". Il collegamento reale è provato solo con API intercettata, mai su GitHub vero.
+- **Prossimo passo consigliato:** C-01 (motore fasce) e poi B-07; B-11 si può fare prima.

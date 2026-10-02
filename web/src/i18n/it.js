@@ -73,6 +73,23 @@ export const it = {
     connected: 'Connesso come',
     failed: 'Connessione non riuscita. Controlla che il comando sia ancora in esecuzione.',
     retry: 'Riprova',
+    dataReal: 'repository reale',
+    realHelp: "L'app legge e scrive i dati veri del gruppo sul repository GitHub.",
+    realTitle: 'Repository reale',
+    realIntro:
+      'Facoltativo: incolla il token personale creato su GitHub per usare i dati veri del gruppo. Il token resta solo su questo dispositivo.',
+    tokenLabel: 'Token personale',
+    connect: 'Collega',
+    connecting: 'Verifica in corso…',
+    disconnect: 'Scollega',
+    linked: 'Collegato al repository',
+    realFailed: {
+      auth: 'Token non valido o scaduto, oppure senza accesso al repository dei dati.',
+      'not-member': 'Il tuo account non è nell’elenco dei membri del gruppo.',
+      'test-mode': 'Questo repository è in modalità prova: non si può usare come repository reale.',
+      network: 'Nessuna connessione a GitHub. Riprova tra poco.',
+    },
+    realLocked: 'Il collegamento al repository reale è bloccato mentre usi la finta API di prova.',
   },
   modal: { close: 'Chiudi la finestra' },
 };

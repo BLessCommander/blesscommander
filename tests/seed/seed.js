@@ -111,9 +111,9 @@ export function buildSeed() {
       name,
       commanders: [`Comandante di ${name}`],
       colorIdentity: ['W', 'U', 'B', 'R', 'G'].slice(0, 1 + (i % 5)),
-      source: { type: 'text', url: null, importedAt: '2026-01-10T12:00:00Z' },
+      source: { type: 'text', url: '', importedAt: '2026-01-10T12:00:00Z' },
       currentVersion: 1,
-      declaredTier: tier,
+      declaredTier: `F${tier}`,
       selfAssessment: { mld: false, extraTurns: false, notes: note },
     };
     files[`decks/${id}/v1.json`] = {
@@ -126,7 +126,7 @@ export function buildSeed() {
       gameChangers: Array.from({ length: gameChangers }, (_, c) => `Carta ${c + 1} di ${name}`),
       combos: [],
       flags: { mld: false, extraTurns: false },
-      floor,
+      floor: `F${floor}`,
       diff: { added: [], removed: [] },
     };
     return { id, owner, name, tier, floor, note };
@@ -171,13 +171,13 @@ export function buildSeed() {
         players: chosen.map((d, seat) => ({
           login: d.owner,
           deckId: d.id,
-          tierAtGame: d.tier,
+          tierAtGame: `F${d.tier}`,
           seat: seat + 1,
         })),
         winners: [{ login: winner.owner, deckId: winner.id }],
         winTurn: baseTurn,
         turnSource: estimated ? 'stima' : 'dado',
-        estimatedTurn: estimated ? baseTurn : null,
+        ...(estimated ? { estimatedTurn: baseTurn } : {}),
         winType: g % 5 === 0 ? 'combo' : 'danni',
         notRepresentative: g % 17 === 3,
         notes: '',
@@ -196,8 +196,8 @@ export function buildSeed() {
       id: fakeUlid('E', 0),
       deckId: promoted.id,
       gameId: games[40].id,
-      from: 2,
-      to: 3,
+      from: 'F2',
+      to: 'F3',
       reasons: ['Turno medio di vittoria basso rispetto alla fascia'],
       createdAt: '2026-05-20T22:00:00Z',
     },
@@ -205,8 +205,8 @@ export function buildSeed() {
       id: fakeUlid('E', 1),
       deckId: demoted.id,
       gameId: games[55].id,
-      from: 3,
-      to: 2,
+      from: 'F3',
+      to: 'F2',
       reasons: ['Nessuna vittoria nelle ultime partite'],
       createdAt: '2026-06-02T22:00:00Z',
     },
@@ -215,21 +215,21 @@ export function buildSeed() {
 
   // Segnaposto: lo snapshot vero lo scrive l'Action di ricalcolo (B-07).
   files['derived/snapshot.json'] = {
-    generatedAt: '2026-06-03T00:00:00Z',
-    decks: Object.fromEntries(
-      decks.map((d) => {
-        const wins = games.filter((g) => g.winnerDeckId === d.id).length;
-        const played = games.filter((g) => g.body.players.some((p) => p.deckId === d.id)).length;
-        return [
-          d.id,
-          {
-            name: d.name,
-            tier: { current: d.id === promoted.id ? 3 : d.tier, floor: d.floor },
-            stats: { games: played, wins },
-          },
-        ];
-      }),
-    ),
+    updatedAt: '2026-06-03T00:00:00Z',
+    pending: false,
+    decks: decks.map((d) => {
+      const wins = games.filter((g) => g.winnerDeckId === d.id).length;
+      const played = games.filter((g) => g.body.players.some((p) => p.deckId === d.id)).length;
+      return {
+        id: d.id,
+        name: d.name,
+        ownerLogin: d.owner,
+        tier: { current: `F${d.id === promoted.id ? 3 : d.tier}`, floor: `F${d.floor}` },
+        stats: { games: played, wins },
+      };
+    }),
+    games: games.map((g) => ({ id: g.id, ...g.body })),
+    standings: [],
     events,
   };
   files['derived/errors.json'] = [];

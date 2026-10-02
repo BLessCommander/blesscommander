@@ -39,12 +39,12 @@ describe('seed di prova', () => {
 
   it('ha mazzi con 4 e 6 game changer e fasce da F1 a F4', () => {
     const versions = paths.filter((p) => /\/v1\.json$/.test(p)).map((p) => files[p]);
-    expect(versions.some((v) => v.gameChangers.length === 4 && v.floor === 3)).toBe(true);
-    expect(versions.some((v) => v.gameChangers.length === 6 && v.floor === 4)).toBe(true);
+    expect(versions.some((v) => v.gameChangers.length === 4 && v.floor === 'F3')).toBe(true);
+    expect(versions.some((v) => v.gameChangers.length === 6 && v.floor === 'F4')).toBe(true);
     const tiers = new Set(
       paths.filter((p) => /^decks\/[^/]+\.json$/.test(p)).map((p) => files[p].declaredTier),
     );
-    expect([...tiers].sort()).toEqual([1, 2, 3, 4]);
+    expect([...tiers].sort()).toEqual(['F1', 'F2', 'F3', 'F4']);
   });
 
   it('ha un evento di promozione e uno di declassamento', () => {
