@@ -35,7 +35,7 @@
 
 | ID | Stato | Funzionalità | Dip. | Spec | Test |
 |---|---|---|---|---|---|
-| C-01 | [ ] | Motore fasce `packages/tier-engine` (pavimento, TMV, D, decisioni, formati, determinismo, ricalcolo) | B-03 | 01, 02 | UT-ENG-* |
+| C-01 | [x] | Motore fasce `packages/tier-engine` (pavimento, TMV, D, decisioni, formati, determinismo, ricalcolo) | B-03 | 01, 02 | UT-ENG-* |
 | C-02 | [ ] | `GitHubProvider`: lettura snapshot con richieste condizionali, scrittura file con gestione conflitti, coda offline | B-06, B-07 | 06 | UT-GH-*, UC-23, UC-24 |
 | C-03 | [ ] | Accesso con token GitHub (guida passo passo nella schermata), verifica membro e ruolo, profilo, uscita | C-02, B-04 | 06 | UC-01, UC-02 |
 | C-04 | [ ] | Gestione membri e ruoli dalla pagina Gruppo (admin), autorizzazioni verificate dall'Action | C-03 | 06 | UC-03, UC-19 |
@@ -93,8 +93,9 @@
 
 > Aggiornato da Claude a fine sessione. Massimo 15 righe: è ciò che la sessione successiva legge per ripartire senza rileggere tutto.
 
-- **Ultima voce lavorata:** B-10 (`GitHubProvider` e collegamento al repository reale).
-- **Stato:** B-01–B-06, B-08–B-10 fatte. Vitest 77 verdi; Playwright 110 passati, 0 falliti sui 6 profili; lint e build verdi. Revisione screenshot Ambiente: la sovrapposizione della barra in basso era un artefatto dello screenshot a pagina intera (`main` ha il padding); sistemata la nota bassa (elenco in colonna su telefono). Non ancora fotografati gli stati errore/verifica del form token.
-- **File principali toccati:** nuovi `web/src/data/{github-provider,provider-contract}.js` e `web/src/platform/app-lifecycle.js`; `data/{index,connection-check}.js` (`checkRepository`), `config/{environment,environment-mode}.js` (modalità `github`), `EnvironmentView.vue`, `vite.config.js` (`__ORG__`, `__DATA_REPO__`), `tests/seed/seed.js` (fasce `F3`, snapshot valido per lo schema), `tests/e2e/environment.spec.js`.
-- **Problemi aperti:** nessuna pagina usa ancora `useDataStore` (voce B-11). Senza Action di ricalcolo (B-07) lo snapshot reale non esiste: il provider restituisce uno snapshot vuoto "in aggiornamento". Il collegamento reale è provato solo con API intercettata, mai su GitHub vero.
-- **Prossimo passo consigliato:** C-01 (motore fasce) e poi B-07; B-11 si può fare prima.
+- **Ultima voce lavorata:** C-01 (motore fasce `packages/tier-engine`).
+- **Stato:** B-01–B-06, B-08–B-10, C-01 fatte. Vitest 115 verdi (38 del motore, UT-ENG-01…20 + casi extra); lint verde. Nessuna UI toccata, quindi niente Playwright né screenshot per questa voce.
+- **File principali toccati:** nuovi in `packages/tier-engine/src/`: `defaults.js`, `tiers.js`, `floor.js`, `metrics.js`, `decision.js`, `recalc.js`, `engine.test.js`; `index.js` esporta tutto. API principale: `recalculate(decks, games, group)` → `{ decks, events, tierAtGame }` nel formato di `derived/deck` e `derived/events` (schemas.js).
+- **Scelte del motore:** parametri e formati con le chiavi italiane della spec §3.9/§3.10; partite e mazzi con i campi dello schema `game`. Contano solo le partite `ufficiale`, ordinate per `endedAt`, poi `createdAt`, poi `id`. Mazzo nuovo: cooldown già trascorso. F5 solo con `f5Confirmed`.
+- **Problemi aperti:** la modifica del mazzo con pesi dimezzati e ritorno a Provvisorio (§3.6 ultimo paragrafo) non è nel motore: da fare con C-05/C-06. Gli eventi "annullati dalla correzione" vanno marcati da B-07 confrontando due ricalcoli. Taratura automatica dei fattori turno (§3.10) non fatta.
+- **Prossimo passo consigliato:** B-07 (Action `recalc`, ora che il motore c'è); B-11 si può fare prima.
