@@ -1,3 +1,5 @@
+@use 'sass:map';
+
 // Breakpoint di SPEC 05 §5.3: 576 / 768 / 1024 / 1440.
 $breakpoints: (
   'sm': 576px,
@@ -7,13 +9,13 @@ $breakpoints: (
 );
 
 @mixin up($name) {
-  @media (min-width: map-get($breakpoints, $name)) {
+  @media (min-width: map.get($breakpoints, $name)) {
     @content;
   }
 }
 
 @mixin down($name) {
-  @media (max-width: map-get($breakpoints, $name) - 0.02px) {
+  @media (max-width: map.get($breakpoints, $name) - 0.02px) {
     @content;
   }
 }

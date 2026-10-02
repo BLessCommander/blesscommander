@@ -25,7 +25,7 @@
 | B-06 | [x] | Livello dati: interfaccia `DataProvider`, `MockProvider`, schemi JSON dei file, adattatori di piattaforma in `web/src/platform/` (versione web) | B-01 | 06 | UT-DATA-* |
 | B-08 | [ ] | Versione locale completa: modalità demo con dati di prova, `dev:lan` per il telefono, `dev:fake-github`, `preview` con il percorso di GitHub Pages, schermata Ambiente | B-06, B-03 | 06 (§6.11) | UC-27 |
 | B-07 | [ ] | Repository dati: struttura cartelle, `config/` iniziale, Action `recalc` (validazione, autorizzazioni da autore commit, ricalcolo da zero, scrittura `derived/`), pubblicazione del motore compilato dal repo codice | B-06, C-01 | 06 | UT-ACT-* |
-| B-09 | [ ] | Pulizia avvisi Sass: sostituire `map-get` con `map.get` (`@use 'sass:map'`) in `web/src/styles/_mixins.scss`, controllare che non restino altri avvisi di deprecazione | B-04 | 05 | UC-30 |
+| B-09 | [x] | Pulizia avvisi Sass: sostituire `map-get` con `map.get` (`@use 'sass:map'`) in `web/src/styles/_mixins.scss`, controllare che non restino altri avvisi di deprecazione | B-04 | 05 | UC-30 |
 
 ---
 
@@ -91,8 +91,8 @@
 
 > Aggiornato da Claude a fine sessione. Massimo 15 righe: è ciò che la sessione successiva legge per ripartire senza rileggere tutto.
 
-- **Ultima voce lavorata:** B-06 (livello dati).
-- **Stato:** B-01–B-06 fatte. Vitest 44 test verdi (UT-DATA: contratto DataProvider, schemi, ULID); Playwright 75 passati e 0 falliti sui 6 profili; lint e build verdi. Nessuna schermata nuova, quindi nessuna revisione screenshot.
+- **Ultima voce lavorata:** B-09 (pulizia avvisi Sass: `map.get` con `@use 'sass:map'` in `_mixins.scss`).
+- **Stato:** B-01–B-06 e B-09 fatte. Vitest 44 test verdi; Playwright 75 passati e 0 falliti sui 6 profili; lint e build verdi, nessun avviso Sass. Nessuna schermata cambiata, quindi nessuna revisione screenshot.
 - **File principali toccati:** `web/src/data/` (data-provider, mock-provider, schemas, validate, ulid, errors, seed-demo, index), `web/src/platform/{secure-storage,share,haptics,external-link,network}.js`, `web/src/stores/data.js`; dipendenza `ajv` 8 in `web`.
 - **Problemi aperti:** lo store `useDataStore` non è ancora usato da nessuna pagina (arriva con B-08 e le voci delle pagine). Il MockProvider non ricalcola le fasce: nello snapshot usa quella dichiarata. `GitHubProvider` non esiste ancora (UT-GH da fare con lui). Gli schemi sono in `schemas.js`: B-07 li scriverà anche in `schemas/` del repository dati. Restano i problemi di B-04 (menu a scomparsa da 768px aperto via URL; notifiche assenti).
-- **Prossimo passo consigliato:** B-09 (piccola pulizia avvisi Sass), poi B-08 (versione locale completa); poi B-07 (serve C-01).
+- **Prossimo passo consigliato:** B-08 (versione locale completa); poi B-07 (serve C-01).
