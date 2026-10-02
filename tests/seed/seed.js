@@ -178,7 +178,7 @@ export function buildSeed() {
         winTurn: baseTurn,
         turnSource: estimated ? 'stima' : 'dado',
         ...(estimated ? { estimatedTurn: baseTurn } : {}),
-        winType: g % 5 === 0 ? 'combo' : 'danni',
+        winType: g % 5 === 0 ? 'combo' : 'creature',
         notRepresentative: g % 17 === 3,
         notes: '',
         revision: 0,

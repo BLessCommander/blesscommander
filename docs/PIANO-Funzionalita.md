@@ -24,7 +24,7 @@
 | B-05 | [x] | Subagent e comandi personalizzati in `.claude/` | B-03 | — | — |
 | B-06 | [x] | Livello dati: interfaccia `DataProvider`, `MockProvider`, schemi JSON dei file, adattatori di piattaforma in `web/src/platform/` (versione web) | B-01 | 06 | UT-DATA-* |
 | B-08 | [x] | Versione locale completa: modalità demo con dati di prova, `dev:lan` per il telefono, `dev:fake-github`, `preview` con il percorso di GitHub Pages, schermata Ambiente | B-06, B-03 | 06 (§6.11) | UC-27 |
-| B-07 | [ ] | Repository dati: struttura cartelle, `config/` iniziale, Action `recalc` (validazione, autorizzazioni da autore commit, ricalcolo da zero, scrittura `derived/`), pubblicazione del motore compilato dal repo codice | B-06, C-01 | 06 | UT-ACT-* |
+| B-07 | [x] | Repository dati: struttura cartelle, `config/` iniziale, Action `recalc` (validazione, autorizzazioni da autore commit, ricalcolo da zero, scrittura `derived/`), pubblicazione del motore compilato dal repo codice | B-06, C-01 | 06 | UT-ACT-* |
 | B-09 | [x] | Pulizia avvisi Sass: sostituire `map-get` con `map.get` (`@use 'sass:map'`) in `web/src/styles/_mixins.scss`, controllare che non restino altri avvisi di deprecazione | B-04 | 05 | UC-30 |
 | B-10 | [x] | `GitHubProvider` (lettura/scrittura via API REST, ETag, conflitti) collegato a `dev:fake-github`; collegamento facoltativo al repository reale dalla schermata Ambiente (token in `platform/secure-storage`, bloccato in modalità prova) | B-06, B-08 | 06 | UT-GH-*, UC-27 |
 | B-11 | [ ] | Usare lo store dati nelle pagine (dashboard, mazzi) al posto dei dati fissi; banner "in aggiornamento" e avviso delle scritture in coda scartate; selettore "Agisci come" in modalità prova (`actingAs`) | B-10 | 05, 06 (§6.7) | UC-27 |
@@ -93,9 +93,9 @@
 
 > Aggiornato da Claude a fine sessione. Massimo 15 righe: è ciò che la sessione successiva legge per ripartire senza rileggere tutto.
 
-- **Ultima voce lavorata:** C-01 (motore fasce `packages/tier-engine`).
-- **Stato:** B-01–B-06, B-08–B-10, C-01 fatte. Vitest 115 verdi (38 del motore, UT-ENG-01…20 + casi extra); lint verde. Nessuna UI toccata, quindi niente Playwright né screenshot per questa voce.
-- **File principali toccati:** nuovi in `packages/tier-engine/src/`: `defaults.js`, `tiers.js`, `floor.js`, `metrics.js`, `decision.js`, `recalc.js`, `engine.test.js`; `index.js` esporta tutto. API principale: `recalculate(decks, games, group)` → `{ decks, events, tierAtGame }` nel formato di `derived/deck` e `derived/events` (schemas.js).
-- **Scelte del motore:** parametri e formati con le chiavi italiane della spec §3.9/§3.10; partite e mazzi con i campi dello schema `game`. Contano solo le partite `ufficiale`, ordinate per `endedAt`, poi `createdAt`, poi `id`. Mazzo nuovo: cooldown già trascorso. F5 solo con `f5Confirmed`.
-- **Problemi aperti:** la modifica del mazzo con pesi dimezzati e ritorno a Provvisorio (§3.6 ultimo paragrafo) non è nel motore: da fare con C-05/C-06. Gli eventi "annullati dalla correzione" vanno marcati da B-07 confrontando due ricalcoli. Taratura automatica dei fattori turno (§3.10) non fatta.
-- **Prossimo passo consigliato:** B-07 (Action `recalc`, ora che il motore c'è); B-11 si può fare prima.
+- **Ultima voce lavorata:** B-07 (Action `recalc`, template repository dati, motore compilato).
+- **Stato:** B-01–B-10 e C-01 fatte. Vitest 128 verdi (13 file); lint verde. Nessuna UI toccata: niente Playwright né screenshot.
+- **File principali:** `data-actions/src/`: `recalc.js` (funzione pura `runRecalc`), `repo-files.js` (disco, autori da Git, `createRecalcHook` per la finta API), `cli.js`, `build-data-repo.js`; `data-actions/template/` (config iniziale e `recalc.yml`). Comandi: `npm run recalc -- <cartella> --no-git`, `npm run build:data-repo`. `dev:fake-github` ora ricalcola all'avvio e dopo ogni scrittura.
+- **Scelte:** gli id di mazzi/partite vengono dal nome file. Chiusura `ufficiale` valida solo se l'autore (o `actingAs`, solo con `testMode` e testOperator) è il registratore; `config/` solo da admin (elenco fidato = `baseline`, se c'è). `updatedAt` dello snapshot deriva dai dati, non dall'orologio. Corretto il seed: `winType` `danni` → `creature`; schema `derived/deck` ora accetta `null` per tmv/dominance/speedTier.
+- **Problemi aperti:** il workflow non passa ancora la `baseline` (config prima del push): senza, un non admin potrebbe aggiungersi ai membri. Da fare in C-15/C-04. Autore = ultimo commit sul file: un'ulteriore modifica altrui a una partita chiusa la farebbe ignorare. Eventi "annullati" (cancelled) non ancora marcati. Il motore pubblicato nel repo dati si copia a mano finché non c'è C-15.
+- **Prossimo passo consigliato:** B-11 oppure C-02/C-03 (accesso con token).

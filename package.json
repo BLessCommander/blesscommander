@@ -21,6 +21,8 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "seed:test": "node tests/seed/seed.js",
+    "recalc": "node data-actions/src/cli.js",
+    "build:data-repo": "node data-actions/src/build-data-repo.js",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "test:visual-review": "playwright test visual-review --project=iphone --project=desktop-chrome"

@@ -134,9 +134,9 @@ export const SCHEMAS = {
         {
           current: tier,
           floor: tier,
-          speedTier: tier,
-          tmv: { type: 'number' },
-          dominance: { type: 'number' },
+          speedTier: { enum: ['F1', 'F2', 'F3', 'F4', 'F5', null] },
+          tmv: { type: ['number', 'null'] },
+          dominance: { type: ['number', 'null'] },
           status: str,
           badges: strings,
           gamesSinceChange: count,

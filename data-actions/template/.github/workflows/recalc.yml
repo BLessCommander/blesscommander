@@ -1,0 +1,40 @@
+name: recalc
+
+# Ricalcola da zero `derived/` ogni volta che cambiano i dati (SPEC §6.5).
+# Le esecuzioni vanno in coda: mai due in parallelo.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'games/**'
+      - 'decks/**'
+      - 'votes/**'
+      - 'config/**'
+  workflow_dispatch:
+
+concurrency:
+  group: recalc
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  recalc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # serve la storia: gli autori dei commit decidono cosa è autorizzato
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Ricalcolo
+        run: node engine/recalc.mjs .
+      - name: Commit di derived/
+        run: |
+          git config user.name "recalc"
+          git config user.email "recalc@users.noreply.github.com"
+          git add -A derived
+          git diff --cached --quiet || git commit -m "Ricalcolo dati derivati"
+          git push
