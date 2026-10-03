@@ -72,6 +72,30 @@ test.describe('pagine con dati reali (demo) @core', () => {
     await expect(banner.getByRole('button', { name: 'Riprova ora' })).toBeVisible();
   });
 
+  test('un mazzo appena salvato compare subito con l’etichetta "in aggiornamento" @ui', async ({
+    page,
+  }) => {
+    await page.goto('/#/mazzi');
+    await expect(page.locator('.deck')).toHaveCount(4);
+    await patchStore(page, {
+      optimisticDecks: [
+        {
+          id: 'appena-salvato',
+          name: 'Mazzo Appena Salvato',
+          ownerLogin: 'demo-giocatore',
+          declaredTier: 'F2',
+          commanders: ['Comandante Nuovo'],
+          currentVersion: 1,
+        },
+      ],
+    });
+    const card = page.locator('.deck').filter({ hasText: 'Mazzo Appena Salvato' });
+    await expect(page.locator('.deck')).toHaveCount(5);
+    await expect(card.getByTestId('deck-pending')).toContainText('In aggiornamento');
+    await expect(card.locator('.tier-badge')).toHaveText('F2');
+    await expect(page.getByTestId('deck-pending')).toHaveCount(1);
+  });
+
   test('"Agisci come" non compare in demo', async ({ page }) => {
     await page.goto('/#/');
     await expect(page.locator('.kpi').first()).toBeVisible();

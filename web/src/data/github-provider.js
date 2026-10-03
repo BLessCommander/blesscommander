@@ -74,6 +74,7 @@ export class GitHubProvider extends DataProvider {
    * @param {() => string} [options.newId]
    * @param {() => boolean} [options.isOnline]
    * @param {number} [options.pollMs] ogni quanto controllare se lo snapshot è cambiato
+   * @param {number} [options.fastPollMs] come `pollMs`, ma mentre un ricalcolo è in attesa
    * @param {boolean} [options.autoFlush] svuota la coda quando torna la rete
    * @param {(event: { type: 'dropped', write: QueuedWrite, error: unknown }) => void} [options.onQueueEvent]
    */
@@ -87,6 +88,7 @@ export class GitHubProvider extends DataProvider {
     newId = () => ulid(),
     isOnline = platformIsOnline,
     pollMs = 30_000,
+    fastPollMs = 5_000,
     autoFlush = false,
     onQueueEvent = () => {},
   }) {
@@ -103,6 +105,7 @@ export class GitHubProvider extends DataProvider {
     this.newId = newId;
     this.isOnline = isOnline;
     this.pollMs = pollMs;
+    this.fastPollMs = Math.min(fastPollMs, pollMs);
     this.onQueueEvent = onQueueEvent;
     // Campi privati: il token non finisce mai in un log né in un oggetto serializzato.
     this.#token = token;
@@ -225,6 +228,11 @@ export class GitHubProvider extends DataProvider {
         if (kind) {
           this.writtenAtEtag = this.snapshotEtag;
           this.pendingKind = kind;
+          if (this.timer) {
+            // Il giro lento già in corso non deve far aspettare il ricalcolo.
+            clearTimeout(this.timer);
+            this.#schedulePoll();
+          }
         }
         this.#notify();
         return { json: next, sha: saved.content?.sha };
@@ -648,11 +656,11 @@ export class GitHubProvider extends DataProvider {
 
   onSnapshotChange(callback) {
     this.listeners.add(callback);
-    this.timer ??= setInterval(() => this.#poll(), this.pollMs);
+    if (!this.timer) this.#schedulePoll();
     return () => {
       this.listeners.delete(callback);
       if (this.listeners.size === 0 && this.timer) {
-        clearInterval(this.timer);
+        clearTimeout(this.timer);
         this.timer = null;
       }
     };
@@ -687,6 +695,16 @@ export class GitHubProvider extends DataProvider {
     }
     if (!path) throw new DataError(DATA_ERROR.notFound, `Partita non trovata: ${id}`);
     return path;
+  }
+
+  /** Un controllo alla volta; più frequente finché il ricalcolo non ha risposto. */
+  #schedulePoll() {
+    const delay = this.writtenAtEtag !== undefined ? this.fastPollMs : this.pollMs;
+    const handle = setTimeout(async () => {
+      await this.#poll();
+      if (this.timer === handle && this.listeners.size > 0) this.#schedulePoll();
+    }, delay);
+    this.timer = handle;
   }
 
   async #poll() {

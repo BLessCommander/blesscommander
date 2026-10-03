@@ -188,6 +188,24 @@ describe('UT-GH GitHubProvider', () => {
     stop();
   });
 
+  it('con un ricalcolo in attesa controlla più spesso (fastPollMs)', async () => {
+    const provider = make('test-giocatore1', { pollMs: 5_000, fastPollMs: 20 });
+    await provider.getSnapshot();
+    const seen = vi.fn();
+    const stop = provider.onSnapshotChange(seen);
+    await provider.createGame(game(ulidLike(8))); // ora il ricalcolo è in attesa
+    const snapshot = await readJson('derived/snapshot.json');
+    await writeFile(
+      join(dir, 'derived/snapshot.json'),
+      JSON.stringify({ ...snapshot, updatedAt: '2026-06-06T00:00:00Z' }),
+    );
+    // Con il giro lento (5 s) il test fallirebbe per tempo scaduto.
+    await expect
+      .poll(() => seen.mock.calls.some(([s]) => s.pending === false), { timeout: 1500 })
+      .toBe(true);
+    stop();
+  });
+
   describe('coda offline', () => {
     it('senza rete mette la scrittura in coda e la invia al ritorno della connessione', async () => {
       let online = false;

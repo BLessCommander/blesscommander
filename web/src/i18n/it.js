@@ -97,6 +97,7 @@ export const it = {
     wins: 'Vittorie',
     tmv: 'TMV',
     list: 'Elenco dei mazzi',
+    updating: 'In aggiornamento…',
     import: 'Importa mazzo',
     resync: {
       button: 'Aggiorna da Archidekt',

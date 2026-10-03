@@ -152,6 +152,38 @@ for (const theme of THEMES) {
   });
 }
 
+// Mazzo appena salvato, in attesa del ricalcolo (C-06e): etichetta «in aggiornamento» sulla scheda.
+for (const theme of THEMES) {
+  test(`screenshot mazzi-in-aggiornamento ${theme} @review`, async ({ page }, testInfo) => {
+    test.skip(
+      !['iphone', 'desktop-chrome'].includes(testInfo.project.name),
+      'solo iphone e desktop',
+    );
+    await page.emulateMedia({ colorScheme: theme });
+    await page.goto('/#/mazzi');
+    await page.locator('.deck').first().waitFor();
+    await page.evaluate(() => {
+      const pinia = document.querySelector('#app').__vue_app__.config.globalProperties.$pinia;
+      pinia.state.value.data.optimisticDecks = [
+        {
+          id: 'appena-salvato',
+          name: 'Mazzo Appena Salvato',
+          ownerLogin: 'demo-giocatore',
+          declaredTier: 'F2',
+          commanders: ['Comandante Nuovo'],
+          currentVersion: 1,
+        },
+      ];
+    });
+    await page.getByTestId('deck-pending').waitFor();
+    await mkdir('review-screenshots', { recursive: true });
+    await page.screenshot({
+      path: `review-screenshots/mazzi-in-aggiornamento-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+  });
+}
+
 // Mazzi di un utente Archidekt (C-06b): elenco con caselle, due spuntate (demo: elenco finto).
 for (const theme of THEMES) {
   test(`screenshot importa-utente ${theme} @review`, async ({ page }, testInfo) => {

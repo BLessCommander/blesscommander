@@ -31,8 +31,21 @@ export const useDataStore = defineStore('data', {
     members: {},
     /** @type {import('../data/data-provider.js').Notification[]} */
     notifications: [],
+    /** @type {any[]} mazzi appena salvati che lo snapshot non contiene ancora (fino al ricalcolo) */
+    optimisticDecks: [],
   }),
   getters: {
+    /** Mazzi dello snapshot più quelli salvati e non ancora ricalcolati, con `optimistic: true`. */
+    snapshotWithPending: (state) => {
+      if (!state.snapshot) return null;
+      const known = new Set(state.snapshot.decks.map((d) => d.id));
+      const extra = state.optimisticDecks
+        .filter((d) => !known.has(d.id))
+        .map((d) => ({ ...d, optimistic: true }));
+      return extra.length
+        ? { ...state.snapshot, decks: [...state.snapshot.decks, ...extra] }
+        : state.snapshot;
+    },
     /** Il ricalcolo delle fasce non ha ancora letto le ultime modifiche. */
     refreshing: (state) => state.snapshot?.pending === true,
     /** Che cosa attende il ricalcolo (`deck`, `game`, `vote`, `config`, `initial`); per scegliere il testo. */
@@ -69,6 +82,7 @@ export const useDataStore = defineStore('data', {
         this.snapshot = await provider.getSnapshot();
         unsubscribe ??= provider.onSnapshotChange((snapshot) => {
           this.snapshot = snapshot;
+          this.pruneOptimisticDecks();
           this.syncStatus();
         });
         await this.loadActingAs();
@@ -105,10 +119,37 @@ export const useDataStore = defineStore('data', {
     async write(method, ...args) {
       if (!provider) throw new Error('Dati non ancora caricati');
       try {
-        return await provider[method](...args);
+        const result = await provider[method](...args);
+        if (method === 'saveDeck') this.rememberDeck(result);
+        else if (method === 'saveDeckVersion') this.rememberDeckVersion(args[0], result);
+        return result;
       } finally {
         this.syncStatus();
       }
+    },
+
+    /** Un secondo salvataggio dello stesso mazzo sostituisce il primo. */
+    rememberDeck(deck) {
+      if (!deck?.id) return;
+      const others = this.optimisticDecks.filter((d) => d.id !== deck.id);
+      // Niente potatura qui: lo snapshot dello store è ancora quello di prima della scrittura.
+      this.optimisticDecks = [...others, deck];
+    },
+
+    rememberDeckVersion(deckId, version) {
+      const deck = this.optimisticDecks.find((d) => d.id === deckId);
+      if (deck && typeof version?.version === 'number') deck.currentVersion = version.version;
+    },
+
+    /** Quando lo snapshot ha già il mazzo, o il ricalcolo è finito, il dato provvisorio non serve più. */
+    pruneOptimisticDecks() {
+      if (!this.snapshot) return;
+      if (!this.snapshot.pending) {
+        this.optimisticDecks = [];
+        return;
+      }
+      const known = new Set(this.snapshot.decks.map((d) => d.id));
+      this.optimisticDecks = this.optimisticDecks.filter((d) => !known.has(d.id));
     },
 
     /** Mazzo e versioni salvate (vedi `DataProvider.getDeck`). */

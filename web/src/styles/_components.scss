@@ -458,6 +458,13 @@
     overflow-wrap: anywhere;
   }
 
+  &__pending {
+    margin: 2px 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
   &__stats {
     grid-column: 1 / -1;
     display: flex;

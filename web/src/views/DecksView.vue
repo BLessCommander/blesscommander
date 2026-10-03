@@ -7,7 +7,9 @@ import { useDataStore } from '../stores/data.js';
 
 const t = it.decks;
 const data = useDataStore();
-const decks = computed(() => (data.snapshot ? sortedDecks(data.snapshot) : []));
+const decks = computed(() =>
+  data.snapshotWithPending ? sortedDecks(data.snapshotWithPending) : [],
+);
 // L'aggiornamento da Archidekt serve ai mazzi importati da lì, a chi li ha importati o a un admin.
 const canResync = (deck) =>
   deck.source?.type === 'archidekt' &&
@@ -35,12 +37,15 @@ const tmv = (deck) => (typeof deck.tier?.tmv === 'number' ? deck.tier.tmv.toFixe
         <span
           class="tier-badge"
           :data-tier="deck.tier?.current ?? deck.declaredTier"
-          :aria-label="`${t.tier} ${deck.tier?.current}`"
+          :aria-label="`${t.tier} ${deck.tier?.current ?? deck.declaredTier}`"
         >
           {{ deck.tier?.current ?? deck.declaredTier }}
         </span>
         <div class="deck__main">
           <h2 class="deck__name">{{ deck.name }}</h2>
+          <p v-if="deck.optimistic" class="deck__pending" data-testid="deck-pending" role="status">
+            {{ t.updating }}
+          </p>
           <p class="muted deck__sub">
             {{ (deck.commanders ?? []).join(' · ') }} · {{ t.owner }}
             <span class="nowrap">{{ deck.ownerLogin }}</span>
