@@ -1,10 +1,13 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import CardImage from '../components/CardImage.vue';
 import TierStepChart from '../components/TierStepChart.vue';
 import WinTypeDonut from '../components/WinTypeDonut.vue';
 import { opponentTables, tierHistory, winTypeList } from '../domain/deck-stats.js';
 import { it } from '../i18n/it.js';
+import { sharedCardCache } from '../platform/card-cache.js';
+import { cardKey } from '../platform/scryfall.js';
 import { useDataStore } from '../stores/data.js';
 
 const t = it.deckPage;
@@ -38,8 +41,33 @@ async function loadFeatures() {
       gameChangers: version?.gameChangers ?? [],
       combos: version?.combos ?? [],
     };
+    loadCommanders(deck.value.commanders ?? [], version?.cards ?? []);
   } catch {
     features.value = { state: 'failed', gameChangers: [], combos: [] };
+  }
+}
+
+// Carte dei comandanti per le immagini: l'id sta nell'elenco carte se c'è, altrimenti si cerca
+// per nome (con la cache). Se Scryfall non risponde la scheda resta senza immagini.
+const commanderCards = ref([]);
+async function loadCommanders(names, cards) {
+  const ids = new Map(
+    cards.filter((c) => c.scryfallId).map((c) => [cardKey(c.name), c.scryfallId]),
+  );
+  commanderCards.value = names.map((name) => ({
+    name,
+    scryfallId: ids.get(cardKey(name)) ?? null,
+  }));
+  const unknown = names.filter((name) => !ids.has(cardKey(name)));
+  if (unknown.length === 0) return;
+  try {
+    const found = await sharedCardCache().byNames(unknown);
+    commanderCards.value = names.map((name) => ({
+      name,
+      scryfallId: ids.get(cardKey(name)) ?? found[cardKey(name)]?.scryfallId ?? null,
+    }));
+  } catch {
+    // senza immagini: resta il nome
   }
 }
 onMounted(() => {
@@ -60,6 +88,15 @@ const comboLabel = (combo) =>
 
     <template v-else>
       <header class="deck-head">
+        <div v-if="commanderCards.length" class="deck-head__art" data-testid="commander-cards">
+          <CardImage
+            v-for="c in commanderCards"
+            :key="c.name"
+            :scryfall-id="c.scryfallId"
+            :name="c.name"
+            version="normal"
+          />
+        </div>
         <span class="tier-badge" :data-tier="current" :aria-label="`${it.decks.tier} ${current}`">
           {{ current }}
         </span>
@@ -169,13 +206,40 @@ const comboLabel = (combo) =>
 
 .deck-head {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   align-items: flex-start;
 }
 
+.deck-head__art {
+  display: flex;
+  flex: none;
+  gap: 0.5rem;
+  width: 5.5rem;
+  flex-wrap: wrap;
+}
+
+/* Telefono: carta e fascia in una riga, titolo e dati a tutta larghezza sotto. */
 .deck-head__main {
+  flex: 1 1 100%;
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+}
+
+@media (min-width: 576px) {
+  .deck-head__art {
+    width: 8rem;
+  }
+
+  .deck-head__main {
+    flex: 1 1 12rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .deck-head__art {
+    width: 10rem;
+  }
 }
 
 .deck-head h1 {

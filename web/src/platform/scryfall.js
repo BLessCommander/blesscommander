@@ -9,9 +9,10 @@
 
 /**
  * @typedef {{ name: string, scryfallId: string, manaCost: string, cmc: number, colorIdentity: string[],
- *   typeLine: string, image: string | null, isGameChanger: boolean, oracleText: string }} CardInfo
+ *   colors: string[], typeLine: string, image: string | null, isGameChanger: boolean, oracleText: string }} CardInfo
  * @typedef {{ cards: Record<string, CardInfo>, notFound: string[] }} CardLookup  chiavi: `cardKey` del nome richiesto
- * @typedef {{ lookup: (names: string[]) => Promise<CardLookup> }} Scryfall
+ * @typedef {{ lookup: (names: string[]) => Promise<CardLookup>,
+ *   lookupIds: (ids: string[]) => Promise<Record<string, CardInfo>> }} Scryfall  `lookupIds`: chiavi = id Scryfall
  */
 
 const API = 'https://api.scryfall.com';
@@ -60,6 +61,7 @@ export function normalizeCard(raw) {
     manaCost: raw.mana_cost ?? face?.mana_cost ?? '',
     cmc: raw.cmc ?? 0,
     colorIdentity: raw.color_identity ?? [],
+    colors: raw.colors ?? raw.card_faces?.[0]?.colors ?? [],
     typeLine: raw.type_line ?? face?.type_line ?? '',
     image: raw.image_uris?.small ?? face?.image_uris?.small ?? null,
     isGameChanger: raw.game_changer === true,
@@ -110,9 +112,15 @@ export function createScryfall({
   fetchImpl = (...args) => fetch(...args),
   pauseMs = PAUSE_MS,
 } = {}) {
-  /** @param {string[]} queries nomi di prima faccia @returns {Promise<any[]>} */
-  async function fetchCards(queries) {
-    const unique = [...new Map(queries.map((q) => [matchKey(q), q])).values()];
+  /**
+   * @param {string[]} queries nomi di prima faccia (o id, con `byId`)
+   * @param {boolean} [byId]
+   * @returns {Promise<any[]>}
+   */
+  async function fetchCards(queries, byId = false) {
+    const unique = byId
+      ? [...new Set(queries)]
+      : [...new Map(queries.map((q) => [matchKey(q), q])).values()];
     /** @type {any[]} */
     const data = [];
     for (const [index, block] of chunk(unique).entries()) {
@@ -120,7 +128,9 @@ export function createScryfall({
       const response = await fetchImpl(`${API}/cards/collection`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ identifiers: block.map((name) => ({ name })) }),
+        body: JSON.stringify({
+          identifiers: block.map((value) => (byId ? { id: value } : { name: value })),
+        }),
       });
       if (!response.ok) throw new Error(`Scryfall: risposta ${response.status}`);
       data.push(...((await response.json()).data ?? []));
@@ -141,6 +151,11 @@ export function createScryfall({
         result = matchCards(unique, data);
       }
       return result;
+    },
+
+    async lookupIds(ids) {
+      const data = await fetchCards(ids, true);
+      return Object.fromEntries(data.map((raw) => [raw.id, normalizeCard(raw)]));
     },
   };
 }

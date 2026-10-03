@@ -47,11 +47,25 @@ const ACCENTED = { 'lim-dul the necromancer': 'Lim-Dûl the Necromancer' };
 const fold = (name) =>
   name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[‘’]/g, "'").trim();
 
-/** @param {{ name: string }[]} identifiers */
+/** @param {{ name?: string, id?: string }[]} identifiers */
 export function fakeCollection(identifiers) {
   const data = [];
   const not_found = [];
   for (const identifier of identifiers) {
+    if (identifier.id) {
+      // Ricerca per id (`fake-<nome>`): carta generica con costo 3, blu, creatura.
+      if (identifier.id.includes('inesistente')) not_found.push(identifier);
+      else
+        data.push({
+          id: identifier.id,
+          name: identifier.id.replace(/^fake-/, '').replace(/-/g, ' '),
+          cmc: 3,
+          colors: ['U'],
+          color_identity: ['U'],
+          type_line: 'Creature — Wizard',
+        });
+      continue;
+    }
     const key = fold(identifier.name);
     if (key.includes('inesistente') || key.includes('//') || /^a-/.test(key)) {
       not_found.push(identifier);
@@ -94,4 +108,29 @@ export async function mockScryfall(page) {
       body: JSON.stringify(fakeCollection(identifiers)),
     });
   });
+}
+
+// PNG 1×1: al posto delle immagini vere di cards.scryfall.io.
+const PIXEL = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64',
+);
+
+/**
+ * Per Playwright: intercetta le immagini delle carte. Con `fail` rispondono con un errore.
+ * Restituisce l'elenco degli indirizzi richiesti.
+ * @param {import('@playwright/test').Page} page
+ * @param {{ fail?: boolean }} [options]
+ * @returns {Promise<string[]>}
+ */
+export async function mockCardImages(page, { fail = false } = {}) {
+  /** @type {string[]} */
+  const requested = [];
+  await page.route('https://cards.scryfall.io/**', (route) => {
+    requested.push(route.request().url());
+    return fail
+      ? route.fulfill({ status: 404 })
+      : route.fulfill({ status: 200, contentType: 'image/png', body: PIXEL });
+  });
+  return requested;
 }
