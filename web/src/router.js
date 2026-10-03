@@ -8,6 +8,7 @@ import { NAV_ITEMS } from './navigation.js';
 const views = {
   dashboard: () => import('./views/DashboardView.vue'),
   decks: () => import('./views/DecksView.vue'),
+  importDeck: () => import('./views/ImportDeckView.vue'),
   group: () => import('./views/GroupView.vue'),
   rules: () => import('./views/RulesView.vue'),
   profile: () => import('./views/ProfileView.vue'),

@@ -97,6 +97,46 @@ export const it = {
     wins: 'Vittorie',
     tmv: 'TMV',
     list: 'Elenco dei mazzi',
+    import: 'Importa mazzo',
+  },
+  importDeck: {
+    intro:
+      'Incolla la lista del mazzo (da Archidekt, Moxfield o altro: "Esporta → Copia testo"). Poi controlli le carte e scegli i comandanti.',
+    nameLabel: 'Nome del mazzo',
+    nameHelp: 'Se lo lasci vuoto uso il nome del comandante.',
+    textLabel: 'Lista del mazzo',
+    textHelp:
+      'Una carta per riga, per esempio "1 Sol Ring". Le righe "Commander" indicano i comandanti.',
+    tierLabel: 'Fascia dichiarata',
+    tierHelp: 'Il mazzo parte come provvisorio: la fascia vera la decidono le partite.',
+    textRequired: 'Incolla almeno una carta per poter continuare.',
+    read: 'Controlla la lista',
+    reading: 'Sto cercando le carte su Scryfall…',
+    readFailed:
+      'Non riesco a contattare Scryfall. Controlla la connessione e riprova: la lista che hai incollato è ancora qui.',
+    previewTitle: 'Controlla il mazzo',
+    cardCount: (n) => (n === 1 ? '1 carta' : `${n} carte`),
+    commandersTitle: 'Comandanti',
+    commandersEmpty: 'Nessun comandante: scegline almeno uno dall’elenco.',
+    commandersHelp:
+      'Possono essere più di uno (partner, background…). Tocca la coroncina accanto a una carta, oppure fai doppio click sul computer.',
+    setCommander: 'Comandante',
+    unsetCommander: 'Togli comandante',
+    cardsTitle: 'Carte del mazzo',
+    gameChanger: 'Game changer',
+    gameChangersFound: (n) => (n === 1 ? '1 game changer trovato' : `${n} game changer trovati`),
+    notFoundTitle: 'Carte non trovate',
+    notFoundHelp:
+      'Scryfall non conosce questi nomi. Torna indietro, correggi la lista e controllala di nuovo.',
+    back: 'Modifica la lista',
+    save: 'Salva il mazzo',
+    saving: 'Salvataggio…',
+    saveFailed: 'Non sono riuscito a salvare il mazzo. Riprova.',
+    reasons: {
+      empty: 'La lista è vuota.',
+      'no-commander': 'Scegli almeno un comandante.',
+      'not-found': 'Ci sono carte non trovate.',
+    },
   },
   sync: {
     updating: 'In aggiornamento: sto ricalcolando le fasce con le ultime modifiche.',

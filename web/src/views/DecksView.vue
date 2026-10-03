@@ -15,6 +15,7 @@ const tmv = (deck) => (typeof deck.tier?.tmv === 'number' ? deck.tier.tmv.toFixe
     <header>
       <h1>{{ it.pages.decks.title }}</h1>
       <p class="muted lead">{{ t.intro }}</p>
+      <RouterLink to="/importa" class="btn">{{ t.import }}</RouterLink>
     </header>
 
     <p v-if="data.error" class="notice notice--error" role="alert">

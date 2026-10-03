@@ -1,4 +1,5 @@
 import { mkdir } from 'node:fs/promises';
+import { mockScryfall } from '../fixtures/scryfall-fake.js';
 import { test } from './fixtures.js';
 
 // Screenshot per la revisione del subagent `ui-reviewer` (PIANO-Test §5).
@@ -17,6 +18,7 @@ const SCREENS = [
   { name: 'notifiche', path: '/#/notifiche' },
   { name: 'gruppo', path: '/#/gruppo' },
   { name: 'gruppo-nuovo-membro', path: '/#/gruppo?overlay=member-form' },
+  { name: 'importa', path: '/#/importa' },
 ];
 const THEMES = ['light', 'dark'];
 
@@ -96,6 +98,31 @@ for (const theme of THEMES) {
     await mkdir('review-screenshots', { recursive: true });
     await page.screenshot({
       path: `review-screenshots/notifiche-miste-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+  });
+}
+
+// Anteprima dell'import (C-05): due comandanti e una carta non trovata.
+for (const theme of THEMES) {
+  test(`screenshot importa-anteprima ${theme} @review`, async ({ page }, testInfo) => {
+    test.skip(
+      !['iphone', 'desktop-chrome'].includes(testInfo.project.name),
+      'solo iphone e desktop',
+    );
+    await page.emulateMedia({ colorScheme: theme });
+    await mockScryfall(page);
+    await page.goto('/#/importa');
+    await page
+      .getByLabel('Lista del mazzo')
+      .fill(
+        'Commander\n1 Tymna the Weaver\n1 Thrasios, Triton Hero\n\nDeck\n1 Sol Ring\n1 Rhystic Study\n1 Carta inesistente',
+      );
+    await page.getByRole('button', { name: 'Controlla la lista' }).click();
+    await page.getByTestId('import-preview').waitFor();
+    await mkdir('review-screenshots', { recursive: true });
+    await page.screenshot({
+      path: `review-screenshots/importa-anteprima-${testInfo.project.name}-${theme}.png`,
       fullPage: true,
     });
   });
