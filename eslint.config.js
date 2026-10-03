@@ -29,6 +29,7 @@ export default [
         __ORG__: 'readonly',
         __DATA_REPO__: 'readonly',
         __TEST_REPO__: 'readonly',
+        __ARCHIDEKT_LIVE__: 'readonly',
       },
     },
     rules: {

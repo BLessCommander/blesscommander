@@ -109,6 +109,18 @@ export const useDataStore = defineStore('data', {
       }
     },
 
+    /** Mazzo e versioni salvate (vedi `DataProvider.getDeck`). */
+    async getDeck(id) {
+      if (!provider) throw new Error('Dati non ancora caricati');
+      return provider.getDeck(id);
+    },
+
+    /** Stato di una richiesta di import (vedi `DataProvider.getImportRequest`). */
+    async getImportRequest(id) {
+      if (!provider) throw new Error('Dati non ancora caricati');
+      return provider.getImportRequest(id);
+    },
+
     async loadMembers() {
       if (!provider) throw new Error('Dati non ancora caricati');
       this.members = await provider.getMembers();

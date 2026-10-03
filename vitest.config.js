@@ -11,6 +11,7 @@ export default defineConfig({
     __ORG__: JSON.stringify(progetto.org || 'BLessCommander'),
     __DATA_REPO__: JSON.stringify(progetto.repos?.data || 'blesscommander-data'),
     __TEST_REPO__: JSON.stringify(progetto.repos?.test || 'blesscommander-data-test'),
+    __ARCHIDEKT_LIVE__: false,
   },
   test: {
     environment: 'node',

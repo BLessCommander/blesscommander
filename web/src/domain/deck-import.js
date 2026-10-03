@@ -26,9 +26,10 @@ export function checkImport(lines, lookup) {
 /**
  * Costruisce mazzo e prima versione dalla lista letta e dai dati Scryfall.
  * L'identità di colore è l'unione di quella di tutti i comandanti.
- * @param {{ name: string, lines: DeckLine[], lookup: CardLookup, declaredTier: string, importedAt: string }} input
+ * @param {{ name: string, lines: DeckLine[], lookup: CardLookup, declaredTier: string, importedAt: string, sourceUrl?: string }} input
+ * `sourceUrl` è il link di Archidekt, se il mazzo viene da lì.
  */
-export function buildDeckFromImport({ name, lines, lookup, declaredTier, importedAt }) {
+export function buildDeckFromImport({ name, lines, lookup, declaredTier, importedAt, sourceUrl }) {
   const cards = mergeDuplicates(deckCards(lines));
   const commanders = commanderNames(lines);
   const info = (cardName) => lookup.cards[cardKey(cardName)];
@@ -49,7 +50,9 @@ export function buildDeckFromImport({ name, lines, lookup, declaredTier, importe
       commanders: commanders.map((c) => info(c)?.name ?? c),
       colorIdentity: COLORS.filter((c) => identity.has(c)),
       declaredTier,
-      source: { type: 'text', importedAt },
+      source: sourceUrl
+        ? { type: 'archidekt', url: sourceUrl, importedAt }
+        : { type: 'text', importedAt },
     },
     version: {
       cards: versionCards,

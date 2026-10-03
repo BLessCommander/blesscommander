@@ -530,6 +530,12 @@ export class GitHubProvider extends DataProvider {
     });
   }
 
+  async getImportRequest(id) {
+    const file = await this.#readFile(`requests/${id}.json`);
+    if (!file) throw new DataError(DATA_ERROR.notFound, `Richiesta non trovata: ${id}`);
+    return { ...file.json, id };
+  }
+
   async getConfig() {
     const file = await this.#readFile('config/group.json');
     if (!file) throw new DataError(DATA_ERROR.notFound, 'Configurazione del gruppo non trovata');

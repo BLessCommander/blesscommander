@@ -4,8 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "dev:lan": "vite --host",
+    "dev": "vite --mode live",
+    "dev:lan": "vite --host --mode live",
+    "dev:test": "vite --port 5174 --strictPort",
     "build": "vite build",
     "preview": "vite preview --host"
   },

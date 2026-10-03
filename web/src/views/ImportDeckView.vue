@@ -1,6 +1,7 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { archidektDeckId } from '../domain/archidekt-link.js';
 import { buildDeckFromImport, checkImport } from '../domain/deck-import.js';
 import {
   commanderNames,
@@ -9,6 +10,7 @@ import {
   parseDeckText,
   toggleCommander,
 } from '../domain/deck-parser.js';
+import ImportArchidektUser from '../components/ImportArchidektUser.vue';
 import AppIcon from '../components/ui/AppIcon.vue';
 import { it } from '../i18n/it.js';
 import { cardKey, createScryfall } from '../platform/scryfall.js';
@@ -19,11 +21,24 @@ const data = useDataStore();
 const router = useRouter();
 const scryfall = createScryfall();
 
+const POLL_MS = 3000;
+const POLL_LIMIT = 70; // circa 3 minuti e mezzo
+
+const source = ref('text'); // text | archidekt
+const archidektUrl = ref('');
+const sourceUrl = ref(''); // link usato per il mazzo che si sta guardando
 const name = ref('');
 const text = ref('');
 const declaredTier = ref('F3');
-const step = ref('edit'); // edit | reading | preview | saving
+const step = ref('edit'); // edit | waiting | reading | preview | saving
 const error = ref('');
+watch(source, () => {
+  sourceUrl.value = '';
+});
+let stopped = false;
+onBeforeUnmount(() => {
+  stopped = true;
+});
 const lines = ref([]);
 const lookup = ref(null);
 
@@ -58,6 +73,50 @@ async function read() {
   }
 }
 
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Chiede il mazzo all'Action `import` e aspetta l'esito, poi prosegue come per il testo incollato. */
+async function fetchArchidekt() {
+  error.value = '';
+  const url = archidektUrl.value.trim();
+  if (!archidektDeckId(url)) {
+    error.value = t.archidektInvalid;
+    return;
+  }
+  step.value = 'waiting';
+  try {
+    const request = await data.write('requestImport', 'archidekt', url);
+    for (let i = 0; i < POLL_LIMIT && !stopped; i++) {
+      const state = await data.getImportRequest(request.id);
+      if (state.status === 'done') {
+        sourceUrl.value = url;
+        name.value = state.deckName ?? ''; // il nome è quello di Archidekt
+        text.value = state.result;
+        await read();
+        return;
+      }
+      if (state.status === 'error') {
+        error.value = t.archidektFailed(String(state.error ?? '').replace(/\.$/, ''));
+        step.value = 'edit';
+        return;
+      }
+      await wait(POLL_MS);
+    }
+    if (!stopped) {
+      error.value = t.archidektTimeout;
+      step.value = 'edit';
+    }
+  } catch {
+    error.value = t.archidektRequestFailed;
+    step.value = 'edit';
+  }
+}
+
+const submit = () => {
+  if (source.value === 'archidekt') return fetchArchidekt();
+  if (source.value === 'text') return read();
+};
+
 const toggle = (card) => {
   lines.value = toggleCommander(lines.value, card.name);
 };
@@ -73,6 +132,7 @@ async function save() {
       lookup: lookup.value,
       declaredTier: declaredTier.value,
       importedAt: new Date().toISOString(),
+      sourceUrl: sourceUrl.value || undefined,
     });
     const saved = await data.write('saveDeck', deck);
     await data.write('saveDeckVersion', saved.id, version);
@@ -92,16 +152,44 @@ async function save() {
     </header>
 
     <form
-      v-if="step === 'edit' || step === 'reading'"
+      v-if="step === 'edit' || step === 'reading' || step === 'waiting'"
       class="card stack import-card"
-      @submit.prevent="read"
+      @submit.prevent="submit"
     >
-      <label class="field">
+      <fieldset class="choice" :disabled="step !== 'edit'">
+        <legend class="choice__legend">{{ t.sourceLabel }}</legend>
+        <label class="choice__option">
+          <input v-model="source" type="radio" name="importSource" value="text" />
+          <span>{{ t.sourceText }}</span>
+        </label>
+        <label class="choice__option">
+          <input v-model="source" type="radio" name="importSource" value="archidekt" />
+          <span>{{ t.sourceArchidekt }}</span>
+        </label>
+        <label class="choice__option">
+          <input v-model="source" type="radio" name="importSource" value="archidekt-user" />
+          <span>{{ t.sourceUser }}</span>
+        </label>
+      </fieldset>
+      <label v-if="source === 'text'" class="field">
         <span>{{ t.nameLabel }}</span>
         <input v-model="name" type="text" name="deckName" autocomplete="off" />
         <small class="muted">{{ t.nameHelp }}</small>
       </label>
-      <label class="field">
+      <label v-if="source === 'archidekt'" class="field">
+        <span>{{ t.archidektLabel }}</span>
+        <input
+          v-model="archidektUrl"
+          type="url"
+          name="archidektUrl"
+          inputmode="url"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+        />
+        <small v-if="step !== 'waiting'" class="muted">{{ t.archidektHelp }}</small>
+      </label>
+      <label v-else-if="source === 'text'" class="field">
         <span>{{ t.textLabel }}</span>
         <textarea
           v-model="text"
@@ -113,7 +201,7 @@ async function save() {
         ></textarea>
         <small class="muted">{{ t.textHelp }}</small>
       </label>
-      <label class="field">
+      <label v-if="source !== 'archidekt-user'" class="field">
         <span>{{ t.tierLabel }}</span>
         <select v-model="declaredTier" name="declaredTier">
           <option v-for="tier in ['F1', 'F2', 'F3', 'F4', 'F5']" :key="tier" :value="tier">
@@ -122,14 +210,38 @@ async function save() {
         </select>
         <small class="muted">{{ t.tierHelp }}</small>
       </label>
-      <p v-if="error" class="notice notice--error" role="alert" data-testid="import-error">
+      <ImportArchidektUser v-if="source === 'archidekt-user'" />
+      <p
+        v-if="error && source !== 'archidekt-user'"
+        class="notice notice--error"
+        role="alert"
+        data-testid="import-error"
+      >
         {{ error }}
       </p>
       <p v-if="step === 'reading'" role="status">{{ t.reading }}</p>
-      <p v-if="!text.trim()" class="muted">{{ t.textRequired }}</p>
-      <button type="submit" class="btn" :disabled="step === 'reading' || !text.trim()">
-        {{ t.read }}
-      </button>
+      <p
+        v-if="step === 'waiting' && source === 'archidekt'"
+        class="import-waiting"
+        role="status"
+        aria-live="polite"
+        data-testid="import-waiting"
+      >
+        <span class="import-waiting__spinner" aria-hidden="true"></span>
+        {{ t.archidektWaiting }}
+      </p>
+      <template v-if="source === 'archidekt'">
+        <p v-if="!archidektUrl.trim()" class="muted">{{ t.archidektRequired }}</p>
+        <button type="submit" class="btn" :disabled="step !== 'edit' || !archidektUrl.trim()">
+          {{ step === 'waiting' ? t.archidektReading : t.archidektRead }}
+        </button>
+      </template>
+      <template v-else-if="source === 'text'">
+        <p v-if="!text.trim()" class="muted">{{ t.textRequired }}</p>
+        <button type="submit" class="btn" :disabled="step !== 'edit' || !text.trim()">
+          {{ t.read }}
+        </button>
+      </template>
     </form>
 
     <section v-else class="stack" data-testid="import-preview" :aria-label="t.previewTitle">
@@ -210,6 +322,34 @@ async function save() {
 </template>
 
 <style scoped>
+.import-waiting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.import-waiting__spinner {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: import-spin 0.9s linear infinite;
+}
+
+@keyframes import-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .import-waiting__spinner {
+    animation: none;
+  }
+}
+
 .import-card {
   max-width: 70ch;
 }

@@ -94,14 +94,21 @@ export async function buildDataRepo(
     entryPoints: [join(root, 'data-actions/src/cli.js')],
     outfile: join(out, 'engine/recalc.mjs'),
   });
+  await build({
+    ...common,
+    entryPoints: [join(root, 'data-actions/src/import-cli.js')],
+    outfile: join(out, 'engine/import.mjs'),
+  });
 
   return [
     'config/group.json',
     'config/members.json',
     '.github/workflows/recalc.yml',
+    '.github/workflows/import.yml',
     'schemas/',
     'engine/tier-engine.mjs',
     'engine/recalc.mjs',
+    'engine/import.mjs',
   ];
 }
 

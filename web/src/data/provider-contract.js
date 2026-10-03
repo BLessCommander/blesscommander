@@ -148,6 +148,17 @@ export function runProviderContract(name, make, logins) {
       expect(request.status).toBe('pending');
     });
 
+    it('legge lo stato di una richiesta di import e rifiuta una richiesta che non esiste', async () => {
+      const provider = make(logins.player1);
+      const request = await provider.requestImport('archidekt', 'https://archidekt.com/decks/1');
+      const state = await provider.getImportRequest(request.id);
+      expect(state).toMatchObject({ id: request.id, source: 'archidekt' });
+      expect(['pending', 'done']).toContain(state.status);
+      await expect(provider.getImportRequest('non-esiste')).rejects.toMatchObject({
+        code: 'not-found',
+      });
+    });
+
     it('notifiche: elenco, lette e risposta restano salvate per utente', async () => {
       const provider = make(logins.player1);
       const list = await provider.getNotifications();

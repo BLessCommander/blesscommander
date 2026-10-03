@@ -1,3 +1,4 @@
+import { downloadDeck, downloadUserDecks } from '../domain/archidekt-import.js';
 import { DataProvider } from './data-provider.js';
 import { DataError, DATA_ERROR } from './errors.js';
 import { assertValid } from './validate.js';
@@ -25,6 +26,29 @@ import {
  */
 
 const clone = (value) => structuredClone(value);
+
+// `npm run dev` (modalità Vite "live"): gli import da Archidekt sono veri, passano dal ponte
+// `/archidekt-api` del server di sviluppo. Nei test e nella build restano mazzi finti.
+const LIVE_ARCHIDEKT = typeof __ARCHIDEKT_LIVE__ !== 'undefined' && __ARCHIDEKT_LIVE__;
+const LIVE_BASE = `${import.meta.env?.BASE_URL ?? '/'}archidekt-api/decks`;
+
+/** Elenco finto dei mazzi di un utente Archidekt, in demo. */
+const DEMO_USER_DECKS = {
+  status: 'done',
+  decks: [
+    { id: '1001', name: 'Mazzo demo uno', size: 100, url: 'https://archidekt.com/decks/1001' },
+    { id: '1002', name: 'Mazzo demo due', size: 100, url: 'https://archidekt.com/decks/1002' },
+    { id: '1003', name: 'Mazzo demo tre', size: 99, url: 'https://archidekt.com/decks/1003' },
+  ],
+};
+
+/** Esito finto dell'Action `import` in demo (l'Action vera esiste solo nel repository dati). */
+const DEMO_IMPORT = {
+  status: 'done',
+  deckName: 'Mazzo di esempio (demo)',
+  result:
+    "Commander\n1 Atraxa, Praetors' Voice\n\nDeck\n1 Sol Ring\n1 Arcane Signet\n1 Command Tower",
+};
 
 /**
  * Dati in memoria: per i test e per lo sviluppo senza rete. Segue le stesse regole di
@@ -163,6 +187,39 @@ export class MockProvider extends DataProvider {
     return clone(request);
   }
 
+  /** In demo l'Action non esiste: la prima lettura è `pending`, la seconda dà un mazzo di esempio. */
+  async getImportRequest(id) {
+    const request = this.state.requests[id];
+    if (!request) throw new DataError(DATA_ERROR.notFound, `Richiesta non trovata: ${id}`);
+    if (request.status === 'pending' && LIVE_ARCHIDEKT && request.source.startsWith('archidekt')) {
+      // Sviluppo con dati veri: come farebbe l'Action `import`, ma dal ponte locale di Vite.
+      const options = { fetchImpl: (...a) => fetch(...a), base: LIVE_BASE };
+      const result =
+        request.source === 'archidekt-user'
+          ? await downloadUserDecks({ nick: request.url, ...options })
+          : await downloadDeck({ url: request.url, ...options });
+      Object.assign(request, result.error ? { status: 'error' } : { status: 'done' }, result);
+    } else if (request.status === 'pending' && !request.polled) {
+      request.polled = true;
+    } else if (request.status === 'pending') {
+      const known = DEMO_USER_DECKS.decks.find((d) => d.url === request.url);
+      Object.assign(
+        request,
+        request.source === 'archidekt-user'
+          ? DEMO_USER_DECKS
+          : {
+              ...DEMO_IMPORT,
+              ...(known ? { deckName: known.name } : {}),
+              // Reimport dello stesso link: in demo il mazzo "è cambiato su Archidekt" (una carta in più).
+              ...(this.#alreadyImported(request)
+                ? { result: `${DEMO_IMPORT.result}\n1 Rhystic Study` }
+                : {}),
+            },
+      );
+    }
+    return clone({ ...request, id });
+  }
+
   async getConfig() {
     return clone(this.state.config);
   }
@@ -241,6 +298,18 @@ export class MockProvider extends DataProvider {
   onSnapshotChange(callback) {
     this.listeners.add(callback);
     return () => this.listeners.delete(callback);
+  }
+
+  /** Il link di questa richiesta era già stato importato, con una richiesta precedente conclusa? */
+  #alreadyImported(request) {
+    return Object.values(this.state.requests).some(
+      (r) =>
+        r !== request &&
+        r.source === 'archidekt' &&
+        r.url === request.url &&
+        r.status === 'done' &&
+        r.createdAt <= request.createdAt,
+    );
   }
 
   #snapshot() {

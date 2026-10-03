@@ -120,7 +120,7 @@ export const SCHEMAS = {
   request: object(
     {
       id,
-      source,
+      source: { enum: ['archidekt', 'archidekt-user', 'moxfield', 'text'] },
       url: { type: 'string' },
       requestedBy: str,
       status: { enum: ['pending', 'done', 'error'] },

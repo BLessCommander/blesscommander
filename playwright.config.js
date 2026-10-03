@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 5173;
+// Porta propria dei test: non si mescola con `npm run dev` (che usa dati veri da Archidekt).
+const PORT = 5174;
 
 // I 6 profili obbligatori di docs/PIANO-Test.md §2.
 export default defineConfig({
@@ -33,7 +34,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev -w web',
+    command: 'npm run dev:test -w web',
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,

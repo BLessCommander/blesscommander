@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LOGINS, buildSeed, writeSeed } from '../../../tests/seed/seed.js';
 import { startFakeGithub, tokenFor } from '../../../tests/fake-github/server.js';
+import { createImportHook } from '../../../data-actions/src/repo-files.js';
 import { GitHubProvider } from './github-provider.js';
 import { runProviderContract } from './provider-contract.js';
 import { writeStorage } from '../platform/storage.js';
@@ -306,5 +307,44 @@ describe('UT-GH "Agisci come" (solo repository di prova)', () => {
     await expect(make('test-owner').setActingAs('test-sconosciuto')).rejects.toMatchObject({
       code: 'forbidden',
     });
+  });
+});
+
+describe('C-06 import da Archidekt con l’Action simulata', () => {
+  it('la richiesta torna "done" con il mazzo, senza chiamare Archidekt vera', async () => {
+    const importDir = await mkdtemp(join(tmpdir(), 'github-import-'));
+    await writeSeed(importDir);
+    const archidekt = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        name: 'Mazzo finto',
+        cards: [
+          { quantity: 1, categories: ['Commander'], card: { oracleCard: { name: 'Tymna' } } },
+          { quantity: 1, categories: null, card: { oracleCard: { name: 'Sol Ring' } } },
+        ],
+      }),
+    });
+    const server = await startFakeGithub({
+      dataDir: importDir,
+      logins: LOGINS,
+      onWrite: createImportHook({ fetchImpl: archidekt }),
+    });
+    try {
+      const provider = new GitHubProvider({
+        owner: server.owner,
+        repo: server.repo,
+        baseUrl: server.url,
+        token: tokenFor('test-giocatore1'),
+        now: () => '2026-03-01T10:00:00Z',
+      });
+      const request = await provider.requestImport('archidekt', 'https://archidekt.com/decks/5');
+      const state = await provider.getImportRequest(request.id);
+      expect(state).toMatchObject({ status: 'done', deckName: 'Mazzo finto' });
+      expect(state.result).toBe('Commander\n1 Tymna\n\nDeck\n1 Sol Ring');
+    } finally {
+      await server.close();
+      await rm(importDir, { recursive: true, force: true });
+    }
   });
 });

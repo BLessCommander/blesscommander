@@ -128,6 +128,87 @@ for (const theme of THEMES) {
   });
 }
 
+// Import da link di Archidekt (C-06): modulo compilato e attesa dell'Action (demo: circa 3 secondi).
+for (const theme of THEMES) {
+  test(`screenshot importa-archidekt ${theme} @review`, async ({ page }, testInfo) => {
+    test.skip(
+      !['iphone', 'desktop-chrome'].includes(testInfo.project.name),
+      'solo iphone e desktop',
+    );
+    await page.emulateMedia({ colorScheme: theme });
+    await mockScryfall(page);
+    await page.goto('/#/importa');
+    await page.getByLabel('Link di Archidekt').check();
+    await page
+      .getByLabel('Link del mazzo su Archidekt')
+      .fill('https://archidekt.com/decks/14637766/jodah');
+    await page.getByRole('button', { name: 'Scarica il mazzo' }).click();
+    await page.getByTestId('import-waiting').waitFor();
+    await mkdir('review-screenshots', { recursive: true });
+    await page.screenshot({
+      path: `review-screenshots/importa-archidekt-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+  });
+}
+
+// Mazzi di un utente Archidekt (C-06b): elenco con caselle, due spuntate (demo: elenco finto).
+for (const theme of THEMES) {
+  test(`screenshot importa-utente ${theme} @review`, async ({ page }, testInfo) => {
+    test.skip(
+      !['iphone', 'desktop-chrome'].includes(testInfo.project.name),
+      'solo iphone e desktop',
+    );
+    await page.emulateMedia({ colorScheme: theme });
+    await mockScryfall(page);
+    await page.goto('/#/importa');
+    await page.getByLabel('Mazzi di un utente Archidekt').check();
+    await page.getByLabel('Nome utente su Archidekt').fill('r3dl0g');
+    await page.getByRole('button', { name: 'Cerca i mazzi' }).click();
+    const list = page.getByTestId('user-decks');
+    await list.waitFor({ timeout: 15000 });
+    await list.getByRole('checkbox', { name: 'Mazzo demo uno' }).check();
+    await list.getByRole('checkbox', { name: 'Mazzo demo tre' }).check();
+    await mkdir('review-screenshots', { recursive: true });
+    await page.screenshot({
+      path: `review-screenshots/importa-utente-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+  });
+}
+
+// Aggiornamento di un mazzo da Archidekt (C-06c/S-02): lista mazzi con il tasto e l'esito (demo).
+for (const theme of THEMES) {
+  test(`screenshot mazzi-aggiorna ${theme} @review`, async ({ page }, testInfo) => {
+    test.skip(
+      !['iphone', 'desktop-chrome'].includes(testInfo.project.name),
+      'solo iphone e desktop',
+    );
+    test.setTimeout(60000);
+    await page.emulateMedia({ colorScheme: theme });
+    await mockScryfall(page);
+    await page.goto('/#/importa');
+    await page.getByLabel('Link di Archidekt').check();
+    await page
+      .getByLabel('Link del mazzo su Archidekt')
+      .fill('https://archidekt.com/decks/14637766/jodah');
+    await page.getByRole('button', { name: 'Scarica il mazzo' }).click();
+    await page.getByTestId('import-preview').waitFor({ timeout: 15000 });
+    await page.getByRole('button', { name: 'Salva il mazzo' }).click();
+    await page.waitForURL(/#\/mazzi$/);
+    await page.getByTestId('resync').click();
+    await page
+      .getByTestId('resync-status')
+      .getByText('Mazzo aggiornato')
+      .waitFor({ timeout: 30000 });
+    await mkdir('review-screenshots', { recursive: true });
+    await page.screenshot({
+      path: `review-screenshots/mazzi-aggiorna-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+  });
+}
+
 for (const screen of SCREENS) {
   for (const theme of THEMES) {
     test(`screenshot ${screen.name} ${theme} @review`, async ({ page }, testInfo) => {

@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import DeckResync from '../components/DeckResync.vue';
 import { sortedDecks } from '../domain/snapshot-stats.js';
 import { it } from '../i18n/it.js';
 import { useDataStore } from '../stores/data.js';
@@ -7,6 +8,11 @@ import { useDataStore } from '../stores/data.js';
 const t = it.decks;
 const data = useDataStore();
 const decks = computed(() => (data.snapshot ? sortedDecks(data.snapshot) : []));
+// L'aggiornamento da Archidekt serve ai mazzi importati da lì, a chi li ha importati o a un admin.
+const canResync = (deck) =>
+  deck.source?.type === 'archidekt' &&
+  Boolean(deck.source.url) &&
+  (deck.ownerLogin === data.user?.login || data.user?.role === 'admin');
 const tmv = (deck) => (typeof deck.tier?.tmv === 'number' ? deck.tier.tmv.toFixed(1) : '—');
 </script>
 
@@ -39,6 +45,7 @@ const tmv = (deck) => (typeof deck.tier?.tmv === 'number' ? deck.tier.tmv.toFixe
             {{ (deck.commanders ?? []).join(' · ') }} · {{ t.owner }}
             <span class="nowrap">{{ deck.ownerLogin }}</span>
           </p>
+          <DeckResync v-if="canResync(deck)" :deck="deck" />
         </div>
         <dl class="deck__stats">
           <div>

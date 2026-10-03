@@ -2,6 +2,7 @@
 import { execFileSync } from 'node:child_process';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
+import { runImport } from './import.js';
 import { runRecalc } from './recalc.js';
 
 const INPUT_DIRS = ['config', 'decks', 'games', 'votes', 'requests'];
@@ -77,6 +78,31 @@ export async function recalcDirectory(dir, options = {}) {
   const result = runRecalc({ files, ...options });
   await writeDerived(dir, result.derived);
   return result;
+}
+
+/**
+ * Esegue le richieste di import in sospeso e riscrive i file `requests/` cambiati.
+ * @param {string} dir
+ * @param {Omit<Parameters<typeof runImport>[0], 'files'>} [options]
+ */
+export async function importDirectory(dir, options = {}) {
+  const files = await readInputFiles(dir);
+  const updates = await runImport({ files, ...options });
+  for (const [path, content] of Object.entries(updates)) {
+    await writeFile(join(resolve(dir), path), `${JSON.stringify(content, null, 2)}\n`);
+  }
+  return updates;
+}
+
+/** Gancio per la finta API GitHub: dopo ogni richiesta in `requests/` simula l'Action `import`. */
+export function createImportHook(options = {}) {
+  /** @type {Record<string, string>} */
+  const authors = {};
+  return async (commit, dir) => {
+    if (!commit.path.startsWith('requests/')) return;
+    authors[commit.path] = commit.author;
+    await importDirectory(dir, { authors, unknownAuthor: 'allow', ...options });
+  };
 }
 
 /**

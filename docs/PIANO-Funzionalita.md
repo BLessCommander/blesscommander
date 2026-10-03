@@ -45,7 +45,9 @@
 | C-04d | [ ] | Stabilizzare il test `access.spec.js` "accede, resta dentro dopo il riavvio…": a volte va in timeout su `Token personale` sotto carico (visto su vari profili), ripassa da solo; trovare la causa (probabile corsa tra `reload` e `goto`) | C-03 | 06 | UC-01 |
 | C-04c | [x] | Centro notifiche in-app: pagina `/notifiche` e campanella con contatore nell'header (desktop e telefono), elenco con letto/non letto e azioni dentro la notifica (es. rispondi sì/no a una richiesta), tipi estendibili (cambi fascia, riapertura, contestazione, richiesta di sostituzione admin). Silenziate per chi è in una partita in corso (regola 1). Stesso stile della UI esistente; da decidere in spec 06 dove si salva lo stato letto/non letto | C-04 | 05, 06, 03 | UC-65 |
 | C-05 | [x] | Import mazzo da testo + arricchimento Scryfall + rilevamento game changer. **Fatto:** incolla lista (sezioni Commander/Sideboard, più comandanti, scelta con pulsante o doppio click), Scryfall a blocchi da 75, game changer dal campo `game_changer`, mazzo e versione 1 salvati dal provider. **Non ancora:** combo (C-07) | C-04 | 04 | UC-04 |
-| C-06 | [ ] | Import da Archidekt (diretto dal browser o tramite Action `import`) | C-05, B-07 | 04, 06 | UC-05 |
+| C-06 | [x] | Import da Archidekt. **Fatto:** il browser non può chiamare Archidekt (CORS solo per localhost), quindi passa dall'Action `import`: l'app scrive `requests/<id>.json`, l'Action (autore = membro) scarica il mazzo e lo riscrive come testo con sezioni, l'app lo legge e prosegue come per l'import da testo. **Non ancora:** elenco mazzi per nome utente (C-06b); Action `import` pubblicata su `-data` (C-16) | C-05, B-07 | 04, 06 | UC-05 |
+| C-06b | [x] | Import dei mazzi di un utente Archidekt: nome utente → elenco dei soli mazzi pubblici con caselle → importa i selezionati (uno dopo l'altro, solo se comandante e carte sono a posto; gli altri vanno importati dal link). **Fatto:** richiesta `archidekt-user` all'Action `import`, componente `ImportArchidektUser.vue`, riepilogo con "Da controllare" | C-06 | 04 | UC-05 |
+| C-06c | [ ] | Rifinitura grafica: scelta della sorgente (e `.choice` del Profilo) con indicatore visibile oltre al colore e larghezza coerente su desktop; "Seleziona tutti" con stato intermedio; spazi attorno al titolo dell'elenco mazzi; select "Fascia" (elenco mazzi e form) con lo stile dei campi anche su telefono, riga più bassa su telefono (fascia accanto al conteggio carte); screenshot di viewport dell'elenco con scroll per vedere "Seleziona tutti" su telefono | C-06 | 05 | — |
 | C-07 | [ ] | Wizard di autovalutazione e calcolo pavimento | C-05, C-01 | 01, 04 | UC-07 |
 | C-08 | [ ] | Lista mazzi e scheda mazzo (metriche, storico fasce, grafici base) | C-07 | 04, 05 | UC-18 |
 | C-09 | [ ] | Lobby: formato (tutti contro tutti 3/4/5–6, 1v1), giocatori, mazzi, registratore, "Inizia" con promemoria dado | C-08 | 03, 02 | UC-09 |
@@ -55,6 +57,7 @@
 | C-13 | [ ] | Storico partite con filtri | C-10 | 03 | UC-21 |
 | C-14 | [ ] | Pagina Regolamento generata dai parametri + pagina Gruppo con parametri del motore | C-03, C-01 | 01, 02 | UC-22 |
 | C-15 | [ ] | Pubblicazione: scansione segreti, repository del codice reso pubblico (con conferma), GitHub Pages via Actions, CI con test, pubblicazione automatica del motore nel repo dati | C-01…C-14 | 06 (§6.11) | CI, UC-28 |
+| C-16 | [ ] | Passaggio al live su GitHub (richiesto dall'utente): pubblicare su `blesscommander-data` workflow `recalc` e `import` + `engine/` + `config/` con l'admin vero (comandi su GitHub: spiegare e chiedere conferma uno per uno, regola 11); membri; app su GitHub Pages collegata al repository vero; scansione segreti prima di rendere pubblico il codice. L'utente autorizza la pubblicazione dell'Action `import` | C-06 | 06 (§6.11) | UC-28 |
 
 ---
 
@@ -63,7 +66,7 @@
 | ID | Stato | Funzionalità | Dip. | Spec | Test |
 |---|---|---|---|---|---|
 | S-01 | [ ] | Import Moxfield tramite Action con ripiego guidato sull'import da testo | C-06 | 04 | UC-06 |
-| S-02 | [ ] | Reimport e versioni del mazzo con diff (ritorno a Provvisorio oltre 10 carte) | C-08 | 04 | UC-08 |
+| S-02 | [~] | Reimport e versioni del mazzo con diff (ritorno a Provvisorio oltre 10 carte). **Fatto (anticipato su richiesta):** tasto "Aggiorna da Archidekt" nella lista mazzi (`DeckResync.vue`, `deck-resync.js`): riscarica il mazzo, confronta con l'ultima versione, crea una nuova versione con le carte entrate/uscite e aggiorna nome e comandanti; "già aggiornato" se non cambia nulla. **Resta:** reimport da testo; scheda mazzo con storico versioni e diff (C-08); regola del motore "oltre 10 carte o game changer cambiati → pavimento ricalcolato, pesi dimezzati, torna Provvisorio" | C-08 | 04 | UC-08 |
 | S-03 | [ ] | Riapertura partita con voto unanime e ricalcolo dello storico | C-11 | 03, 01 | UC-40 |
 | S-04 | [ ] | Contestazione dei cambi di fascia con voto | C-11 | 01 | UC-41 |
 | S-05 | [ ] | Formati a squadre (2v2, Emperor), Star, vittorie condivise | C-10 | 02 | UC-42 |
@@ -98,9 +101,10 @@
 
 > Aggiornato da Claude a fine sessione. Massimo 15 righe: è ciò che la sessione successiva legge per ripartire senza rileggere tutto.
 
-- **Ultima voce lavorata:** C-05 (fatta). C-04b2 resta `[~]`: UC-25 aspetta la lobby (C-09), non l'import.
-- **Stato:** B-01–B-12, C-01–C-05 fatte. Vitest e Playwright sui 6 profili verdi (vedi nota sotto), lint verde. Revisione screenshot superata (restano note basse: card del form a sinistra su desktop largo, pulsante "Togli comandante" largo su telefono, motivo del blocco ripetuto).
-- **File principali:** `web/src/domain/deck-parser.js`, `deck-import.js`, `web/src/platform/scryfall.js`, `web/src/views/ImportDeckView.vue` (route `/importa`), pulsante in `DecksView.vue`, `tests/e2e/deck-import.spec.js`, schermate `importa` in `visual-review.spec.js`.
-- **Scelte:** lista incollata → Scryfall (`/cards/collection`, 75 nomi per volta) → anteprima → `saveDeck` + `saveDeckVersion`. Più comandanti: identità di colore = unione. Scryfall è sempre quella vera, anche in demo (serve internet); i test la intercettano con `tests/fixtures/scryfall-fake.js` (un nome con "inesistente" non viene trovato). Fascia iniziale: per ora un menu F1–F5 (default F3), il wizard arriva con C-07.
-- **Problemi aperti:** Scryfall vera mai provata dai test (regola 5): provarla a mano con `npm run dev`. Nessuna Action genera ancora notifiche. `-data-test` ancora da popolare (chiede conferma). `access.spec.js` "accede, resta dentro…" instabile (C-04d).
-- **Prossimo passo consigliato:** C-06 (import da Archidekt con link e con nome utente). Prima verificare se Archidekt accetta richieste dal browser (CORS); se no, passare dall'Action `import`.
+- **Ultima voce lavorata:** C-06 e C-06b (fatte) + tasto di aggiornamento mazzo (parte di S-02, `[~]`). Il motore non conosce ancora le versioni: la regola "oltre 10 carte → Provvisorio" resta da fare. C-04b2 resta `[~]` (UC-25 aspetta la lobby, C-09).
+- **Stato:** B-01–B-12, C-01–C-06b fatte. Vitest, Playwright sui 6 profili (14 test per profilo sull'import) e lint verdi. Revisione screenshot: restano solo note basse, raccolte in C-06c.
+- **File principali:** `data-actions/src/import.js` (+ `import-cli.js`, `import.test.js`, workflow `import.yml`), `repo-files.js` (`importDirectory`, `createImportHook`), `web/src/domain/` (`archidekt-link.js`, `import-request.js`, `import-decks.js`), `components/ImportArchidektUser.vue`, `ImportDeckView.vue`, provider `getImportRequest`, `tests/e2e/deck-import-archidekt.spec.js`.
+- **Scelte:** Archidekt solo via Action (CORS). Esito dentro `requests/<id>.json`: mazzo = `deckName` + `result` (testo Commander/Deck/Sideboard); utente = `decks` [{id,name,size,url}]; errore = `error`. In demo il MockProvider simula l'Action. Provato a mano sull'Archidekt vero con `r3dl0g` (12 mazzi) e il mazzo Jodah (99 righe): funziona.
+- **Prova con mazzi veri in locale:** `npm run dev` importa da Archidekt e Scryfall veri (serve internet; ponte `/archidekt-api` di Vite, solo in sviluppo). `npm run dev:fake-github` esegue invece l'Action `import` vera sulla finta API GitHub. Provato a mano con `r3dl0g` (12 mazzi) e Jodah. Playwright usa la porta 5174. Il nome del mazzo è sempre quello di Archidekt; la fascia si sceglie per ogni mazzo nell'elenco.
+- **Problemi aperti:** l'Action `import` non è ancora su `-data` (C-16). Archidekt e Scryfall vere mai provate dai test: provarle a mano. Moxfield: l'Action risponde "incolla la lista" (S-01). `-data-test` da popolare. `access.spec.js` instabile (C-04d). Se Playwright dà "connection refused" su tutto, non lanciare due comandi Playwright insieme.
+- **Prossimo passo consigliato:** C-16 (live su GitHub, serve la tua conferma a ogni comando su GitHub). Firebase/Render: dopo, con E-02/E-03.

@@ -98,10 +98,79 @@ export const it = {
     tmv: 'TMV',
     list: 'Elenco dei mazzi',
     import: 'Importa mazzo',
+    resync: {
+      button: 'Aggiorna da Archidekt',
+      buttonFor: (name) => `Aggiorna da Archidekt: ${name}`,
+      working: 'Aggiorno…',
+      waiting: 'Scarico il mazzo da Archidekt e lo confronto con quello salvato… circa un minuto.',
+      same: 'Il mazzo è già aggiornato: nessuna modifica su Archidekt.',
+      updated: (summary) => `Mazzo aggiornato: ${summary}.`,
+      review:
+        'Il mazzo su Archidekt non è completo (manca il comandante o alcune carte non sono state trovate). Quello salvato non è cambiato.',
+      failed: (reason) => `${reason}. Il mazzo salvato non è cambiato.`,
+      timeout: 'L’aggiornamento sta durando troppo. Riprova più tardi.',
+      requestFailed:
+        'Non riesco ad aggiornare il mazzo. Controlla la connessione e riprova: quello salvato non è cambiato.',
+    },
   },
   importDeck: {
     intro:
       'Incolla la lista del mazzo (da Archidekt, Moxfield o altro: "Esporta → Copia testo"). Poi controlli le carte e scegli i comandanti.',
+    sourceLabel: 'Da dove importo il mazzo?',
+    sourceText: 'Incolla la lista',
+    sourceArchidekt: 'Link di Archidekt',
+    sourceUser: 'Mazzi di un utente Archidekt',
+    user: {
+      nickLabel: 'Nome utente su Archidekt',
+      nickHelp:
+        'Vedrai i mazzi pubblici di quell’utente e potrai scegliere quali importare. Ci vuole circa un minuto.',
+      nickRequired: 'Scrivi il nome utente per poter continuare.',
+      search: 'Cerca i mazzi',
+      searchingButton: 'Cerco…',
+      searching: 'Sto cercando i mazzi su Archidekt… ci vuole circa un minuto.',
+      failed: (reason) => `${reason}. Controlla il nome utente e riprova.`,
+      timeout: 'La ricerca sta durando troppo. Riprova più tardi.',
+      requestFailed:
+        'Non riesco a inviare la richiesta. Controlla la connessione e riprova, oppure usa il link di un mazzo.',
+      listTitle: (nick, n) => (n === 1 ? `1 mazzo di ${nick}` : `${n} mazzi di ${nick}`),
+      listHelp: 'Spunta i mazzi da importare. Sono solo quelli pubblici.',
+      selectAll: 'Seleziona tutti',
+      selectedCount: (n, total) => `${n} di ${total} selezionati`,
+      cards: (n) => (n === 1 ? '1 carta' : `${n} carte`),
+      tierOf: (name) => `Fascia di ${name}`,
+      tierShort: 'Fascia',
+      tierHelp:
+        'La fascia è quella che dichiari per ogni mazzo: parte come provvisoria e la decidono poi le partite.',
+      importSelected: (n) =>
+        n === 0 ? 'Importa i mazzi scelti' : n === 1 ? 'Importa 1 mazzo' : `Importa ${n} mazzi`,
+      otherNick: 'Cambia utente',
+      importing: (done, total) => `Importo i mazzi… ${Math.min(done + 1, total)} di ${total}`,
+      summary: (ok, total) =>
+        ok === total
+          ? ok === 1
+            ? 'Mazzo importato.'
+            : `Tutti i ${total} mazzi sono stati importati.`
+          : `Importati ${ok} mazzi su ${total}.`,
+      problemsTitle: 'Da controllare',
+      reviewNotFound:
+        'alcune carte non sono state trovate: importalo dal suo link per correggere la lista',
+      reviewNoCommander: 'manca il comandante: importalo dal suo link e scegli il comandante',
+      goToDecks: 'Vai ai mazzi',
+      backToList: 'Torna all’elenco',
+    },
+    archidektLabel: 'Link del mazzo su Archidekt',
+    archidektHelp:
+      'Per esempio https://archidekt.com/decks/123456. Il mazzo deve essere pubblico. Lo scarica il repository dei dati: ci vuole circa un minuto.',
+    archidektRead: 'Scarica il mazzo',
+    archidektReading: 'Scarico…',
+    archidektRequired: 'Incolla il link del mazzo per poter continuare.',
+    archidektInvalid: 'Questo non sembra un link di un mazzo di Archidekt.',
+    archidektWaiting: 'Sto scaricando il mazzo da Archidekt… ci vuole circa un minuto.',
+    archidektTimeout:
+      'Il download sta durando troppo. Riprova più tardi, oppure incolla la lista come testo.',
+    archidektFailed: (reason) => `${reason}. Puoi sempre incollare la lista come testo.`,
+    archidektRequestFailed:
+      'Non riesco a inviare la richiesta. Controlla la connessione e riprova, oppure incolla la lista come testo.',
     nameLabel: 'Nome del mazzo',
     nameHelp: 'Se lo lasci vuoto uso il nome del comandante.',
     textLabel: 'Lista del mazzo',

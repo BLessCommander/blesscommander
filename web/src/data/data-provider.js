@@ -20,6 +20,7 @@ export const PROVIDER_METHODS = Object.freeze([
   'updateGame',
   'vote',
   'requestImport',
+  'getImportRequest',
   'getConfig',
   'saveConfig',
   'getMembers',
@@ -104,12 +105,22 @@ export class DataProvider {
   }
 
   /**
-   * @param {'archidekt' | 'moxfield' | 'text'} source
-   * @param {string} url
+   * @param {'archidekt' | 'archidekt-user' | 'moxfield' | 'text'} source
+   * @param {string} url link del mazzo; per `archidekt-user` il nome utente (esito: `decks`)
    * @returns {Promise<Doc>} la richiesta creata
    */
   requestImport(source, url) {
     return notImplemented('requestImport')(source, url);
+  }
+
+  /**
+   * Stato di una richiesta di import: `pending`, poi `done` (con `deckName` e `result`, il mazzo
+   * come testo con sezioni) oppure `error` (con `error`, un messaggio per l'utente).
+   * @param {string} id
+   * @returns {Promise<Doc>}
+   */
+  getImportRequest(id) {
+    return notImplemented('getImportRequest')(id);
   }
 
   /** @returns {Promise<Doc>} */

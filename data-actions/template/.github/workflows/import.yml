@@ -1,0 +1,38 @@
+name: import
+
+# Scarica i mazzi richiesti dall'app in `requests/` (SPEC §6.8) e scrive l'esito nella richiesta.
+# Le esecuzioni vanno in coda: mai due in parallelo.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'requests/**'
+  workflow_dispatch:
+
+concurrency:
+  group: import
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # serve la storia: l'autore del commit deve essere un membro
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Import dei mazzi
+        run: node engine/import.mjs .
+      - name: Commit delle richieste
+        run: |
+          git config user.name "import"
+          git config user.email "import@users.noreply.github.com"
+          git add -A requests
+          git diff --cached --quiet || git commit -m "Import mazzi completati"
+          git pull --rebase
+          git push

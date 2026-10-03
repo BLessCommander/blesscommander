@@ -1,6 +1,10 @@
 import { spawn } from 'node:child_process';
 import { resolve } from 'node:path';
-import { createRecalcHook, recalcDirectory } from '../../data-actions/src/repo-files.js';
+import {
+  createImportHook,
+  createRecalcHook,
+  recalcDirectory,
+} from '../../data-actions/src/repo-files.js';
 import { startFakeGithub } from '../fake-github/server.js';
 import { LOGINS, writeSeed } from '../seed/seed.js';
 
@@ -13,12 +17,18 @@ const port = Number(process.env.FAKE_GITHUB_PORT ?? 4500);
 
 const count = await writeSeed(dataDir);
 await recalcDirectory(dataDir, { unknownAuthor: 'allow' }); // snapshot vero al posto del segnaposto
-// Dopo ogni scrittura la finta API ricalcola `derived/` come farà l'Action vera.
+// Dopo ogni scrittura la finta API ricalcola `derived/` e esegue l'Action `import` come farà
+// quella vera: qui l'import scarica DAVVERO da Archidekt (serve internet), per provare mazzi reali.
+const recalc = createRecalcHook();
+const imports = createImportHook();
 const fake = await startFakeGithub({
   dataDir,
   logins: LOGINS,
   port,
-  onWrite: createRecalcHook(),
+  onWrite: async (commit, dir) => {
+    await recalc(commit, dir);
+    await imports(commit, dir);
+  },
 });
 console.log(`Finta API GitHub su ${fake.url} (${count} file di prova in ${dataDir}).`);
 

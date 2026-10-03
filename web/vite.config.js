@@ -10,7 +10,7 @@ const repoCodice = progetto.repos?.code || 'blesscommander';
 
 // Percorso di base: "/" in sviluppo; "/<repository>/" in build e anteprima (GitHub Pages).
 // Si può forzare con la variabile VITE_BASE.
-export default defineConfig(({ command, isPreview }) => ({
+export default defineConfig(({ command, isPreview, mode }) => ({
   base: process.env.VITE_BASE ?? (command === 'build' || isPreview ? `/${repoCodice}/` : '/'),
   plugins: [vue()],
   define: {
@@ -18,8 +18,20 @@ export default defineConfig(({ command, isPreview }) => ({
     __ORG__: JSON.stringify(progetto.org || 'BLessCommander'),
     __DATA_REPO__: JSON.stringify(progetto.repos?.data || 'blesscommander-data'),
     __TEST_REPO__: JSON.stringify(progetto.repos?.test || 'blesscommander-data-test'),
+    // Solo `npm run dev` (modalità "live"): l'import da Archidekt in demo usa dati veri.
+    __ARCHIDEKT_LIVE__: JSON.stringify(command === 'serve' && mode === 'live'),
   },
-  server: { port: 5173 },
+  server: {
+    port: 5173,
+    // Il browser non può chiamare Archidekt (CORS): in sviluppo la chiamata passa da qui.
+    proxy: {
+      '/archidekt-api': {
+        target: 'https://archidekt.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/archidekt-api/, '/api'),
+      },
+    },
+  },
   preview: { port: 4173 },
   test: {
     environment: 'node',
