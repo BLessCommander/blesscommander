@@ -26,6 +26,26 @@ describe('buildDeckFromImport', () => {
     expect(version.gameChangers).toEqual(['Rhystic Study']);
     expect(version.cards).toHaveLength(4);
   });
+
+  it('salva l’esito del wizard: pavimento, combo, segnalazioni e autovalutazione', async () => {
+    const lines = parseDeckText(TEXT);
+    const lookup = await createDemoScryfall().lookup(lines.map((l) => l.name));
+    const combos = [{ cards: ['A', 'B'], produces: ['Infinite mana'], manaValue: 4 }];
+    const { deck, version } = buildDeckFromImport({
+      name: 'Con wizard',
+      lines,
+      lookup,
+      declaredTier: 'F4',
+      importedAt: '2026-01-01T00:00:00Z',
+      assessment: { floor: 'F4', massLandDestruction: true, chainExtraTurns: false, combos },
+    });
+    expect(deck.selfAssessment).toEqual({ mld: true, extraTurns: false });
+    expect(version).toMatchObject({
+      floor: 'F4',
+      combos,
+      flags: { mld: true, extraTurns: false },
+    });
+  });
 });
 
 describe('checkImport', () => {

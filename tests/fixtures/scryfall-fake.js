@@ -12,7 +12,20 @@ const IDENTITY = {
   'krenko, mob boss': ['R'],
   'esika, god of the tree': ['W', 'U', 'B', 'R', 'G'],
 };
-const GAME_CHANGERS = new Set(['rhystic study', 'cyclonic rift', 'demonic tutor']);
+const GAME_CHANGERS = new Set([
+  'rhystic study',
+  'cyclonic rift',
+  'demonic tutor',
+  'vampiric tutor',
+]);
+// Valore di mana delle carte usate nelle combo dei test.
+const CMC = { "thassa's oracle": 2, 'demonic consultation': 1, 'kenrith, the returned king': 5 };
+const ORACLE_TEXT = {
+  armageddon: 'Destroy all lands.',
+  'time warp': 'Target player takes an extra turn after this one.',
+  'temporal manipulation': 'Take an extra turn after this one.',
+  'sol ring': '{T}: Add {C}{C}.',
+};
 
 // Prima faccia (minuscola, senza accenti) → nome completo su Scryfall.
 const MULTI_FACED = {
@@ -41,7 +54,8 @@ export function fakeCollection(identifiers) {
       id: `fake-${fold(name).replace(/[^a-z0-9]+/g, '-')}`,
       name,
       mana_cost: '',
-      cmc: 0,
+      cmc: CMC[key] ?? 0,
+      oracle_text: ORACLE_TEXT[key] ?? '',
       type_line: '',
       color_identity: IDENTITY[key] ?? [],
       game_changer: GAME_CHANGERS.has(key),

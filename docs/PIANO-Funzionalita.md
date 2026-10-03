@@ -53,7 +53,8 @@
 | C-06g | [x] | Ricalcolo che a volte fallisce per conflitto di scrittura: l'Action `recalc` fa `git push` e GitHub lo rifiuta (non-fast-forward) quando un altro commit arriva nel frattempo (visto il 2026-10-03 su «Mazzo: Niko»). Il ricalcolo successivo ha sistemato i dati, ma può restare «in aggiornamento» più a lungo. Rifare `git pull --rebase` e riprovare il push (qualche tentativo) nel workflow; test sulla logica dove possibile | C-16 | 06 | UT-DATA |
 | C-06f | [ ] | Pulsante «Elimina mazzo» (nella scheda e nell'elenco Mazzi), con finestra di conferma dell'app (niente `confirm`). Può eliminare solo il proprietario o un admin. **Decisione dell'utente:** si elimina solo il mazzo, le partite e le metriche restano. Mazzo senza partite → cancellati `decks/<id>.json` e le sue versioni. Mazzo con partite → **archiviato**: sparisce da elenco Mazzi e lobby, ma resta nello storico (il suo nome compare ancora nelle partite passate) perché il ricalcolo riparte dallo storico; ripristinabile. Serve nuovo campo `archived` nello schema `deck`, `deleteDeck`/`archiveDeck` nel `DataProvider` (e nel provider di prova), il motore ignora i mazzi archiviati per le nuove partite. Test: provider (UT-DATA), Action, Playwright sui 6 profili | C-06, C-09 | 04, 06 | UC-04, UC-18 |
 | C-16b | [ ] | Rifinitura della pagina di Accesso (sito pubblico): campo token sopra le istruzioni o istruzioni comprimibili (ora il campo sta sotto la piega); casella «repository di prova» allineata alla prima riga e contrasto del testo secondario; screenshot a pagina intera, con token errato e in tema scuro, desktop e telefono | C-16 | 05 | UC-28 |
-| C-07 | [ ] | Wizard di autovalutazione e calcolo pavimento | C-05, C-01 | 01, 04 | UC-07 |
+| C-07 | [x] | Wizard di autovalutazione e calcolo pavimento (combo da Commander Spellbook incluse; rilevatori riusabili) | C-05, C-01 | 01, 04 | UC-07 |
+| C-07b | [ ] | Ricontrollo di game changer, combo e carte sospette sui mazzi già importati a ogni aggiornamento (reimport/resync): pavimento ricalcolato, wizard riproposto se cambia (SPEC §3.6 «Modifiche al mazzo»). Include: mazzi importati prima di C-07 (nessun `floor` salvato), resync Archidekt (`deck-resync.js`) e import multiplo da utente Archidekt (`import-decks.js`), che oggi salvano senza wizard | C-07 | 01, 04 | da definire |
 | C-08 | [ ] | Lista mazzi e scheda mazzo (metriche, storico fasce, grafici base) | C-07 | 04, 05 | UC-18 |
 | C-09 | [ ] | Lobby: formato (tutti contro tutti 3/4/5–6, 1v1), giocatori, mazzi, registratore, "Inizia" con promemoria dado | C-08 | 03, 02 | UC-09 |
 | C-10 | [ ] | Chiusura partita in 3 tocchi (turno da dado o stima), solo registratore, anteprima locale e stato "in aggiornamento" fino al ricalcolo dell'Action | C-09, C-01, B-07 | 03 | UC-10, UC-11, UC-12, UC-13, UC-14 |
@@ -79,7 +80,7 @@
 | S-07 | [ ] | Varianti (Planechase, personalizzate) e formati personalizzati | S-05 | 02 | UC-44 |
 | S-08 | [ ] | Tavolo bilanciato e randomizzatore posti | C-09 | 05 | UC-45 |
 | S-09 | [ ] | Statistiche avanzate e classifiche (per fascia, formato, head-to-head, % turni da dado) | C-12 | 05 | UC-46 |
-| S-10 | [ ] | Rilevamento combo (Commander Spellbook) nel pavimento | C-07 | 04 | UC-47 |
+| S-10 | [x] | Rilevamento combo (Commander Spellbook) nel pavimento (fatto in C-07) | C-07 | 04 | UC-47 |
 | S-11 | [ ] | PWA installabile e registrazione offline | C-10 | 05 | UC-48 |
 | S-12 | [ ] | Simulatore "e se…" | C-01, C-08 | 01 | UC-49 |
 | S-13 | [ ] | Taratura automatica dei fattori turno | S-09 | 02 | UC-50 |
@@ -106,11 +107,11 @@
 
 > Aggiornato da Claude a fine sessione. Massimo 15 righe: è ciò che la sessione successiva legge per ripartire senza rileggere tutto.
 
-- **Ultima voce lavorata:** C-06g (fatta, non ancora committata): il passo finale di `recalc.yml` fa fino a 5 tentativi di `git pull --rebase` + `git push` invece di un solo push. Test in `data-actions/src/recalc-workflow.test.js` (con un vero conflitto tra due cartelle Git locali).
-- **Da fare a mano (con conferma):** copiare `recalc.yml` nel repository dati vero `blesscommander-data` (solo quel file, mai `config/`); finché non si fa, il sito vero ha ancora il vecchio push.
-- **Stato:** B-01–B-12, C-01–C-06b, C-06e, C-06g, C-16 fatte. Vitest e lint verdi sui test della voce (Playwright non toccato).
-- **File principali:** `web/src/stores/data.js` (`optimisticDecks`, `snapshotWithPending`, `rememberDeck`, `pruneOptimisticDecks`), `web/src/views/DecksView.vue`, `web/src/data/github-provider.js` (`fastPollMs`, `#schedulePoll`), `tests/e2e/visual-review.spec.js`.
-- **Scelte:** il dato provvisorio vive nello store, non nello snapshot; sparisce quando lo snapshot lo contiene o il ricalcolo è finito. Controllo ogni 5 s (invece di 30) mentre un ricalcolo è in attesa.
-- **Problemi aperti:** non ho misurato i tempi reali (scrittura / Action / polling): da vedere sul sito vero. `access.spec.js` instabile (C-04d); Moxfield (S-01); `-data-test` da popolare. Con C-06f (elimina mazzo) ricordare di togliere anche il mazzo provvisorio. Se Playwright dà «connection refused», non lanciare due comandi insieme.
-- **Voci nuove:** C-06f (elimina mazzo), C-06d (nome già usato; dipende da S-02), C-16b (pagina Accesso), C-06c (grafica import).
-- **Prossimo passo consigliato:** C-07 (wizard di autovalutazione e pavimento). C-06f dipende da C-09, quindi non ancora; C-06d solo dopo S-02.
+- **Ultima voce lavorata:** C-07 (fatta, non ancora committata; C-06g è ancora da committare). Wizard di autovalutazione (`DeckWizard.vue`) come ultimo passo dell’import: game changer, combo a 2 carte (Commander Spellbook), terre distrutte e turni extra proposti, pavimento in tempo reale, fascia dichiarata ≥ pavimento. S-10 assorbita.
+- **Da fare a mano (con conferma):** copiare `recalc.yml` nel repository dati vero `blesscommander-data` (solo quel file, mai `config/`).
+- **Stato:** B-01–B-12, C-01–C-07, C-06b, C-06e, C-06g, C-16, S-10 fatte. Vitest 256 verdi, Playwright import/Archidekt verdi sui 6 profili, revisione screenshot wizard superata.
+- **File principali:** `web/src/components/DeckWizard.vue`, `web/src/domain/deck-features.js`, `web/src/platform/spellbook.js`, `web/src/views/ImportDeckView.vue`, `tests/fixtures/spellbook-fake.js`.
+- **Scelte:** il wizard si apre prima di scrivere (una sola versione per mazzo); turni extra «a catena» proposti da 2 carte in su; il pavimento usa `DEFAULT_PARAMS` (non i parametri del gruppo); la versione salva `floor`, `combos`, `flags`.
+- **Problemi aperti:** import multiplo da utente Archidekt e resync non passano dal wizard (C-07b); mazzi vecchi senza `floor`. `access.spec.js` instabile (C-04d); Moxfield (S-01); `-data-test` da popolare. Se Playwright dà «connection refused», non lanciare due comandi insieme.
+- **Voci nuove:** C-07b (ricontrollo mazzi già importati a ogni aggiornamento), C-06f, C-06d (dopo S-02), C-16b, C-06c.
+- **Prossimo passo consigliato:** C-07b, poi C-08 (lista mazzi e scheda mazzo). C-06f dipende da C-09.

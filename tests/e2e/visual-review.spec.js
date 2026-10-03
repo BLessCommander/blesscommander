@@ -1,5 +1,6 @@
 import { mkdir } from 'node:fs/promises';
 import { mockScryfall } from '../fixtures/scryfall-fake.js';
+import { mockSpellbook } from '../fixtures/spellbook-fake.js';
 import { test } from './fixtures.js';
 
 // Screenshot per la revisione del subagent `ui-reviewer` (PIANO-Test §5).
@@ -112,6 +113,7 @@ for (const theme of THEMES) {
     );
     await page.emulateMedia({ colorScheme: theme });
     await mockScryfall(page);
+    await mockSpellbook(page);
     await page.goto('/#/importa');
     await page
       .getByLabel('Lista del mazzo')
@@ -128,6 +130,34 @@ for (const theme of THEMES) {
   });
 }
 
+// Wizard di autovalutazione (C-07): game changer, combo, sospette e fascia.
+for (const theme of THEMES) {
+  test(`screenshot importa-wizard ${theme} @review`, async ({ page }, testInfo) => {
+    test.skip(
+      !['iphone', 'desktop-chrome'].includes(testInfo.project.name),
+      'solo iphone e desktop',
+    );
+    await page.emulateMedia({ colorScheme: theme });
+    await mockScryfall(page);
+    await mockSpellbook(page);
+    await page.goto('/#/importa');
+    await page
+      .getByLabel('Lista del mazzo')
+      .fill(
+        "Commander\n1 Tymna the Weaver\n\nDeck\n1 Rhystic Study\n1 Cyclonic Rift\n1 Demonic Tutor\n1 Vampiric Tutor\n1 Armageddon\n1 Time Warp\n1 Thassa's Oracle\n1 Demonic Consultation",
+      );
+    await page.getByRole('button', { name: 'Controlla la lista' }).click();
+    await page.getByTestId('import-preview').waitFor();
+    await page.getByRole('button', { name: 'Avanti: autovalutazione' }).click();
+    await page.getByTestId('deck-wizard').waitFor();
+    await mkdir('review-screenshots', { recursive: true });
+    await page.screenshot({
+      path: `review-screenshots/importa-wizard-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+  });
+}
+
 // Import da link di Archidekt (C-06): modulo compilato e attesa dell'Action (demo: circa 3 secondi).
 for (const theme of THEMES) {
   test(`screenshot importa-archidekt ${theme} @review`, async ({ page }, testInfo) => {
@@ -137,6 +167,7 @@ for (const theme of THEMES) {
     );
     await page.emulateMedia({ colorScheme: theme });
     await mockScryfall(page);
+    await mockSpellbook(page);
     await page.goto('/#/importa');
     await page.getByLabel('Link di Archidekt').check();
     await page
@@ -193,6 +224,7 @@ for (const theme of THEMES) {
     );
     await page.emulateMedia({ colorScheme: theme });
     await mockScryfall(page);
+    await mockSpellbook(page);
     await page.goto('/#/importa');
     await page.getByLabel('Mazzi di un utente Archidekt').check();
     await page.getByLabel('Nome utente su Archidekt').fill('r3dl0g');
@@ -219,6 +251,7 @@ for (const theme of THEMES) {
     test.setTimeout(60000);
     await page.emulateMedia({ colorScheme: theme });
     await mockScryfall(page);
+    await mockSpellbook(page);
     await page.goto('/#/importa');
     await page.getByLabel('Link di Archidekt').check();
     await page
@@ -226,7 +259,8 @@ for (const theme of THEMES) {
       .fill('https://archidekt.com/decks/14637766/jodah');
     await page.getByRole('button', { name: 'Scarica il mazzo' }).click();
     await page.getByTestId('import-preview').waitFor({ timeout: 15000 });
-    await page.getByRole('button', { name: 'Salva il mazzo' }).click();
+    await page.getByRole('button', { name: 'Avanti: autovalutazione' }).click();
+    await page.getByTestId('wizard-save').click();
     await page.waitForURL(/#\/mazzi$/);
     await page.getByTestId('resync').click();
     await page

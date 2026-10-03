@@ -1,4 +1,5 @@
 import { mockScryfall } from '../fixtures/scryfall-fake.js';
+import { mockSpellbook } from '../fixtures/spellbook-fake.js';
 import { test, expect } from './fixtures.js';
 
 // C-06 (UC-05): import da link di Archidekt. In demo l'Action `import` è simulata dal MockProvider
@@ -6,6 +7,7 @@ import { test, expect } from './fixtures.js';
 
 const open = async (page) => {
   await mockScryfall(page);
+  await mockSpellbook(page);
   await page.goto('/#/importa');
   await page.getByLabel('Link di Archidekt').check();
 };
@@ -23,7 +25,8 @@ test.describe('import da Archidekt @core', () => {
     await expect(page.getByTestId('import-preview')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId('commanders')).toContainText("Atraxa, Praetors' Voice");
     await expect(page.getByTestId('card-row')).toHaveCount(4);
-    await page.getByRole('button', { name: 'Salva il mazzo' }).click();
+    await page.getByRole('button', { name: 'Avanti: autovalutazione' }).click();
+    await page.getByTestId('wizard-save').click();
     await expect(page).toHaveURL(/#\/mazzi$/);
     await expect(
       page.locator('.deck__name').filter({ hasText: 'Mazzo di esempio (demo)' }),
@@ -122,7 +125,8 @@ test.describe('aggiorna il mazzo da Archidekt @core', () => {
       .fill('https://archidekt.com/decks/14637766/jodah');
     await page.getByRole('button', { name: 'Scarica il mazzo' }).click();
     await expect(page.getByTestId('import-preview')).toBeVisible({ timeout: 15_000 });
-    await page.getByRole('button', { name: 'Salva il mazzo' }).click();
+    await page.getByRole('button', { name: 'Avanti: autovalutazione' }).click();
+    await page.getByTestId('wizard-save').click();
     await expect(page).toHaveURL(/#\/mazzi$/);
   };
 

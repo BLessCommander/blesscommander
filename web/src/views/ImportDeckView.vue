@@ -10,16 +10,20 @@ import {
   parseDeckText,
   toggleCommander,
 } from '../domain/deck-parser.js';
+import { detectSuspects, twoCardCombos } from '../domain/deck-features.js';
+import DeckWizard from '../components/DeckWizard.vue';
 import ImportArchidektUser from '../components/ImportArchidektUser.vue';
 import AppIcon from '../components/ui/AppIcon.vue';
 import { it } from '../i18n/it.js';
 import { cardKey, createScryfall } from '../platform/scryfall.js';
+import { createSpellbook } from '../platform/spellbook.js';
 import { useDataStore } from '../stores/data.js';
 
 const t = it.importDeck;
 const data = useDataStore();
 const router = useRouter();
 const scryfall = createScryfall();
+const spellbook = createSpellbook();
 
 const POLL_MS = 3000;
 const POLL_LIMIT = 70; // circa 3 minuti e mezzo
@@ -29,8 +33,8 @@ const archidektUrl = ref('');
 const sourceUrl = ref(''); // link usato per il mazzo che si sta guardando
 const name = ref('');
 const text = ref('');
-const declaredTier = ref('F3');
-const step = ref('edit'); // edit | waiting | reading | preview | saving
+const step = ref('edit'); // edit | waiting | reading | preview | analyzing | wizard | saving
+const combos = ref(null); // combo a due carte; null = Commander Spellbook non ha risposto
 const error = ref('');
 watch(source, () => {
   sourceUrl.value = '';
@@ -49,8 +53,14 @@ const notFound = computed(() =>
     cards.value.some((c) => cardKey(c.name) === cardKey(n)),
   ),
 );
-const gameChangers = computed(
-  () => cards.value.filter((c) => lookup.value?.cards[cardKey(c.name)]?.isGameChanger).length,
+const gameChangerNames = computed(() =>
+  cards.value
+    .filter((c) => lookup.value?.cards[cardKey(c.name)]?.isGameChanger)
+    .map((c) => lookup.value.cards[cardKey(c.name)].name),
+);
+const gameChangers = computed(() => gameChangerNames.value.length);
+const suspects = computed(() =>
+  lookup.value ? detectSuspects(cards.value, lookup.value) : { massLand: [], extraTurns: [] },
 );
 const check = computed(() => checkImport(lines.value, lookup.value));
 const isCommander = (card) => card.section === 'commander';
@@ -121,7 +131,24 @@ const toggle = (card) => {
   lines.value = toggleCommander(lines.value, card.name);
 };
 
-async function save() {
+/** Cerca le combo e apre il wizard. Se Spellbook non risponde, il wizard le fa dichiarare a mano. */
+async function analyze() {
+  if (!check.value.ok) return;
+  error.value = '';
+  step.value = 'analyzing';
+  try {
+    const found = await spellbook.findCombos({
+      commanders: commanders.value,
+      cards: cards.value.map((c) => ({ name: c.name, qty: c.qty })),
+    });
+    combos.value = twoCardCombos(found, lookup.value);
+  } catch {
+    combos.value = null;
+  }
+  step.value = 'wizard';
+}
+
+async function save({ declaredTier, assessment }) {
   if (!check.value.ok) return;
   step.value = 'saving';
   error.value = '';
@@ -130,7 +157,8 @@ async function save() {
       name: name.value.trim() || commanders.value[0],
       lines: lines.value,
       lookup: lookup.value,
-      declaredTier: declaredTier.value,
+      declaredTier,
+      assessment,
       importedAt: new Date().toISOString(),
       sourceUrl: sourceUrl.value || undefined,
     });
@@ -139,7 +167,7 @@ async function save() {
     await router.push('/mazzi');
   } catch {
     error.value = t.saveFailed;
-    step.value = 'preview';
+    step.value = 'wizard';
   }
 }
 </script>
@@ -201,15 +229,6 @@ async function save() {
         ></textarea>
         <small class="muted">{{ t.textHelp }}</small>
       </label>
-      <label v-if="source !== 'archidekt-user'" class="field">
-        <span>{{ t.tierLabel }}</span>
-        <select v-model="declaredTier" name="declaredTier">
-          <option v-for="tier in ['F1', 'F2', 'F3', 'F4', 'F5']" :key="tier" :value="tier">
-            {{ tier }}
-          </option>
-        </select>
-        <small class="muted">{{ t.tierHelp }}</small>
-      </label>
       <ImportArchidektUser v-if="source === 'archidekt-user'" />
       <p
         v-if="error && source !== 'archidekt-user'"
@@ -243,6 +262,23 @@ async function save() {
         </button>
       </template>
     </form>
+
+    <p v-else-if="step === 'analyzing'" role="status" data-testid="import-analyzing">
+      {{ t.analyzing }}
+    </p>
+
+    <div v-else-if="step === 'wizard' || step === 'saving'" class="stack">
+      <DeckWizard
+        :game-changers="gameChangerNames"
+        :combos="combos"
+        :suspects="suspects"
+        :busy="step === 'saving'"
+        @back="step = 'preview'"
+        @confirm="save"
+      />
+      <p v-if="step === 'saving'" role="status">{{ t.saving }}</p>
+      <p v-if="error" class="notice notice--error" role="alert">{{ error }}</p>
+    </div>
 
     <section v-else class="stack" data-testid="import-preview" :aria-label="t.previewTitle">
       <div v-if="notFound.length" class="notice notice--error" role="alert" data-testid="not-found">
@@ -303,18 +339,18 @@ async function save() {
         <li v-for="reason in check.reasons" :key="reason">{{ t.reasons[reason] }}</li>
       </ul>
       <p v-if="error" class="notice notice--error" role="alert">{{ error }}</p>
-      <p v-if="step === 'saving'" role="status">{{ t.saving }}</p>
       <div class="actions">
-        <button
-          type="button"
-          class="btn btn--secondary"
-          :disabled="step === 'saving'"
-          @click="step = 'edit'"
-        >
+        <button type="button" class="btn btn--secondary" @click="step = 'edit'">
           {{ t.back }}
         </button>
-        <button type="button" class="btn" :disabled="!check.ok || step === 'saving'" @click="save">
-          {{ t.save }}
+        <button
+          type="button"
+          class="btn"
+          :disabled="!check.ok"
+          data-testid="to-wizard"
+          @click="analyze"
+        >
+          {{ t.next }}
         </button>
       </div>
     </section>
