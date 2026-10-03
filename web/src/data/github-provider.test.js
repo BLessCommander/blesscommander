@@ -45,6 +45,18 @@ const withInterference = (change, times = 1) => {
   };
 };
 
+function buildSeedDeckId() {
+  return Object.keys(buildSeed())
+    .find((p) => /^decks\/[^/]+\.json$/.test(p))
+    .slice(6, -5);
+}
+
+const game = (id) => ({
+  id,
+  formatId: 'ffa4',
+  players: [{ login: 'test-giocatore1', deckId: buildSeedDeckId() }],
+});
+
 beforeAll(async () => {
   dir = await mkdtemp(join(tmpdir(), 'github-provider-'));
   await writeSeed(dir);
@@ -140,16 +152,23 @@ describe('UT-GH GitHubProvider', () => {
     await writeFile(join(dir, 'config/members.json'), JSON.stringify(members));
   });
 
-  it('mostra "in aggiornamento" finché lo snapshot non cambia dopo una scrittura', async () => {
+  it('mostra "in aggiornamento" con il tipo di dato salvato, finché lo snapshot non cambia', async () => {
     const provider = make('test-giocatore1');
     await provider.getSnapshot();
-    await provider.requestImport('text', 'lista');
-    expect((await provider.getSnapshot()).pending).toBe(true);
+    await provider.createGame(game(ulidLike(7)));
+    expect(await provider.getSnapshot()).toMatchObject({ pending: true, pendingKind: 'game' });
     const snapshot = await readJson('derived/snapshot.json');
     await writeFile(
       join(dir, 'derived/snapshot.json'),
       JSON.stringify({ ...snapshot, updatedAt: '2026-06-04T00:00:00Z' }),
     );
+    expect(await provider.getSnapshot()).toMatchObject({ pending: false, pendingKind: null });
+  });
+
+  it('una richiesta di import non fa ricalcolare niente: nessun "in aggiornamento"', async () => {
+    const provider = make('test-giocatore1');
+    await provider.getSnapshot();
+    await provider.requestImport('text', 'lista');
     expect((await provider.getSnapshot()).pending).toBe(false);
   });
 
@@ -170,17 +189,6 @@ describe('UT-GH GitHubProvider', () => {
   });
 
   describe('coda offline', () => {
-    const game = (id) => ({
-      id,
-      formatId: 'ffa4',
-      players: [{ login: 'test-giocatore1', deckId: buildSeedDeckId() }],
-    });
-    function buildSeedDeckId() {
-      return Object.keys(buildSeed())
-        .find((p) => /^decks\/[^/]+\.json$/.test(p))
-        .slice(6, -5);
-    }
-
     it('senza rete mette la scrittura in coda e la invia al ritorno della connessione', async () => {
       let online = false;
       const provider = make('test-giocatore1', { isOnline: () => online });

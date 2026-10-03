@@ -21,6 +21,8 @@ const GITHUB_API = 'https://api.github.com';
 // Il token va solo a GitHub o alla finta API locale (CLAUDE.md, regola 8).
 const ALLOWED_BASE = /^(https:\/\/api\.github\.com|http:\/\/(127\.0\.0\.1|localhost)(:\d+)?)$/;
 const MAX_ATTEMPTS = 3;
+/** Cartelle del repository dati il cui cambiamento fa partire il ricalcolo, e come lo chiamiamo. */
+const RECALC_KINDS = { decks: 'deck', games: 'game', votes: 'vote', config: 'config' };
 const QUEUEABLE = new Set([
   'saveDeck',
   'saveDeckVersion',
@@ -111,6 +113,8 @@ export class GitHubProvider extends DataProvider {
     this.user = null;
     this.snapshotEtag = null;
     this.writtenAtEtag = undefined;
+    /** Che cosa è stato scritto per ultimo e attende il ricalcolo: `deck`, `game`, `vote` o `config`. */
+    this.pendingKind = null;
     /** @type {Set<(snapshot: any) => void>} */
     this.listeners = new Set();
     this.timer = null;
@@ -216,7 +220,12 @@ export class GitHubProvider extends DataProvider {
         });
         const saved = await response.json();
         this.cache.delete(path);
-        this.writtenAtEtag = this.snapshotEtag;
+        // Solo le cartelle che fanno ripartire il ricalcolo (come i `paths` del workflow `recalc`).
+        const kind = RECALC_KINDS[path.split('/')[0]];
+        if (kind) {
+          this.writtenAtEtag = this.snapshotEtag;
+          this.pendingKind = kind;
+        }
         this.#notify();
         return { json: next, sha: saved.content?.sha };
       } catch (error) {
@@ -370,12 +379,19 @@ export class GitHubProvider extends DataProvider {
     const file = await this.#readFile('derived/snapshot.json');
     this.snapshotEtag = file?.etag ?? null;
     if (!file) {
-      return { decks: [], games: [], standings: [], updatedAt: this.now(), pending: true };
+      return {
+        decks: [],
+        games: [],
+        standings: [],
+        updatedAt: this.now(),
+        pending: true,
+        pendingKind: 'initial',
+      };
     }
     assertValid('derived/snapshot', file.json);
     const pending = this.writtenAtEtag !== undefined && file.etag === this.writtenAtEtag;
     if (!pending) this.writtenAtEtag = undefined;
-    return { ...file.json, pending };
+    return { ...file.json, pending, pendingKind: pending ? this.pendingKind : null };
   }
 
   async getDeck(id) {

@@ -54,10 +54,17 @@ test.describe('pagine con dati reali (demo) @core', () => {
     await patchStore(page, {
       pendingWrites: 2,
       dropped: [{ method: 'saveDeck', message: 'non valido' }],
-      snapshot: { decks: [], games: [], standings: [], updatedAt: '2026-01-01', pending: true },
+      snapshot: {
+        decks: [],
+        games: [],
+        standings: [],
+        updatedAt: '2026-01-01',
+        pending: true,
+        pendingKind: 'deck',
+      },
     });
     const banner = page.locator('.sync');
-    await expect(banner).toContainText('In aggiornamento');
+    await expect(banner).toContainText('Mazzo salvato: sto aggiornando le schede e le fasce');
     await expect(banner).toContainText('2 modifiche sono in attesa di connessione');
     await expect(banner.getByRole('alert')).toContainText('è stata rifiutata');
     await banner.getByRole('button', { name: 'Ho capito' }).click();

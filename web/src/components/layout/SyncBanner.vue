@@ -8,7 +8,9 @@ const data = useDataStore();
 
 <template>
   <div v-if="data.refreshing || data.pendingWrites > 0 || data.dropped.length > 0" class="sync">
-    <p v-if="data.refreshing" class="sync__row" role="status">{{ t.updating }}</p>
+    <p v-if="data.refreshing" class="sync__row" role="status">
+      {{ t.updating[data.refreshingKind] }}
+    </p>
     <p v-if="data.pendingWrites > 0" class="sync__row" role="status">
       {{ t.pending(data.pendingWrites) }}
       <button type="button" class="link-btn" @click="data.flushQueue()">{{ t.retry }}</button>

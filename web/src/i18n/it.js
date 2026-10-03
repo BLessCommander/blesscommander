@@ -208,7 +208,15 @@ export const it = {
     },
   },
   sync: {
-    updating: 'In aggiornamento: sto ricalcolando le fasce con le ultime modifiche.',
+    // Il testo dipende da ciò che è stato salvato per ultimo e attende il ricalcolo.
+    updating: {
+      deck: 'Mazzo salvato: sto aggiornando le schede e le fasce. Ci vuole circa un minuto.',
+      game: 'Partita salvata: sto ricalcolando le fasce. Ci vuole circa un minuto.',
+      vote: 'Voto registrato: sto aggiornando i risultati. Ci vuole circa un minuto.',
+      config:
+        'Impostazioni salvate: sto riapplicandole a fasce e statistiche. Ci vuole circa un minuto.',
+      initial: 'Sto preparando i dati per la prima volta. Ci vuole circa un minuto.',
+    },
     pending: (n) =>
       n === 1
         ? '1 modifica è in attesa di connessione e verrà inviata appena torna la rete.'

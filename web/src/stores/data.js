@@ -35,6 +35,8 @@ export const useDataStore = defineStore('data', {
   getters: {
     /** Il ricalcolo delle fasce non ha ancora letto le ultime modifiche. */
     refreshing: (state) => state.snapshot?.pending === true,
+    /** Che cosa attende il ricalcolo (`deck`, `game`, `vote`, `config`, `initial`); per scegliere il testo. */
+    refreshingKind: (state) => state.snapshot?.pendingKind ?? 'game',
     /** Chi ha una partita in lobby o in corso non riceve notifiche (regola 1). */
     notificationsPaused: (state) =>
       Boolean(
