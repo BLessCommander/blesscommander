@@ -7,6 +7,8 @@ const props = defineProps({
   scryfallId: { type: String, default: null },
   name: { type: String, required: true },
   version: { type: String, default: 'small' },
+  /** Con il nome in alto (per le pile, dove si vede solo la parte alta della carta). */
+  top: { type: Boolean, default: false },
 });
 
 const url = computed(() => cardImageUrl(props.scryfallId, { version: props.version }));
@@ -33,7 +35,9 @@ const size = computed(() => IMAGE_SIZES[props.version] ?? IMAGE_SIZES.small);
       decoding="async"
       @error="failed = true"
     />
-    <span v-else class="card-image__fallback">{{ name }}</span>
+    <span v-else class="card-image__fallback" :class="{ 'card-image__fallback--top': top }">
+      {{ name }}
+    </span>
   </span>
 </template>
 
@@ -43,7 +47,7 @@ const size = computed(() => IMAGE_SIZES[props.version] ?? IMAGE_SIZES.small);
   width: 100%;
   overflow: hidden;
   background: var(--surface-alt, var(--surface));
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--text) 35%, transparent);
   border-radius: 6%/4.3%;
   box-shadow: 0 1px 4px rgb(0 0 0 / 25%);
 }
@@ -64,5 +68,10 @@ const size = computed(() => IMAGE_SIZES[props.version] ?? IMAGE_SIZES.small);
   text-align: center;
   overflow-wrap: anywhere;
   color: var(--text-muted);
+}
+
+.card-image__fallback--top {
+  place-items: start center;
+  padding-top: 0.5rem;
 }
 </style>
