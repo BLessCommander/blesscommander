@@ -1,4 +1,5 @@
 import { downloadDeck, downloadUserDecks } from '../domain/archidekt-import.js';
+import { createSpellbook } from '../platform/spellbook.js';
 import { DataProvider } from './data-provider.js';
 import { DataError, DATA_ERROR } from './errors.js';
 import { assertValid } from './validate.js';
@@ -191,7 +192,23 @@ export class MockProvider extends DataProvider {
   async getImportRequest(id) {
     const request = this.state.requests[id];
     if (!request) throw new DataError(DATA_ERROR.notFound, `Richiesta non trovata: ${id}`);
-    if (request.status === 'pending' && LIVE_ARCHIDEKT && request.source.startsWith('archidekt')) {
+    if (request.status === 'pending' && request.source === 'spellbook') {
+      // Sviluppo locale: come l'Action `import`, ma da localhost Spellbook risponde anche al browser.
+      try {
+        const deck = JSON.parse(request.url);
+        request.combos = await createSpellbook({ fetchImpl: (...a) => fetch(...a) }).findCombos(
+          deck,
+        );
+        request.status = 'done';
+      } catch {
+        request.status = 'error';
+        request.error = 'Commander Spellbook non risponde';
+      }
+    } else if (
+      request.status === 'pending' &&
+      LIVE_ARCHIDEKT &&
+      request.source.startsWith('archidekt')
+    ) {
       // Sviluppo con dati veri: come farebbe l'Action `import`, ma dal ponte locale di Vite.
       const options = { fetchImpl: (...a) => fetch(...a), base: LIVE_BASE };
       const result =

@@ -105,8 +105,8 @@ export class DataProvider {
   }
 
   /**
-   * @param {'archidekt' | 'archidekt-user' | 'moxfield' | 'text'} source
-   * @param {string} url link del mazzo; per `archidekt-user` il nome utente (esito: `decks`)
+   * @param {'archidekt' | 'archidekt-user' | 'moxfield' | 'text' | 'spellbook'} source
+   * @param {string} url link del mazzo; per `archidekt-user` il nome utente (esito: `decks`); per `spellbook` il JSON `{ commanders, cards }` (esito: `combos`)
    * @returns {Promise<Doc>} la richiesta creata
    */
   requestImport(source, url) {

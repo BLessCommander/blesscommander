@@ -7,10 +7,30 @@ import {
   downloadUserDecks,
 } from '../../web/src/domain/archidekt-import.js';
 import { archidektDeckId } from '../../web/src/domain/archidekt-link.js';
+import { createSpellbook } from '../../web/src/platform/spellbook.js';
 
 export { archidektDeckId, archidektToText };
 
 const failure = (request, error) => ({ ...request, status: 'error', error });
+
+/** Commander Spellbook dal server: dal browser non risponde (CORS solo per localhost). */
+async function findCombos(request, fetchImpl) {
+  let deck;
+  try {
+    deck = JSON.parse(request.url);
+  } catch {
+    return failure(request, 'Richiesta non valida: manca la lista del mazzo');
+  }
+  try {
+    const combos = await createSpellbook({ fetchImpl, timeoutMs: 60000 }).findCombos({
+      commanders: deck.commanders ?? [],
+      cards: deck.cards ?? [],
+    });
+    return { ...request, status: 'done', combos };
+  } catch {
+    return failure(request, 'Commander Spellbook non risponde');
+  }
+}
 
 /**
  * @param {object} input
@@ -61,6 +81,8 @@ export async function runImport({
       updates[path] = result.error
         ? failure(request, result.error)
         : { ...request, status: 'done', ...result };
+    } else if (request.source === 'spellbook') {
+      updates[path] = await findCombos(request, fetchImpl);
     } else {
       updates[path] = failure(
         request,

@@ -331,3 +331,100 @@ describe('runImport: mazzi di un utente', () => {
     expect(updates['requests/01.json'].error).toMatch(/non è un membro/);
   });
 });
+
+describe('runImport: combo da Commander Spellbook', () => {
+  const comboRequest = (url) =>
+    JSON.stringify({
+      source: 'spellbook',
+      url,
+      requestedBy: 'anna',
+      status: 'pending',
+      createdAt: '2026-10-03T10:00:00Z',
+    });
+  const deckJson = JSON.stringify({
+    commanders: ['Tymna the Weaver'],
+    cards: [
+      { name: "Thassa's Oracle", qty: 1 },
+      { name: 'Demonic Consultation', qty: 1 },
+    ],
+  });
+  const files = (url = deckJson) => ({
+    'config/members.json': members,
+    'requests/01.json': comboRequest(url),
+  });
+  const authors = { 'requests/01.json': 'anna' };
+
+  it('chiede le combo a Spellbook dal server e le scrive nella richiesta', async () => {
+    let sent;
+    const updates = await runImport({
+      files: files(),
+      authors,
+      fetchImpl: async (url, init) => {
+        sent = { url, body: JSON.parse(init.body) };
+        return reply(200, {
+          results: {
+            included: [
+              {
+                id: '742-1295',
+                uses: [
+                  { card: { name: "Thassa's Oracle" } },
+                  { card: { name: 'Demonic Consultation' } },
+                ],
+                produces: [{ feature: { name: 'Win the game' } }],
+              },
+            ],
+          },
+        })();
+      },
+    });
+    expect(sent.url).toBe('https://backend.commanderspellbook.com/find-my-combos');
+    expect(sent.body.commanders).toEqual([{ card: 'Tymna the Weaver', quantity: 1 }]);
+    expect(updates['requests/01.json']).toMatchObject({
+      status: 'done',
+      combos: [
+        {
+          id: '742-1295',
+          cards: ["Thassa's Oracle", 'Demonic Consultation'],
+          produces: ['Win the game'],
+          infinite: true,
+        },
+      ],
+    });
+  });
+
+  it('se Spellbook non risponde la richiesta finisce in errore', async () => {
+    const updates = await runImport({ files: files(), authors, fetchImpl: reply(503, {}) });
+    expect(updates['requests/01.json']).toMatchObject({
+      status: 'error',
+      error: 'Commander Spellbook non risponde',
+    });
+  });
+
+  it('una richiesta senza la lista del mazzo è respinta senza chiamare nessuno', async () => {
+    let called = false;
+    const updates = await runImport({
+      files: files('non è json'),
+      authors,
+      fetchImpl: async () => {
+        called = true;
+        return reply(200, {})();
+      },
+    });
+    expect(called).toBe(false);
+    expect(updates['requests/01.json'].status).toBe('error');
+  });
+
+  it('chi non è membro non fa partire nessuna chiamata', async () => {
+    let called = false;
+    const updates = await runImport({
+      files: files(),
+      authors: { 'requests/01.json': 'estraneo' },
+      fetchImpl: async () => {
+        called = true;
+        return reply(200, {})();
+      },
+    });
+    expect(called).toBe(false);
+    expect(updates['requests/01.json'].status).toBe('error');
+  });
+});

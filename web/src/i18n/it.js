@@ -202,7 +202,8 @@ export const it = {
     save: 'Salva il mazzo',
     next: 'Avanti: autovalutazione',
     saving: 'Salvataggio…',
-    analyzing: 'Cerco le combo su Commander Spellbook…',
+    analyzing:
+      'Cerco le combo su Commander Spellbook… ci vuole circa un minuto. Se non risponde, le dichiari tu.',
     wizard: {
       title: 'Autovalutazione del mazzo',
       intro:

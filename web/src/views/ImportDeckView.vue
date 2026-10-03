@@ -15,15 +15,14 @@ import DeckWizard from '../components/DeckWizard.vue';
 import ImportArchidektUser from '../components/ImportArchidektUser.vue';
 import AppIcon from '../components/ui/AppIcon.vue';
 import { it } from '../i18n/it.js';
+import { requestAndWait } from '../domain/import-request.js';
 import { cardKey, createScryfall } from '../platform/scryfall.js';
-import { createSpellbook } from '../platform/spellbook.js';
 import { useDataStore } from '../stores/data.js';
 
 const t = it.importDeck;
 const data = useDataStore();
 const router = useRouter();
 const scryfall = createScryfall();
-const spellbook = createSpellbook();
 
 const POLL_MS = 3000;
 const POLL_LIMIT = 70; // circa 3 minuti e mezzo
@@ -137,11 +136,22 @@ async function analyze() {
   error.value = '';
   step.value = 'analyzing';
   try {
-    const found = await spellbook.findCombos({
+    // Dal browser Spellbook non risponde (CORS): la richiesta passa dall'Action `import`, come Archidekt.
+    const request = JSON.stringify({
       commanders: commanders.value,
       cards: cards.value.map((c) => ({ name: c.name, qty: c.qty })),
     });
-    combos.value = twoCardCombos(found, lookup.value);
+    const done = await requestAndWait({
+      create: (s, u) => data.write('requestImport', s, u),
+      get: (id) => data.getImportRequest(id),
+      source: 'spellbook',
+      url: request,
+      wait,
+      pollMs: POLL_MS,
+      limit: POLL_LIMIT,
+      isStopped: () => stopped,
+    });
+    combos.value = twoCardCombos(done.combos ?? [], lookup.value);
   } catch {
     combos.value = null;
   }
