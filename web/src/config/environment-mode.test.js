@@ -46,6 +46,14 @@ describe('resolveEnvironment', () => {
     expect(resolveEnvironment({}, { token: null, testRepo: true }).mode).toBe('demo');
   });
 
+  it('sul sito pubblicato senza token non c’è la demo: si resta non collegati', () => {
+    expect(resolveEnvironment({ VITE_PUBLIC_SITE: 'true' }).mode).toBe('signed-out');
+    expect(resolveEnvironment({ VITE_PUBLIC_SITE: 'true' }, { token: 'ghp_x' }).mode).toBe(
+      'github',
+    );
+    expect(resolveEnvironment({ VITE_PUBLIC_SITE: 'false' }).mode).toBe('demo');
+  });
+
   it('la finta API ha la precedenza e non usa mai un token reale', () => {
     const env = resolveEnvironment(
       { VITE_DATA_MODE: 'fake-github', VITE_FAKE_GITHUB_URL: 'http://localhost:4500' },

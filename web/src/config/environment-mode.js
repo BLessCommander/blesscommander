@@ -1,5 +1,5 @@
 /**
- * @typedef {'demo' | 'fake-github' | 'github'} EnvironmentMode
+ * @typedef {'demo' | 'fake-github' | 'github' | 'signed-out'} EnvironmentMode
  * @typedef {{ mode: EnvironmentMode, label: string, fakeGithubUrl: string | null, fakeLogin: string | null, testRepo: boolean }} Environment
  */
 
@@ -8,6 +8,7 @@ const LABELS = {
   'fake-github': 'FINTA API GITHUB',
   github: 'REPOSITORY REALE',
   'github-test': 'REPOSITORY DI PROVA',
+  'signed-out': 'NON COLLEGATO',
 };
 
 /**
@@ -35,6 +36,16 @@ export function resolveEnvironment(env, saved = {}) {
     const testRepo = saved.testRepo === true;
     const label = testRepo ? LABELS['github-test'] : LABELS.github;
     return { mode: 'github', label, fakeGithubUrl: null, fakeLogin: null, testRepo };
+  }
+  // Sito pubblicato (impostato solo dal workflow di Pages): senza token niente demo, solo l'accesso.
+  if (env.VITE_PUBLIC_SITE === 'true') {
+    return {
+      mode: 'signed-out',
+      label: LABELS['signed-out'],
+      fakeGithubUrl: null,
+      fakeLogin: null,
+      testRepo: false,
+    };
   }
   return {
     mode: 'demo',

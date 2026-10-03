@@ -30,6 +30,8 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+        env:
+          VITE_PUBLIC_SITE: 'true' # senza token si vede solo l'accesso, non la demo
       - uses: actions/upload-pages-artifact@v3
         with:
           path: web/dist
