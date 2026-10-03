@@ -33,7 +33,9 @@ export function checkImport(lines, lookup) {
  * Costruisce mazzo e prima versione dalla lista letta e dai dati Scryfall.
  * L'identità di colore è l'unione di quella di tutti i comandanti.
  * @param {{ name: string, lines: DeckLine[], lookup: CardLookup, declaredTier: string, importedAt: string, sourceUrl?: string, assessment?: Assessment }} input
- * `sourceUrl` è il link di Archidekt, se il mazzo viene da lì; `assessment` è l'esito del wizard.
+ * `sourceUrl` è il link di Archidekt, se il mazzo viene da lì; `assessment` è l'esito del wizard;
+ * `salt` (nome → punteggio EDHREC) arriva da Archidekt e si salva nel mazzo per le sole carte del mazzo.
+ * @param {Record<string, number>} [input.salt]
  */
 export function buildDeckFromImport({
   name,
@@ -43,6 +45,7 @@ export function buildDeckFromImport({
   importedAt,
   sourceUrl,
   assessment,
+  salt,
 }) {
   const cards = mergeDuplicates(deckCards(lines));
   const commanders = commanderNames(lines);
@@ -58,12 +61,21 @@ export function buildDeckFromImport({
     };
   });
 
+  // Il salt si tiene per nome di carta (comandante compreso), solo per le carte del mazzo.
+  /** @type {Record<string, number>} */
+  const deckSalt = {};
+  for (const line of cards) {
+    const value = salt?.[line.name];
+    if (typeof value === 'number') deckSalt[info(line.name)?.name ?? line.name] = value;
+  }
+
   return {
     deck: {
       name: name.trim(),
       commanders: commanders.map((c) => info(c)?.name ?? c),
       colorIdentity: COLORS.filter((c) => identity.has(c)),
       declaredTier,
+      ...(Object.keys(deckSalt).length ? { salt: deckSalt } : {}),
       ...(assessment
         ? {
             selfAssessment: {

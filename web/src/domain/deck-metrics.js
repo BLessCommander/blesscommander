@@ -181,3 +181,44 @@ export function drawOdds(cards, { by = 'type', mode = 'atLeast', wanted = 1, dra
     })),
   };
 }
+
+/** Fasce della distribuzione del salt (punteggio EDHREC da 0 a 4); `max` è escluso. */
+export const SALT_BUCKETS = [
+  { key: 'low', max: 0.5 },
+  { key: 'mid', max: 1 },
+  { key: 'high', max: 2 },
+  { key: 'top', max: Infinity },
+];
+export const SALT_MAX = 4;
+
+/**
+ * Saltiness del mazzo dai punteggi per carta (nome → punteggio EDHREC 0–4). Le carte senza punteggio
+ * non contano: `covered` dice quante carte ne hanno uno.
+ * @param {DetailedCard[]} cards
+ * @param {Record<string, number> | undefined} salt
+ * @returns {{ available: boolean, total: number, average: number | null, covered: number, size: number,
+ *   buckets: number[], top: { name: string, salt: number, qty: number }[] }}
+ */
+export function saltSummary(cards, salt) {
+  const scored = cards
+    .filter((card) => typeof salt?.[card.name] === 'number')
+    .map((card) => ({ name: card.name, salt: salt[card.name], qty: qtyOf(card) }));
+  const covered = sum(scored, (card) => card.qty);
+  const total = sum(scored, (card) => card.salt * card.qty);
+  const buckets = SALT_BUCKETS.map(() => 0);
+  for (const card of scored) {
+    buckets[SALT_BUCKETS.findIndex((b) => card.salt < b.max)] += card.qty;
+  }
+  return {
+    available: scored.length > 0,
+    total,
+    average: covered ? total / covered : null,
+    covered,
+    size: deckSize(cards),
+    buckets,
+    top: scored
+      .filter((card) => card.salt > 0)
+      .sort((a, b) => b.salt - a.salt || a.name.localeCompare(b.name, 'it'))
+      .slice(0, 10),
+  };
+}

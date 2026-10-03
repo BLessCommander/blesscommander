@@ -11,9 +11,11 @@ const props = defineProps({
   label: { type: String, required: true },
   /** Versione piccola, per le curve di ogni colore. */
   compact: { type: Boolean, default: false },
+  /** Larghezza di ogni colonna (in unità del disegno); più larga se le etichette sono lunghe. */
+  step: { type: Number, default: 32 },
 });
 
-const STEP = 32;
+const STEP = props.step;
 const TOP = 16;
 const BASE = 20;
 const H = computed(() => (props.compact ? 90 : 160));

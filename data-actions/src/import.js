@@ -2,6 +2,7 @@
 // richiesta stessa. Il mazzo torna come testo con le sezioni, così l'app usa lo stesso parser e la
 // stessa anteprima dell'import da testo. Non scrive mai in `derived/`.
 import {
+  archidektSalt,
   archidektToText,
   downloadDeck,
   downloadUserDecks,
@@ -9,7 +10,7 @@ import {
 import { archidektDeckId } from '../../web/src/domain/archidekt-link.js';
 import { createSpellbook } from '../../web/src/platform/spellbook.js';
 
-export { archidektDeckId, archidektToText };
+export { archidektDeckId, archidektSalt, archidektToText };
 
 const failure = (request, error) => ({ ...request, status: 'error', error });
 

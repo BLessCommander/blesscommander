@@ -25,6 +25,11 @@ export function diffCards(before, after) {
   };
 }
 
+const sameSalt = (a = {}, b = {}) => {
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length && keys.every((k) => a[k] === b[k]);
+};
+
 const sameList = (a, b) =>
   a.length === b.length && [...a].sort().every((x, i) => x === [...b].sort()[i]);
 
@@ -37,7 +42,7 @@ const sameList = (a, b) =>
  * @param {object} input
  * @param {any} input.deck mazzo salvato (con `source.url`)
  * @param {any} [input.current] ultima versione salvata
- * @param {{ deckName?: string, result: string }} input.fetched esito dell'Action `import`
+ * @param {{ deckName?: string, result: string, salt?: Record<string, number> }} input.fetched esito dell'Action `import`
  * @param {any} input.lookup dati Scryfall per le carte scaricate
  * @param {string} input.now
  */
@@ -53,10 +58,14 @@ export function planResync({ deck, current, fetched, lookup, now }) {
     declaredTier: deck.declaredTier,
     importedAt: now,
     sourceUrl: deck.source?.url,
+    salt: fetched.salt,
   });
   const diff = diffCards(current?.cards ?? [], built.version.cards);
   const cardsChanged = diff.added.length + diff.removed.length + diff.changed.length > 0;
+  // Il salt si aggiorna anche se le carte sono le stesse (nei mazzi importati prima non c'era).
+  const saltChanged = fetched.salt !== undefined && !sameSalt(built.deck.salt, deck.salt);
   const deckChanged =
+    saltChanged ||
     built.deck.name !== deck.name ||
     !sameList(built.deck.commanders, deck.commanders ?? []) ||
     !sameList(built.deck.colorIdentity, deck.colorIdentity ?? []);
@@ -72,6 +81,7 @@ export function planResync({ deck, current, fetched, lookup, now }) {
       commanders: built.deck.commanders,
       colorIdentity: built.deck.colorIdentity,
       source: built.deck.source,
+      ...(built.deck.salt ? { salt: built.deck.salt } : {}),
     },
     version: cardsChanged
       ? { ...built.version, diff: { added: diff.added, removed: diff.removed } }
@@ -81,6 +91,7 @@ export function planResync({ deck, current, fetched, lookup, now }) {
       removed: diff.removed.length,
       changed: diff.changed.length,
       renamed: built.deck.name !== deck.name,
+      salt: saltChanged,
     },
   };
 }

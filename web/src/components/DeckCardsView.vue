@@ -26,6 +26,8 @@ const props = defineProps({
   info: { type: Object, required: true },
   /** `loading`, `ready` o `failed`. */
   dataState: { type: String, default: 'ready' },
+  /** Salt score per carta (nome → punteggio), se il mazzo viene da Archidekt. */
+  salt: { type: Object, default: () => ({}) },
 });
 const t = it.deckCards;
 
@@ -94,6 +96,10 @@ const selected = computed(() => flat.value[selectedIndex.value] ?? null);
 const selectedInfo = computed(() =>
   selected.value?.scryfallId ? (props.info[selected.value.scryfallId] ?? null) : null,
 );
+const selectedSalt = computed(() => {
+  const value = selected.value ? props.salt[selected.value.name] : undefined;
+  return typeof value === 'number' ? value : null;
+});
 const selectedCombos = computed(() =>
   selected.value ? combosOfCard(selected.value.name, props.combos) : [],
 );
@@ -273,7 +279,13 @@ const colorText = (card) => COLOR_ORDER.filter((c) => card.colors.includes(c)).j
     </div>
 
     <AppModal name="card" :title="selected?.name ?? ''">
-      <CardDetail v-if="selected" :card="selected" :info="selectedInfo" :combos="selectedCombos" />
+      <CardDetail
+        v-if="selected"
+        :card="selected"
+        :info="selectedInfo"
+        :combos="selectedCombos"
+        :salt="selectedSalt"
+      />
       <template #footer>
         <div v-if="selected" class="dc__pager">
           <button

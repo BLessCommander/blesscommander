@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { archidektDeckId, archidektToText, runImport } from './import.js';
+import { archidektDeckId, archidektSalt, archidektToText, runImport } from './import.js';
 
 const deck = {
   id: 7,
@@ -10,9 +10,13 @@ const deck = {
     { name: 'Maybeboard', includedInDeck: false },
   ],
   cards: [
-    { quantity: 1, categories: ['Commander'], card: { oracleCard: { name: 'Tymna the Weaver' } } },
-    { quantity: 1, categories: null, card: { oracleCard: { name: 'Sol Ring' } } },
-    { quantity: 2, categories: ['Ramp'], card: { oracleCard: { name: 'Island' } } },
+    {
+      quantity: 1,
+      categories: ['Commander'],
+      card: { oracleCard: { name: 'Tymna the Weaver', salt: 0.15 } },
+    },
+    { quantity: 1, categories: null, card: { oracleCard: { name: 'Sol Ring', salt: 0.2 } } },
+    { quantity: 2, categories: ['Ramp'], card: { oracleCard: { name: 'Island', salt: 0 } } },
     { quantity: 1, categories: ['Sideboard'], card: { oracleCard: { name: 'Mana Crypt' } } },
     { quantity: 1, categories: ['Maybeboard'], card: { oracleCard: { name: 'Rhystic Study' } } },
     // Più categorie: conta la principale (la prima).
@@ -30,12 +34,12 @@ const deck = {
       quantity: 1,
       categories: null,
       deletedAt: '2024-01-01',
-      card: { oracleCard: { name: 'Carta tolta' } },
+      card: { oracleCard: { name: 'Carta tolta', salt: 3 } },
     },
     {
       quantity: 1,
       categories: null,
-      card: { oracleCard: { name: 'Fire // Ice' } },
+      card: { oracleCard: { name: 'Fire // Ice', salt: 'n/d' } },
     },
   ],
 };
@@ -89,6 +93,16 @@ describe('archidektToText', () => {
   });
 });
 
+describe('archidektSalt', () => {
+  it('legge il salt di ogni carta, salta quelle tolte o senza punteggio numerico', () => {
+    expect(archidektSalt(deck)).toEqual({ 'Tymna the Weaver': 0.15, 'Sol Ring': 0.2, Island: 0 });
+  });
+
+  it('senza carte non dà nulla', () => {
+    expect(archidektSalt({})).toEqual({});
+  });
+});
+
 describe('runImport', () => {
   const files = (request = pending()) => ({
     'config/members.json': members,
@@ -111,6 +125,11 @@ describe('runImport', () => {
       deckName: 'Mazzo di prova',
     });
     expect(updates['requests/01.json'].result).toContain('Commander\n1 Tymna the Weaver');
+    expect(updates['requests/01.json'].salt).toEqual({
+      'Tymna the Weaver': 0.15,
+      'Sol Ring': 0.2,
+      Island: 0,
+    });
   });
 
   it('non rifà le richieste già concluse', async () => {

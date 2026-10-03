@@ -234,12 +234,34 @@ export const it = {
       combos: 'Combo del mazzo',
       comboWith: (names) => `Con ${names.join(' + ')}`,
       noData: 'Dati della carta non disponibili. Sono mostrati solo nome e quantità.',
+      salt: 'Salt (EDHREC)',
+      saltOf: (value) => `${value.toFixed(2).replace('.', ',')} su 4`,
     },
   },
   deckStats: {
     title: 'Statistiche',
     tabsLabel: 'Statistiche del mazzo',
-    tabs: { overview: 'Panoramica', curve: 'Curva', colors: 'Colori', draw: 'Pescata' },
+    tabs: {
+      overview: 'Panoramica',
+      curve: 'Curva',
+      colors: 'Colori',
+      draw: 'Pescata',
+      salt: 'Salt',
+    },
+    // Numeri con la virgola decimale, come si scrive in italiano.
+    decimal: (value, digits = 2) => Number(value).toFixed(digits).replace('.', ','),
+    saltTotal: 'Salt totale',
+    saltAverage: 'Salt medio per carta',
+    saltCoverage: 'Carte con punteggio',
+    saltDistribution: 'Quante carte per livello di salt',
+    saltTop: 'Le carte più salate',
+    saltBuckets: { low: 'Sotto 0,5', mid: '0,5–1', high: '1–2', top: '2 o più' },
+    saltSummary: (items) =>
+      `Carte per livello di salt: ${items.map((i) => `${i.label}: ${i.value}`).join(', ')}`,
+    saltIntro:
+      'Il salt score di EDHREC va da 0 a 4: è il voto della community su quanto una carta è fastidiosa da affrontare. Non è un divieto: serve a capire che aria si respira al tavolo.',
+    saltNone:
+      'Per questo mazzo non ci sono punteggi di salt: arrivano da Archidekt. Importa il mazzo da Archidekt o usa «Aggiorna da Archidekt» per averli.',
     noData: 'I dati delle carte non sono disponibili: le statistiche non si possono calcolare.',
     unknownNote: (n) =>
       n === 1

@@ -10,6 +10,9 @@ import {
   drawOdds,
   MANA_COLORS,
   manaCurve,
+  SALT_BUCKETS,
+  SALT_MAX,
+  saltSummary,
   typeBreakdown,
 } from '../domain/deck-metrics.js';
 import { it } from '../i18n/it.js';
@@ -23,11 +26,13 @@ const props = defineProps({
   info: { type: Object, required: true },
   /** `loading`, `ready` o `failed`. */
   dataState: { type: String, default: 'ready' },
+  /** Salt score per carta (nome → punteggio EDHREC 0–4), se il mazzo viene da Archidekt. */
+  salt: { type: Object, default: () => ({}) },
 });
 const t = it.deckStats;
 const names = it.deckCards;
 
-const TABS = ['overview', 'curve', 'colors', 'draw'];
+const TABS = ['overview', 'curve', 'colors', 'draw', 'salt'];
 const tab = ref('overview');
 function onTabKey(event, index) {
   const move = { ArrowRight: 1, ArrowLeft: -1 }[event.key];
@@ -51,6 +56,16 @@ const lands = computed(() => types.value.find((row) => row.type === 'Land')?.cou
 const gameChangers = computed(() =>
   props.cards.filter((c) => c.isGameChanger).reduce((sum, c) => sum + (c.qty ?? 1), 0),
 );
+
+const saltInfo = computed(() => saltSummary(detailed.value, props.salt));
+const saltItems = computed(() =>
+  SALT_BUCKETS.map((bucket, i) => ({
+    label: t.saltBuckets[bucket.key],
+    value: saltInfo.value.buckets[i],
+  })),
+);
+const saltLabel = computed(() => t.saltSummary(saltItems.value));
+const saltPercent = (value) => Math.round((value / SALT_MAX) * 100);
 
 const curveItems = (counts) =>
   counts.map((value, i) => ({ label: i === CURVE_MAX ? `${CURVE_MAX}+` : String(i), value }));
@@ -157,12 +172,18 @@ const oddsText = (value) => {
         <div>
           <dt>{{ t.average }}</dt>
           <dd data-testid="stat-average">
-            {{ curve.average === null ? '—' : curve.average.toFixed(2) }}
+            {{ curve.average === null ? '—' : t.decimal(curve.average) }}
           </dd>
         </div>
         <div>
           <dt>{{ names.gameChanger }}</dt>
           <dd data-testid="stat-game-changers">{{ gameChangers }}</dd>
+        </div>
+        <div>
+          <dt>{{ t.saltTotal }}</dt>
+          <dd data-testid="stat-salt">
+            {{ saltInfo.available ? t.decimal(saltInfo.total) : '—' }}
+          </dd>
         </div>
       </dl>
       <h3>{{ t.typesTitle }}</h3>
@@ -259,6 +280,59 @@ const oddsText = (value) => {
           </div>
         </li>
       </ul>
+    </div>
+
+    <!-- Saltiness -->
+    <div
+      v-show="tab === 'salt'"
+      id="stats-panel-salt"
+      role="tabpanel"
+      aria-labelledby="stats-tab-salt"
+      data-testid="stats-salt"
+    >
+      <p v-if="!saltInfo.available" class="empty" data-testid="salt-none">{{ t.saltNone }}</p>
+      <template v-else>
+        <p class="muted">{{ t.saltIntro }}</p>
+        <dl class="facts">
+          <div>
+            <dt>{{ t.saltTotal }}</dt>
+            <dd data-testid="salt-total">{{ t.decimal(saltInfo.total) }}</dd>
+          </div>
+          <div>
+            <dt>{{ t.saltAverage }}</dt>
+            <dd data-testid="salt-average">{{ t.decimal(saltInfo.average) }}</dd>
+          </div>
+          <div>
+            <dt>{{ t.saltCoverage }}</dt>
+            <dd data-testid="salt-covered">{{ saltInfo.covered }} / {{ saltInfo.size }}</dd>
+          </div>
+        </dl>
+        <div class="salt-grid">
+          <div>
+            <h3>{{ t.saltDistribution }}</h3>
+            <div class="chart chart--narrow">
+              <BarChart :items="saltItems" :label="saltLabel" :step="64" />
+            </div>
+          </div>
+          <div>
+            <h3>{{ t.saltTop }}</h3>
+            <ul class="rows rows--salt">
+              <li
+                v-for="card in saltInfo.top"
+                :key="card.name"
+                class="rows__item"
+                data-testid="salt-top"
+              >
+                <span class="rows__name rows__name--wide">{{ card.name }}</span>
+                <span class="meter" aria-hidden="true">
+                  <span class="meter__fill" :style="{ width: `${saltPercent(card.salt)}%` }"></span>
+                </span>
+                <strong class="rows__value">{{ t.decimal(card.salt) }}</strong>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </template>
     </div>
 
     <!-- Probabilità di pescata -->
@@ -360,9 +434,18 @@ const oddsText = (value) => {
   max-width: 40rem;
 }
 
+/* Cinque schede: su telefono la quinta occupa tutta la riga. */
+.tabs__tab:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
 @media (min-width: 576px) {
   .tabs {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .tabs__tab:last-child:nth-child(odd) {
+    grid-column: auto;
   }
 }
 
@@ -396,6 +479,13 @@ const oddsText = (value) => {
   margin: 0;
 }
 
+/* Su telefono l'ultimo indicatore, se resta solo, occupa tutta la riga. */
+@media (max-width: 575px) {
+  .facts > div:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
 .facts dt {
   font-size: 0.9375rem;
   color: var(--text-muted);
@@ -427,6 +517,18 @@ const oddsText = (value) => {
   text-align: right;
 }
 
+.rows--salt {
+  max-width: 44rem;
+}
+
+.rows--salt .rows__item {
+  grid-template-columns: minmax(0, 9rem) minmax(0, 1fr) 3rem;
+}
+
+.rows__name--wide {
+  overflow-wrap: anywhere;
+}
+
 .meter {
   display: block;
   height: 0.75rem;
@@ -444,6 +546,31 @@ const oddsText = (value) => {
 
 .chart {
   max-width: 48rem;
+}
+
+.chart--narrow {
+  max-width: 18rem;
+}
+
+/* Su schermi larghi grafico e carte più salate stanno affiancati. */
+.salt-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 2rem;
+}
+
+@media (min-width: 768px) {
+  .salt-grid {
+    grid-template-columns: 18rem minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.empty {
+  padding: 1rem;
+  margin: 0;
+  border: 1px dashed var(--text-muted);
+  border-radius: var(--radius-sm);
 }
 
 .small-multiples {

@@ -45,12 +45,13 @@ onBeforeUnmount(() => {
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-function summaryText({ added, removed, changed, renamed }) {
+function summaryText({ added, removed, changed, renamed, salt }) {
   const parts = [];
   if (added) parts.push(`${plural(added, 'carta entrata', 'carte entrate')}`);
   if (removed) parts.push(`${plural(removed, 'carta uscita', 'carte uscite')}`);
   if (changed) parts.push(`${plural(changed, 'quantità cambiata', 'quantità cambiate')}`);
   if (renamed) parts.push('nome aggiornato');
+  if (salt) parts.push('saltiness aggiornata');
   return parts.join(', ');
 }
 

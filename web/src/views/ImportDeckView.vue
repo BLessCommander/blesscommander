@@ -30,6 +30,7 @@ const POLL_LIMIT = 70; // circa 3 minuti e mezzo
 const source = ref('text'); // text | archidekt
 const archidektUrl = ref('');
 const sourceUrl = ref(''); // link usato per il mazzo che si sta guardando
+const salt = ref(undefined); // salt score per carta, se il mazzo viene da Archidekt
 const name = ref('');
 const text = ref('');
 const step = ref('edit'); // edit | waiting | reading | preview | analyzing | wizard | saving
@@ -37,6 +38,7 @@ const combos = ref(null); // combo infinite; null = Commander Spellbook non ha r
 const error = ref('');
 watch(source, () => {
   sourceUrl.value = '';
+  salt.value = undefined;
 });
 let stopped = false;
 onBeforeUnmount(() => {
@@ -98,6 +100,7 @@ async function fetchArchidekt() {
       const state = await data.getImportRequest(request.id);
       if (state.status === 'done') {
         sourceUrl.value = url;
+        salt.value = state.salt;
         name.value = state.deckName ?? ''; // il nome è quello di Archidekt
         text.value = state.result;
         await read();
@@ -167,6 +170,7 @@ async function save({ declaredTier, assessment }) {
       assessment,
       importedAt: new Date().toISOString(),
       sourceUrl: sourceUrl.value || undefined,
+      salt: sourceUrl.value ? salt.value : undefined,
     });
     const saved = await data.write('saveDeck', deck);
     await data.write('saveDeckVersion', saved.id, version);

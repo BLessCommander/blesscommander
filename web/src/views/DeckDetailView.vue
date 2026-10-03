@@ -33,11 +33,13 @@ const nameOf = computed(
 // Game changer e combo stanno nell'ultima versione salvata, non nello snapshot.
 const features = ref({ state: 'loading', gameChangers: [], combos: [] });
 const versionCards = ref([]);
+const deckSalt = ref({}); // salt score per carta (EDHREC via Archidekt), se c'è
 // Dati delle carte letti una volta sola e condivisi da elenco e statistiche.
 const cardData = useCardData(() => versionCards.value);
 async function loadFeatures() {
   features.value = { state: 'loading', gameChangers: [], combos: [] };
   versionCards.value = [];
+  deckSalt.value = {};
   if (!deck.value || deck.value.optimistic) return;
   try {
     const { deck: full, versions } = await data.getDeck(deck.value.id);
@@ -49,6 +51,7 @@ async function loadFeatures() {
       combos: version?.combos ?? [],
     };
     versionCards.value = version?.cards ?? [];
+    deckSalt.value = full.salt ?? {};
     loadCommanders(deck.value.commanders ?? [], versionCards.value);
   } catch {
     features.value = { state: 'failed', gameChangers: [], combos: [] };
@@ -152,6 +155,7 @@ const comboLabel = (combo) =>
           :combos="features.combos"
           :info="cardData.info.value"
           :data-state="cardData.state.value"
+          :salt="deckSalt"
         />
       </section>
 
@@ -161,6 +165,7 @@ const comboLabel = (combo) =>
           :cards="versionCards"
           :info="cardData.info.value"
           :data-state="cardData.state.value"
+          :salt="deckSalt"
         />
       </section>
 

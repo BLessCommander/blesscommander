@@ -28,11 +28,11 @@ const current = {
   ],
 };
 const base = 'Commander\n1 Tymna the Weaver\n\nDeck\n1 Sol Ring\n5 Island';
-const plan = async (result, deckName = 'Jodah') =>
+const plan = async (result, deckName = 'Jodah', salt = undefined, deck = saved) =>
   planResync({
-    deck: saved,
+    deck,
     current,
-    fetched: { deckName, result },
+    fetched: { deckName, result, salt },
     lookup: await lookupOf(result),
     now: '2026-10-03T10:00:00Z',
   });
@@ -66,7 +66,13 @@ describe('planResync', () => {
     expect(result.status).toBe('update');
     expect(result.version.diff).toEqual({ added: ['Rhystic Study'], removed: ['Sol Ring'] });
     expect(result.version.gameChangers).toEqual(['Rhystic Study']);
-    expect(result.summary).toEqual({ added: 1, removed: 1, changed: 1, renamed: false });
+    expect(result.summary).toEqual({
+      added: 1,
+      removed: 1,
+      changed: 1,
+      renamed: false,
+      salt: false,
+    });
     expect(result.deck).toMatchObject({ id: saved.id, currentVersion: 1, declaredTier: 'F3' });
   });
 
@@ -76,6 +82,36 @@ describe('planResync', () => {
     expect(result.version).toBeNull();
     expect(result.deck.name).toBe('Jodah v2');
     expect(result.summary.renamed).toBe(true);
+  });
+
+  it('il salt nuovo si salva anche con le stesse carte, senza una nuova versione', async () => {
+    const salt = { 'Tymna the Weaver': 0.2, 'Sol Ring': 0.3 };
+    const result = await plan(base, 'Jodah', salt);
+    expect(result.status).toBe('update');
+    expect(result.version).toBeNull();
+    expect(result.deck.salt).toEqual(salt);
+    expect(result.summary.salt).toBe(true);
+  });
+
+  it('lo stesso salt di prima non cambia nulla', async () => {
+    const salt = { 'Tymna the Weaver': 0.2, 'Sol Ring': 0.3 };
+    expect(await plan(base, 'Jodah', salt, { ...saved, salt })).toEqual({ status: 'same' });
+  });
+
+  it('un salt cambiato su EDHREC si aggiorna', async () => {
+    const result = await plan(
+      base,
+      'Jodah',
+      { 'Sol Ring': 0.35 },
+      { ...saved, salt: { 'Sol Ring': 0.3 } },
+    );
+    expect(result.status).toBe('update');
+    expect(result.deck.salt).toEqual({ 'Sol Ring': 0.35 });
+  });
+
+  it('senza salt nell’esito (mazzo da testo) il salt salvato non si tocca', async () => {
+    const salt = { 'Sol Ring': 0.3 };
+    expect(await plan(base, 'Jodah', undefined, { ...saved, salt })).toEqual({ status: 'same' });
   });
 
   it('cambia il comandante: si aggiorna anche il mazzo', async () => {

@@ -41,6 +41,24 @@ export function archidektToText(json) {
   return { name: String(json.name ?? '').trim(), text };
 }
 
+/**
+ * Salt score di EDHREC (0–4) di ogni carta del mazzo, come Archidekt lo mostra: nome → punteggio.
+ * Le carte senza punteggio mancano. Nome e punteggio sono quelli di `oracleCard`.
+ * @returns {Record<string, number>}
+ */
+export function archidektSalt(json) {
+  /** @type {Record<string, number>} */
+  const salt = {};
+  for (const entry of json.cards ?? []) {
+    const oracle = entry.card?.oracleCard;
+    if (!oracle?.name || entry.deletedAt) continue;
+    if (typeof oracle.salt === 'number' && Number.isFinite(oracle.salt)) {
+      salt[oracle.name] = oracle.salt;
+    }
+  }
+  return salt;
+}
+
 const ATTEMPTS = 3;
 const defaultWait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -68,7 +86,7 @@ async function fetchDeckWithRetry(fetchImpl, address, wait) {
 /**
  * Scarica un mazzo pubblico.
  * @param {{ url: string, fetchImpl: typeof fetch, base?: string, wait?: (ms: number) => Promise<void> }} input
- * @returns {Promise<{ deckName: string, result: string } | { error: string }>}
+ * @returns {Promise<{ deckName: string, result: string, salt: Record<string, number> } | { error: string }>}
  */
 export async function downloadDeck({ url, fetchImpl, base = ARCHIDEKT_API, wait = defaultWait }) {
   const id = archidektDeckId(url);
@@ -79,8 +97,11 @@ export async function downloadDeck({ url, fetchImpl, base = ARCHIDEKT_API, wait 
       return { error: 'Mazzo non trovato o privato: rendilo pubblico su Archidekt' };
     }
     if (!response.ok) return { error: `Archidekt ha risposto con errore ${response.status}` };
-    const { name, text } = archidektToText(await response.json());
-    return text ? { deckName: name, result: text } : { error: 'Il mazzo è vuoto' };
+    const json = await response.json();
+    const { name, text } = archidektToText(json);
+    return text
+      ? { deckName: name, result: text, salt: archidektSalt(json) }
+      : { error: 'Il mazzo è vuoto' };
   } catch {
     return { error: 'Archidekt non risponde: riprova tra poco' };
   }

@@ -64,18 +64,24 @@ async function mockCards(page, { fail = false } = {}) {
 }
 
 /** Fa leggere alla scheda un mazzo con queste carte. */
-const withCards = (page, cards) =>
-  page.evaluate((list) => {
-    const pinia = document.querySelector('#app').__vue_app__.config.globalProperties.$pinia;
-    pinia._s.get('data').getDeck = async () => ({
-      deck: { currentVersion: 1 },
-      versions: [{ version: 1, cards: list, gameChangers: [], combos: [] }],
-    });
-  }, cards);
+const withCards = (page, cards, salt = undefined) =>
+  page.evaluate(
+    ({ list, scores }) => {
+      const pinia = document.querySelector('#app').__vue_app__.config.globalProperties.$pinia;
+      pinia._s.get('data').getDeck = async () => ({
+        deck: { currentVersion: 1, ...(scores ? { salt: scores } : {}) },
+        versions: [{ version: 1, cards: list, gameChangers: [], combos: [] }],
+      });
+    },
+    { list: cards, scores: salt },
+  );
 
-async function openStats(page) {
+// Punteggi EDHREC (0–4) per nome di carta, come arrivano da Archidekt.
+const SALT = { 'Sol Ring': 0.2, Counterspell: 1.5, 'Atraxa, Praetors Voice': 0.7, Island: 0 };
+
+async function openStats(page, { salt = SALT } = {}) {
   await page.goto('/#/mazzi');
-  await withCards(page, CARDS);
+  await withCards(page, CARDS, salt);
   await page.getByRole('link', { name: 'Mazzo Ottimizzato' }).click();
   await expect(page.getByTestId('deck-stats')).toBeVisible();
   await expect(page.getByTestId('stat-cards')).toHaveText('15');
@@ -94,7 +100,7 @@ test.describe('statistiche del mazzo @core', () => {
     await openStats(page);
     await expect(page.getByTestId('stat-spells')).toHaveText('4');
     await expect(page.getByTestId('stat-lands')).toHaveText('10');
-    await expect(page.getByTestId('stat-average')).toHaveText('2.25');
+    await expect(page.getByTestId('stat-average')).toHaveText('2,25');
     await expect(page.getByTestId('stat-game-changers')).toHaveText('2');
     await expect(page.getByTestId('stat-type')).toHaveCount(4);
     await expect(page.getByTestId('stats-unknown')).toHaveText(
@@ -163,12 +169,59 @@ test.describe('statistiche del mazzo @core', () => {
   test('la pagina non scorre in orizzontale in nessuna scheda @ui', async ({ page }) => {
     await mockCards(page);
     await openStats(page);
-    for (const id of ['overview', 'curve', 'colors', 'draw']) {
+    for (const id of ['overview', 'curve', 'colors', 'draw', 'salt']) {
       await page.getByTestId(`stats-tab-${id}`).click();
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
       );
       expect(overflow, id).toBeLessThanOrEqual(0);
     }
+  });
+
+  test('la saltiness mostra totale, media, livelli e le carte più salate @ui', async ({ page }) => {
+    await mockCards(page);
+    await openStats(page);
+    await expect(page.getByTestId('stat-salt')).toHaveText('3,90');
+    await page.getByTestId('stats-tab-salt').click();
+    await expect(page.getByTestId('salt-total')).toHaveText('3,90');
+    await expect(page.getByTestId('salt-average')).toHaveText('0,28');
+    await expect(page.getByTestId('salt-covered')).toHaveText('14 / 15');
+    await expect(page.getByTestId('salt-top')).toHaveCount(3);
+    await expect(page.getByTestId('salt-top').first()).toContainText('Counterspell');
+    await expect(page.getByTestId('salt-top').first()).toContainText('1,50');
+    const chart = page.getByTestId('stats-salt').getByRole('img').first();
+    await expect(chart).toHaveAttribute(
+      'aria-label',
+      'Carte per livello di salt: Sotto 0,5: 11, 0,5–1: 1, 1–2: 2, 2 o più: 0',
+    );
+  });
+
+  test('senza punteggi di salt (mazzo non da Archidekt) lo dice e spiega come averli @ui', async ({
+    page,
+  }) => {
+    await mockCards(page);
+    await openStats(page, { salt: null }); // `undefined` userebbe il valore di default
+    await expect(page.getByTestId('stat-salt')).toHaveText('—');
+    await page.getByTestId('stats-tab-salt').click();
+    await expect(page.getByTestId('salt-none')).toContainText('Archidekt');
+    await expect(page.getByTestId('salt-total')).toHaveCount(0);
+  });
+
+  test('il salt di una carta si vede nel dettaglio', async ({ page }) => {
+    await mockCards(page);
+    await openStats(page);
+    await page
+      .getByTestId('card-item')
+      .filter({ hasText: 'Counterspell' })
+      .getByTestId('card-open')
+      .click();
+    await expect(page.getByTestId('detail-salt')).toHaveText('1,50 su 4');
+    await page.keyboard.press('Escape');
+    await page
+      .getByTestId('card-item')
+      .filter({ hasText: 'Carta senza dati' })
+      .getByTestId('card-open')
+      .click();
+    await expect(page.getByTestId('detail-salt')).toHaveCount(0);
   });
 });

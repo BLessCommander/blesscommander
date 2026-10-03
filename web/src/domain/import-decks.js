@@ -15,7 +15,7 @@ import { commanderNames, deckCards, mergeDuplicates, parseDeckText } from './dec
  * Gli altri restano da importare a mano dal loro link (`review`) oppure sono falliti (`failed`).
  * @param {object} input
  * @param {DeckToImport} input.entry
- * @param {(url: string) => Promise<{ deckName?: string, result: string }>} input.requestDeck
+ * @param {(url: string) => Promise<{ deckName?: string, result: string, salt?: Record<string, number> }>} input.requestDeck
  * @param {(names: string[]) => Promise<any>} input.lookup
  * @param {(deckJson: string) => Promise<{ combos?: any[] }>} input.requestCombos
  * @returns {Promise<PreparedDeck | ImportOutcome>}
@@ -41,6 +41,7 @@ export async function prepareDeck({ entry, requestDeck, lookup, requestCombos })
       lines,
       lookup: found,
       combos,
+      salt: state.salt,
       ...wizardInput(cards, found),
     };
   } catch (error) {
@@ -63,5 +64,6 @@ export function buildPreparedDeck(prepared, { declaredTier, assessment }, import
     assessment,
     importedAt,
     sourceUrl: prepared.entry.url,
+    salt: prepared.salt,
   });
 }

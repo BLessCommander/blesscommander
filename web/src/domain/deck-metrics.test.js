@@ -8,6 +8,7 @@ import {
   drawOdds,
   drawProbability,
   manaCurve,
+  saltSummary,
   typeBreakdown,
 } from './deck-metrics.js';
 
@@ -194,5 +195,68 @@ describe('drawCategories e drawOdds', () => {
 
   it('le carte da pescare non superano il mazzo', () => {
     expect(drawOdds(cards, { draws: 99 }).draws).toBe(23);
+  });
+});
+
+describe('saltSummary', () => {
+  const salt = { 'Sol Ring': 0.2, Counterspell: 1.5, Atraxa: 0.7, Island: 0, Colosso: 3.2 };
+
+  it('somma pesata per quantità, media sulle carte con punteggio, carte coperte', () => {
+    const summary = saltSummary(cards, salt);
+    expect(summary.available).toBe(true);
+    // 0.2 + 1.5*2 + 0.7 + 0*10 + 3.2 = 7.1
+    expect(summary.total).toBeCloseTo(7.1, 10);
+    expect(summary.covered).toBe(1 + 2 + 1 + 10 + 1);
+    expect(summary.average).toBeCloseTo(7.1 / 15, 10);
+    expect(summary.size).toBe(23);
+  });
+
+  it('distribuisce le carte per fasce, con i limiti esclusi', () => {
+    const edge = detailCards(
+      [
+        { name: 'A', qty: 1 },
+        { name: 'B', qty: 2 },
+        { name: 'C', qty: 1 },
+        { name: 'D', qty: 1 },
+        { name: 'E', qty: 3 },
+      ],
+      {},
+    );
+    const summary = saltSummary(edge, { A: 0.49, B: 0.5, C: 1, D: 2, E: 3.9 });
+    expect(summary.buckets).toEqual([1, 2, 1, 4]);
+  });
+
+  it('elenca le carte più salate, senza quelle a zero, al massimo dieci', () => {
+    const many = detailCards(
+      Array.from({ length: 15 }, (_, i) => ({ name: `Carta ${i}`, qty: 1 })),
+      {},
+    );
+    const scores = Object.fromEntries(many.map((c, i) => [c.name, i / 4]));
+    const { top } = saltSummary(many, scores);
+    expect(top).toHaveLength(10);
+    expect(top[0]).toEqual({ name: 'Carta 14', salt: 3.5, qty: 1 });
+    expect(top.every((c) => c.salt > 0)).toBe(true);
+  });
+
+  it('a pari punteggio ordina per nome', () => {
+    const pair = detailCards(
+      [
+        { name: 'Zeta', qty: 1 },
+        { name: 'Alfa', qty: 1 },
+      ],
+      {},
+    );
+    const { top } = saltSummary(pair, { Zeta: 1, Alfa: 1 });
+    expect(top.map((c) => c.name)).toEqual(['Alfa', 'Zeta']);
+  });
+
+  it('senza punteggi non c’è nulla da mostrare', () => {
+    for (const none of [undefined, {}]) {
+      const summary = saltSummary(cards, none);
+      expect(summary.available).toBe(false);
+      expect(summary.average).toBeNull();
+      expect(summary.total).toBe(0);
+      expect(summary.top).toEqual([]);
+    }
   });
 });

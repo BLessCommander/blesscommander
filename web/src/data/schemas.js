@@ -61,6 +61,8 @@ export const SCHEMAS = {
       currentVersion: count,
       declaredTier: tier,
       selfAssessment: object({ mld: bool, extraTurns: bool, notes: { type: 'string' } }, []),
+      // Salt score di EDHREC (0–4) per carta, preso da Archidekt: nome → punteggio.
+      salt: { type: 'object', additionalProperties: { type: 'number', minimum: 0 } },
     },
     ['id', 'ownerLogin', 'name', 'commanders', 'colorIdentity', 'currentVersion', 'declaredTier'],
   ),

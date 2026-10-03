@@ -48,6 +48,36 @@ describe('buildDeckFromImport', () => {
   });
 });
 
+describe('buildDeckFromImport: salt', () => {
+  const make = async (salt) => {
+    const lines = parseDeckText(TEXT);
+    const lookup = await createDemoScryfall().lookup(lines.map((l) => l.name));
+    return buildDeckFromImport({
+      name: 'Con salt',
+      lines,
+      lookup,
+      declaredTier: 'F3',
+      importedAt: '2026-01-01T00:00:00Z',
+      salt,
+    });
+  };
+
+  it('salva il salt delle carte del mazzo, comandante compreso, e scarta il resto', async () => {
+    const { deck } = await make({
+      'Tymna the Weaver': 0.2,
+      'Sol Ring': 0.3,
+      'Rhystic Study': 1.1,
+      'Carta non nel mazzo': 2.5,
+    });
+    expect(deck.salt).toEqual({ 'Tymna the Weaver': 0.2, 'Sol Ring': 0.3, 'Rhystic Study': 1.1 });
+  });
+
+  it('senza salt il mazzo non ha il campo', async () => {
+    expect((await make(undefined)).deck).not.toHaveProperty('salt');
+    expect((await make({})).deck).not.toHaveProperty('salt');
+  });
+});
+
 describe('checkImport', () => {
   it('chiede un comandante e blocca le carte non trovate', async () => {
     expect(checkImport(parseDeckText('1 Sol Ring'), null).reasons).toEqual(['no-commander']);

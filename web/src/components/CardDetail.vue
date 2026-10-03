@@ -11,6 +11,8 @@ const props = defineProps({
   info: { type: Object, default: null },
   /** Combo del mazzo a cui la carta partecipa. */
   combos: { type: Array, default: () => [] },
+  /** Salt score EDHREC (0–4), se si conosce. */
+  salt: { type: Number, default: null },
 });
 const t = it.deckCards;
 const d = t.detail;
@@ -45,6 +47,10 @@ const others = (combo) => combo.cards.filter((n) => n !== props.card.name);
         <div>
           <dt>{{ d.qty }}</dt>
           <dd data-testid="detail-qty">{{ card.qty }}</dd>
+        </div>
+        <div v-if="salt !== null">
+          <dt>{{ d.salt }}</dt>
+          <dd data-testid="detail-salt">{{ d.saltOf(salt) }}</dd>
         </div>
         <template v-if="info">
           <div>
