@@ -88,7 +88,7 @@ export const it = {
       "L'app si usa solo prima (lobby) e dopo (chiusura in 3 tocchi). Mentre si gioca, l'unica cosa da fare è girare un dado fisico per contare i turni.",
   },
   decks: {
-    intro: 'Tutti i mazzi del gruppo, dalla fascia più alta.',
+    intro: 'Mazzi raggruppati per giocatore. Il tuo gruppo è aperto.',
     empty: 'Nessun mazzo ancora. Importane uno dalla pagina Importa.',
     owner: 'Di',
     tier: 'Fascia',
@@ -97,6 +97,18 @@ export const it = {
     wins: 'Vittorie',
     tmv: 'TMV',
     list: 'Elenco dei mazzi',
+    groups: {
+      show: 'Mostra',
+      all: (n) => `Tutti i mazzi (${n})`,
+      mine: (n) => `I miei mazzi (${n})`,
+      player: (name, n) => `${name} (${n})`,
+      mineTitle: 'I miei mazzi',
+      you: 'Tu',
+      count: (n) => (n === 1 ? '1 mazzo' : `${n} mazzi`),
+      expandAll: 'Apri tutti',
+      collapseAll: 'Chiudi tutti',
+      noneMine: 'Non hai ancora mazzi: importane uno dalla pagina Importa.',
+    },
     updating: 'In aggiornamento…',
     import: 'Importa mazzo',
     resync: {

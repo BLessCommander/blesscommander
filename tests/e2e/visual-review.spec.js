@@ -199,7 +199,7 @@ for (const theme of THEMES) {
         {
           id: 'appena-salvato',
           name: 'Mazzo Appena Salvato',
-          ownerLogin: 'demo-giocatore',
+          ownerLogin: 'demo-admin', // chi salva è sempre l'utente collegato: il suo gruppo è aperto
           declaredTier: 'F2',
           commanders: ['Comandante Nuovo'],
           currentVersion: 1,
@@ -264,6 +264,30 @@ for (const theme of THEMES) {
     await mkdir('review-screenshots', { recursive: true });
     await page.screenshot({
       path: `review-screenshots/importa-utente-wizard-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+  });
+}
+
+// Mazzi raggruppati per giocatore (C-08d): tutti i gruppi aperti, e un solo giocatore scelto dal menu.
+for (const theme of THEMES) {
+  test(`screenshot mazzi-gruppi ${theme} @review`, async ({ page }, testInfo) => {
+    test.skip(
+      !['iphone', 'desktop-chrome'].includes(testInfo.project.name),
+      'solo iphone e desktop',
+    );
+    await page.emulateMedia({ colorScheme: theme });
+    await page.goto('/#/mazzi');
+    await page.getByTestId('expand-all').click();
+    await page.locator('.deck').first().waitFor();
+    await mkdir('review-screenshots', { recursive: true });
+    await page.screenshot({
+      path: `review-screenshots/mazzi-gruppi-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+    await page.getByTestId('deck-filter').selectOption({ label: 'Giocatore 2 (1)' });
+    await page.screenshot({
+      path: `review-screenshots/mazzi-giocatore-${testInfo.project.name}-${theme}.png`,
       fullPage: true,
     });
   });

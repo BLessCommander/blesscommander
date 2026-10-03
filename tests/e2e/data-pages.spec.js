@@ -25,19 +25,72 @@ test.describe('pagine con dati reali (demo) @core', () => {
     await expect(recent).toContainText('Mazzo Ottimizzato');
   });
 
-  test('i mazzi sono elencati dalla fascia più alta @ui', async ({ page }) => {
+  test('i mazzi sono raggruppati per giocatore: prima i miei, poi gli altri @ui', async ({
+    page,
+  }) => {
     await page.goto('/#/mazzi');
     await expect(page.getByRole('heading', { level: 1, name: 'Mazzi' })).toBeVisible();
+    await page.getByTestId('expand-all').click();
     const names = page.locator('.deck__name');
     await expect(names).toHaveText([
-      'Mazzo Ottimizzato',
-      'Mazzo Potenziato',
-      'Mazzo Base',
-      'Mazzo Esibizione',
+      'Mazzo Ottimizzato', // i miei (l'utente demo è l'admin)
+      'Mazzo Esibizione', // Giocatore 1
+      'Mazzo Base', // Giocatore 2
+      'Mazzo Potenziato', // Giocatore 3
     ]);
     const first = page.locator('.deck').first();
     await expect(first.locator('.tier-badge')).toHaveText('F4');
     await expect(first).toContainText('Vittorie');
+  });
+
+  test('il mio gruppo è aperto, gli altri chiusi; si aprono con un tocco @ui', async ({ page }) => {
+    await page.goto('/#/mazzi');
+    await expect(page.locator('.deck__name')).toHaveText(['Mazzo Ottimizzato']);
+    const heads = page.locator('.deck-group__toggle');
+    await expect(heads).toHaveCount(4);
+    await expect(heads.first()).toContainText('I miei mazzi');
+    await expect(heads.first()).toContainText('Tu');
+    await expect(heads.first()).toHaveAttribute('aria-expanded', 'true');
+
+    const other = page.getByRole('button', { name: /Giocatore 2/ });
+    await expect(other).toHaveAttribute('aria-expanded', 'false');
+    await other.click();
+    await expect(other).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('.deck__name')).toHaveText(['Mazzo Ottimizzato', 'Mazzo Base']);
+    await other.click();
+    await expect(page.locator('.deck__name')).toHaveText(['Mazzo Ottimizzato']);
+  });
+
+  test('«Apri tutti» e «Chiudi tutti»', async ({ page }) => {
+    await page.goto('/#/mazzi');
+    await page.getByTestId('expand-all').click();
+    await expect(page.locator('.deck')).toHaveCount(4);
+    await page.getByTestId('collapse-all').click();
+    await expect(page.locator('.deck')).toHaveCount(0);
+    await expect(page.locator('.deck-group__toggle')).toHaveCount(4);
+  });
+
+  test('il menu mostra solo i miei mazzi o quelli di un giocatore @ui', async ({ page }) => {
+    await page.goto('/#/mazzi');
+    const filter = page.getByTestId('deck-filter');
+    await expect(filter.locator('option')).toHaveText([
+      'Tutti i mazzi (4)',
+      'I miei mazzi (1)',
+      'Giocatore 1 (1)',
+      'Giocatore 2 (1)',
+      'Giocatore 3 (1)',
+    ]);
+
+    await filter.selectOption({ label: 'Giocatore 3 (1)' });
+    await expect(page.locator('.deck-group')).toHaveCount(1);
+    await expect(page.locator('.deck__name')).toHaveText(['Mazzo Potenziato']);
+    await expect(page.getByTestId('expand-all')).toHaveCount(0);
+
+    await filter.selectOption({ label: 'I miei mazzi (1)' });
+    await expect(page.locator('.deck__name')).toHaveText(['Mazzo Ottimizzato']);
+
+    await filter.selectOption({ label: 'Tutti i mazzi (4)' });
+    await expect(page.locator('.deck-group')).toHaveCount(4);
   });
 
   test('senza modifiche in sospeso non compare nessun banner di sincronizzazione', async ({
@@ -76,6 +129,7 @@ test.describe('pagine con dati reali (demo) @core', () => {
     page,
   }) => {
     await page.goto('/#/mazzi');
+    await page.getByTestId('expand-all').click();
     await expect(page.locator('.deck')).toHaveCount(4);
     await patchStore(page, {
       optimisticDecks: [
@@ -89,6 +143,7 @@ test.describe('pagine con dati reali (demo) @core', () => {
         },
       ],
     });
+    await page.getByTestId('expand-all').click(); // il nuovo giocatore ha un gruppo chiuso
     const card = page.locator('.deck').filter({ hasText: 'Mazzo Appena Salvato' });
     await expect(page.locator('.deck')).toHaveCount(5);
     await expect(card.getByTestId('deck-pending')).toContainText('In aggiornamento');

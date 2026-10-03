@@ -65,7 +65,7 @@
 | C-08 | [ ] | Lista mazzi e scheda mazzo (metriche, storico fasce, grafici base) | C-07 | 04, 05 | UC-18 |
 | C-08b | [ ] | **Immagini delle carte con cache nel browser**: scaricare ogni immagine una volta sola e riusarla (Cache Storage / IndexedDB, dietro `web/src/platform/`), formato leggero (il più piccolo di Scryfall che renda la carta leggibile, `small` o `normal`), caricamento solo quando serve (lazy), niente scaricamenti ripetuti | C-07 | 04, 06 (§6.9) | da definire |
 | C-08c | [ ] | **Scheda mazzo cliccabile** dall’elenco mazzi: lista carte con immagini, lista combo, **grafici e statistiche stile Archidekt** (curva di mana, tipi, colori, game changer), storico fasce; vista del mazzo anche nell’elenco | C-08, C-08b | 04, 05 | UC-18 |
-| C-08d | [ ] | **Elenco mazzi raggruppato per utente** (non una lista unica): sezione per proprietario, il proprio in cima | C-08 | 05 | da definire |
+| C-08d | [x] | **Elenco mazzi raggruppato per utente** (non una lista unica): una sezione apribile per giocatore, la mia in cima e aperta con l’etichetta «Tu», le altre chiuse; menu «Mostra» (tutti / i miei / un giocatore), «Apri tutti» e «Chiudi tutti». **Possibile miglioramento:** ricordare la scelta del menu tra una pagina e l’altra | C-08 | 05 | da definire |
 | C-08e | [ ] | **Tag ai mazzi** (l’utente li mette sui propri mazzi) e **filtro per tag** per ritrovare i propri mazzi; i tag restano nel repository dati | C-08, C-08d | 04, 05 | da definire |
 | C-09 | [ ] | Lobby: formato (tutti contro tutti 3/4/5–6, 1v1), giocatori, mazzi, registratore, "Inizia" con promemoria dado | C-08 | 03, 02 | UC-09 |
 | C-10 | [ ] | Chiusura partita in 3 tocchi (turno da dado o stima), solo registratore, anteprima locale e stato "in aggiornamento" fino al ricalcolo dell'Action | C-09, C-01, B-07 | 03 | UC-10, UC-11, UC-12, UC-13, UC-14 |
@@ -118,7 +118,7 @@
 
 > Aggiornato da Claude a fine sessione. Massimo 15 righe: è ciò che la sessione successiva legge per ripartire senza rileggere tutto.
 
-- **Ultima voce lavorata:** C-07b (fatta): wizard per ogni mazzo dell’import da nome utente e ricontrollo dopo «Aggiorna da Archidekt» (`planRecheck`/`withAssessment` in `deck-resync.js`, finestra `AppModal` in `DeckResync.vue`, pulsanti fissi in `DeckWizard`). Prima: C-07c (combo via Action, repository dati aggiornato, commit 11623d3) e C-07 (wizard).
+- **Ultima voce lavorata:** C-08d (fatta): pagina Mazzi con una sezione per giocatore (`deck-groups.js`, `DecksView.vue`), menu «Mostra», «Apri tutti/Chiudi tutti». Prima: correzione import Archidekt (categoria principale), strumenti `live:diagnose` e `test:live`, regola «qualsiasi combo infinita», ricontrollo dopo l’aggiornamento (C-07b), combo via Action (C-07c), wizard (C-07).
 - **Da fare a mano (con conferma):** copiare `recalc.yml` nel repository dati vero `blesscommander-data` (solo quel file, mai `config/`).
 - **Stato:** B-01–B-12, C-01–C-07, C-06b, C-06e, C-06g, C-16, S-10 fatte. Vitest 256 verdi, Playwright import/Archidekt verdi sui 6 profili, revisione screenshot wizard superata.
 - **File principali:** `web/src/components/DeckWizard.vue`, `web/src/domain/deck-features.js`, `web/src/platform/spellbook.js`, `web/src/views/ImportDeckView.vue`, `tests/fixtures/spellbook-fake.js`.
