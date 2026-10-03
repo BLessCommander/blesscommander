@@ -5,7 +5,7 @@ import { createScryfall } from '../platform/scryfall.js';
 import { createSpellbook } from '../platform/spellbook.js';
 import { findDeckCombos } from './deck-features.js';
 import { deckCards, parseDeckText } from './deck-parser.js';
-import { diffCards, planRecheck, planResync, withAssessment } from './deck-resync.js';
+import { diffCards, planRecheck, planResync, resyncedDeck, withAssessment } from './deck-resync.js';
 
 const scryfall = createScryfall({ fetchImpl: fakeScryfallFetch, pauseMs: 0 });
 const lookupOf = (text) => scryfall.lookup(deckCards(parseDeckText(text)).map((l) => l.name));
@@ -269,5 +269,51 @@ describe('ricontrollo con una combo nuova (caso Restoration Angel + Felidar Guar
     expect(recheck.needsWizard).toBe(true);
     expect(recheck.assessment.floor).toBe('F3');
     expect(recheck.declaredTier).toBe('F3');
+  });
+});
+
+describe('resyncedDeck (il mazzo che si salva dopo l’aggiornamento)', () => {
+  const fresh = {
+    ...saved,
+    selfAssessment: { mld: false, extraTurns: false, notes: 'ok' },
+    salt: { 'Sol Ring': 0.1 },
+  };
+
+  it('porta il salt nuovo nel mazzo salvato', async () => {
+    const salt = { 'Tymna the Weaver': 0.2, 'Sol Ring': 0.3 };
+    const result = await plan(base, 'Jodah', salt);
+    expect(resyncedDeck(saved, result).salt).toEqual(salt);
+  });
+
+  it('un salt nuovo sostituisce quello vecchio', async () => {
+    const result = await plan(base, 'Jodah', { 'Sol Ring': 0.35 }, fresh);
+    expect(resyncedDeck(fresh, result).salt).toEqual({ 'Sol Ring': 0.35 });
+  });
+
+  it('senza salt nell’aggiornamento quello salvato resta', async () => {
+    const result = await plan(base, 'Jodah v2', undefined, fresh);
+    expect(resyncedDeck(fresh, result).salt).toEqual({ 'Sol Ring': 0.1 });
+  });
+
+  it('aggiorna nome, comandanti, colori e link e tiene gli altri campi', async () => {
+    const result = await plan(base, 'Jodah v2');
+    const deck = resyncedDeck(fresh, result);
+    expect(deck).toMatchObject({
+      id: saved.id,
+      name: 'Jodah v2',
+      declaredTier: 'F3',
+      currentVersion: 1,
+      selfAssessment: { notes: 'ok' },
+    });
+  });
+
+  it('con l’esito del controllo aggiorna l’autovalutazione e la fascia scelta', async () => {
+    const result = await plan(base, 'Jodah v2'); // con le stesse carte e lo stesso nome non c'è nulla da salvare
+    const deck = resyncedDeck(fresh, result, {
+      assessment: { massLandDestruction: true, chainExtraTurns: true },
+      declaredTier: 'F4',
+    });
+    expect(deck.declaredTier).toBe('F4');
+    expect(deck.selfAssessment).toEqual({ mld: true, extraTurns: true, notes: 'ok' });
   });
 });

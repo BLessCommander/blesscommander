@@ -3,7 +3,7 @@ import { onBeforeUnmount, ref, shallowRef, watch } from 'vue';
 import { useOverlay } from '../composables/use-overlay.js';
 import { deckCards, parseDeckText } from '../domain/deck-parser.js';
 import { findDeckCombos } from '../domain/deck-features.js';
-import { planRecheck, planResync, withAssessment } from '../domain/deck-resync.js';
+import { planRecheck, planResync, resyncedDeck, withAssessment } from '../domain/deck-resync.js';
 import AppModal from './ui/AppModal.vue';
 import DeckWizard from './DeckWizard.vue';
 import { ImportRequestError, requestAndWait } from '../domain/import-request.js';
@@ -63,23 +63,10 @@ async function commit({ deck, plan, recheck, choice }) {
     await data.write('saveDeckVersion', deck.id, version);
   }
   const fresh = (await data.getDeck(deck.id)).deck;
-  await data.write('saveDeck', {
-    ...fresh,
-    name: plan.deck.name,
-    commanders: plan.deck.commanders,
-    colorIdentity: plan.deck.colorIdentity,
-    source: plan.deck.source,
-    ...(choice?.declaredTier ? { declaredTier: choice.declaredTier } : {}),
-    ...(assessment
-      ? {
-          selfAssessment: {
-            ...fresh.selfAssessment,
-            mld: assessment.massLandDestruction,
-            extraTurns: assessment.chainExtraTurns,
-          },
-        }
-      : {}),
-  });
+  await data.write(
+    'saveDeck',
+    resyncedDeck(fresh, plan, { assessment, declaredTier: choice?.declaredTier }),
+  );
   result.value = { kind: 'ok', text: t.updated(summaryText(plan.summary)) };
 }
 

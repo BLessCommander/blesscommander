@@ -159,6 +159,35 @@ export function planRecheck({ deck, current, plan, lookup, combos }) {
 }
 
 /**
+ * Mazzo da salvare dopo un aggiornamento: il mazzo appena riletto dal repository più i campi nuovi
+ * di `planResync` (nome, comandanti, colori, link, salt) e l'esito del controllo, se c'è.
+ * Ogni campo che l'aggiornamento deve portare va elencato qui: gli altri restano com'erano.
+ * @param {any} fresh mazzo salvato, riletto subito prima
+ * @param {{ deck: any }} plan esito di `planResync` (`update`)
+ * @param {{ assessment?: any, declaredTier?: string }} [choice]
+ */
+export function resyncedDeck(fresh, plan, { assessment, declaredTier } = {}) {
+  return {
+    ...fresh,
+    name: plan.deck.name,
+    commanders: plan.deck.commanders,
+    colorIdentity: plan.deck.colorIdentity,
+    source: plan.deck.source,
+    ...(plan.deck.salt ? { salt: plan.deck.salt } : {}),
+    ...(declaredTier ? { declaredTier } : {}),
+    ...(assessment
+      ? {
+          selfAssessment: {
+            ...fresh.selfAssessment,
+            mld: assessment.massLandDestruction,
+            extraTurns: assessment.chainExtraTurns,
+          },
+        }
+      : {}),
+  };
+}
+
+/**
  * Versione da salvare con l'esito del controllo (pavimento, combo, segnalazioni).
  * @param {any} version versione di `planResync`
  * @param {{ floor: string, massLandDestruction: boolean, chainExtraTurns: boolean, combos: any[] }} assessment

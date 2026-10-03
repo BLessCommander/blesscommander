@@ -47,6 +47,18 @@ export function runProviderContract(name, make, logins) {
       expect(read.versions).toHaveLength(1);
     });
 
+    it('salva e rilegge il salt delle carte (e rifiuta un salt non numerico)', async () => {
+      const provider = make(logins.player1);
+      const salt = { 'Sol Ring': 0.2, Island: 0 };
+      const deck = await provider.saveDeck({ ...newDeck, salt });
+      expect((await provider.getDeck(deck.id)).deck.salt).toEqual(salt);
+      const updated = await provider.saveDeck({ ...deck, salt: { 'Sol Ring': 0.25 } });
+      expect((await provider.getDeck(updated.id)).deck.salt).toEqual({ 'Sol Ring': 0.25 });
+      await expect(
+        provider.saveDeck({ ...newDeck, salt: { 'Sol Ring': 'alto' } }),
+      ).rejects.toMatchObject({ code: 'invalid' });
+    });
+
     it('rifiuta dati non validi con DataError "invalid"', async () => {
       const provider = make(logins.player1);
       await expect(provider.saveDeck({ name: 'X', declaredTier: 'F9' })).rejects.toMatchObject({
