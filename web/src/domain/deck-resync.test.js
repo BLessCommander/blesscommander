@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { fakeScryfallFetch } from '../../../tests/fixtures/scryfall-fake.js';
+import { fakeSpellbookFetch } from '../../../tests/fixtures/spellbook-fake.js';
 import { createScryfall } from '../platform/scryfall.js';
+import { createSpellbook } from '../platform/spellbook.js';
+import { findDeckCombos } from './deck-features.js';
 import { deckCards, parseDeckText } from './deck-parser.js';
 import { diffCards, planRecheck, planResync, withAssessment } from './deck-resync.js';
 
@@ -194,5 +197,41 @@ describe('withAssessment', () => {
       combos: [],
       flags: { mld: true, extraTurns: false },
     });
+  });
+});
+
+describe('ricontrollo con una combo nuova (caso Restoration Angel + Felidar Guardian)', () => {
+  const spellbook = createSpellbook({ fetchImpl: fakeSpellbookFetch });
+  const deck = { ...saved, selfAssessment: { mld: false, extraTurns: false } };
+  const before = { ...current, floor: 'F1', gameChangers: [], combos: [] };
+
+  it('la combo è trovata, riapre il wizard e porta il pavimento a F3 (pezzi da 8 mana)', async () => {
+    const result = `${base}\n1 Restoration Angel\n1 Felidar Guardian`;
+    const lookup = await lookupOf(result);
+    const update = planResync({
+      deck,
+      current,
+      fetched: { deckName: 'Jodah', result },
+      lookup,
+      now: '2026-10-03T10:00:00Z',
+    });
+    expect(update.status).toBe('update');
+    const combos = await findDeckCombos({
+      commanders: update.commanders,
+      cards: update.cards,
+      lookup,
+      request: async (json) => ({
+        combos: await spellbook.findCombos(JSON.parse(json)),
+      }),
+    });
+    expect(combos).toHaveLength(1);
+    expect(combos[0]).toMatchObject({
+      cards: ['Restoration Angel', 'Felidar Guardian'],
+      manaValue: 8,
+    });
+    const recheck = planRecheck({ deck, current: before, plan: update, lookup, combos });
+    expect(recheck.needsWizard).toBe(true);
+    expect(recheck.assessment.floor).toBe('F3');
+    expect(recheck.declaredTier).toBe('F3');
   });
 });

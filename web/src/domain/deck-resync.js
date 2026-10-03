@@ -103,7 +103,7 @@ const comboKeys = (combos) =>
  * @param {any} [input.current] ultima versione salvata
  * @param {{ cards: { name: string, qty: number }[] }} input.plan esito di `planResync` (`update`)
  * @param {any} input.lookup dati Scryfall delle carte scaricate
- * @param {any[] | null} input.combos combo a due carte; `null` se Spellbook non ha risposto
+ * @param {any[] | null} input.combos combo infinite; `null` se Spellbook non ha risposto
  */
 export function planRecheck({ deck, current, plan, lookup, combos }) {
   const { gameChangers, suspects } = wizardInput(plan.cards, lookup);

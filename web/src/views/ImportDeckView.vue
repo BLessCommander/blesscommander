@@ -33,7 +33,7 @@ const sourceUrl = ref(''); // link usato per il mazzo che si sta guardando
 const name = ref('');
 const text = ref('');
 const step = ref('edit'); // edit | waiting | reading | preview | analyzing | wizard | saving
-const combos = ref(null); // combo a due carte; null = Commander Spellbook non ha risposto
+const combos = ref(null); // combo infinite; null = Commander Spellbook non ha risposto
 const error = ref('');
 watch(source, () => {
   sourceUrl.value = '';

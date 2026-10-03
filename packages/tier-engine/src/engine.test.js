@@ -334,14 +334,14 @@ describe('UT-ENG-18: pavimento di costruzione', () => {
     ['6 game changer', { gameChangers: 6 }, 'F4'],
     ['terre distrutte', { massLandDestruction: true }, 'F4'],
     ['turni extra concatenabili', { chainExtraTurns: true }, 'F4'],
-    ['combo rapida (mana ≤ 6)', { twoCardCombo: { manaValue: 6 } }, 'F4'],
-    ['combo tardiva (mana ≥ 7)', { twoCardCombo: { manaValue: 7 } }, 'F3'],
+    ['combo rapida (mana ≤ 6)', { infiniteCombo: { manaValue: 6 } }, 'F4'],
+    ['combo tardiva (mana ≥ 7)', { infiniteCombo: { manaValue: 7 } }, 'F3'],
   ])('%s → %s', (_name, features, expected) => {
     expect(computeFloor(features, params)).toBe(expected);
   });
 
   it('prende il più alto tra le condizioni', () => {
-    expect(computeFloor({ gameChangers: 2, twoCardCombo: { manaValue: 9 } }, params)).toBe('F3');
+    expect(computeFloor({ gameChangers: 2, infiniteCombo: { manaValue: 9 } }, params)).toBe('F3');
     expect(computeFloor({ gameChangers: 2, massLandDestruction: true }, params)).toBe('F4');
   });
 

@@ -6,7 +6,7 @@ import { maxTier } from './tiers.js';
  * @property {number} [gameChangers] numero di game changer
  * @property {boolean} [massLandDestruction] terre distrutte di massa
  * @property {boolean} [chainExtraTurns] turni extra concatenabili
- * @property {{ manaValue: number }|null} [twoCardCombo] valore di mana totale dei due pezzi
+ * @property {{ manaValue: number }|null} [infiniteCombo] combo infinita (qualsiasi numero di carte): valore di mana totale dei pezzi
  */
 
 /**
@@ -22,8 +22,8 @@ export function computeFloor(features, params) {
   else if (gc >= 1) floor = maxTier(floor, 'F3');
   if (features.massLandDestruction) floor = maxTier(floor, 'F4');
   if (features.chainExtraTurns) floor = maxTier(floor, 'F4');
-  if (features.twoCardCombo) {
-    floor = maxTier(floor, features.twoCardCombo.manaValue >= 7 ? 'F3' : 'F4');
+  if (features.infiniteCombo) {
+    floor = maxTier(floor, features.infiniteCombo.manaValue >= 7 ? 'F3' : 'F4');
   }
   return floor;
 }

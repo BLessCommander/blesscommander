@@ -1,8 +1,10 @@
 // Finto Commander Spellbook per i test (regola 5: nessun test chiama servizi reali). Risponde come
 // POST /find-my-combos, nella forma verificata sull'API vera: `results.included`, ogni combo con
-// `uses[].card.name` e `produces[].feature.name`. Conosce due combo a due carte:
+// `uses[].card.name` e `produces[].feature.name`. Conosce quattro combo:
 // - Thassa's Oracle + Demonic Consultation (vince la partita);
-// - Basalt Monolith + Rings of Brighthearth (mana infinito).
+// - Basalt Monolith + Rings of Brighthearth (mana infinito);
+// - Restoration Angel + Felidar Guardian (ETB e LTB infiniti: risposta vera di Spellbook);
+// - Isochron Scepter + Dramatic Reversal + Sol Ring (a tre carte).
 
 const COMBOS = [
   {
@@ -14,6 +16,16 @@ const COMBOS = [
     id: '100-200',
     cards: ['Basalt Monolith', 'Rings of Brighthearth'],
     produces: ['Infinite colorless mana'],
+  },
+  {
+    id: '1090-2781',
+    cards: ['Restoration Angel', 'Felidar Guardian'],
+    produces: ['Infinite creature ETB', 'Infinite creature LTB'],
+  },
+  {
+    id: '500-600-700',
+    cards: ['Isochron Scepter', 'Dramatic Reversal', 'Sol Ring'],
+    produces: ['Infinite mana'],
   },
 ];
 

@@ -4,7 +4,7 @@
 
 Le fasce ricalcano i bracket ufficiali con le modifiche decise dal gruppo. I limiti sono configurabili dalla pagina Impostazioni del gruppo.
 
-| Fascia | Nome | Turno di vittoria atteso | Game Changer | Terre distrutte di massa | Turni extra | Combo infinite a 2 carte |
+| Fascia | Nome | Turno di vittoria atteso | Game Changer | Terre distrutte di massa | Turni extra | Combo infinite |
 |---|---|---|---|---|---|---|
 | **F1** | Esibizione | 10 o più | 0 | No | No | No |
 | **F2** | Base | 8 – 9 | 0 | No | Sì, ma non a catena | No |
@@ -51,7 +51,7 @@ se il mazzo ha 1–5 game changer        → Fmin = max(Fmin, F3)
 se il mazzo ha 6+ game changer         → Fmin = max(Fmin, F4)
 se contiene terre distrutte di massa   → Fmin = max(Fmin, F4)
 se contiene turni extra concatenabili  → Fmin = max(Fmin, F4)
-se contiene una combo infinita 2 carte:
+se contiene una combo infinita (qualsiasi numero di carte):
     valore di mana totale pezzi ≥ 7    → Fmin = max(Fmin, F3)   ("tardiva")
     valore di mana totale pezzi ≤ 6    → Fmin = max(Fmin, F4)   ("rapida")
 ```

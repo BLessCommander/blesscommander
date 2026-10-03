@@ -60,15 +60,15 @@ export function detectSuspects(cards, lookup) {
 }
 
 /**
- * Combo con esattamente due carte che producono un effetto infinito o la vittoria, col valore di mana
- * totale dei due pezzi (somma dei valori di mana delle due carte).
+ * Combo che producono un effetto infinito o la vittoria, con qualsiasi numero di carte, col valore di
+ * mana totale dei pezzi (somma dei valori di mana di tutte le carte della combo).
  * @param {Combo[]} combos
  * @param {CardLookup} lookup
  * @returns {{ id: string, cards: string[], produces: string[], manaValue: number }[]}
  */
-export function twoCardCombos(combos, lookup) {
+export function infiniteCombos(combos, lookup) {
   return combos
-    .filter((c) => c.cards.length === 2 && c.infinite)
+    .filter((c) => c.cards.length >= 2 && c.infinite)
     .map((c) => ({
       id: c.id,
       cards: c.cards,
@@ -107,7 +107,7 @@ export function deckFloor(input, params = DEFAULT_PARAMS) {
       gameChangers: input.gameChangers,
       massLandDestruction: input.massLandDestruction,
       chainExtraTurns: input.chainExtraTurns,
-      twoCardCombo: weakest === null ? null : { manaValue: weakest },
+      infiniteCombo: weakest === null ? null : { manaValue: weakest },
     },
     params,
   );
@@ -129,7 +129,7 @@ export function wizardInput(cards, lookup) {
 }
 
 /**
- * Combo a due carte del mazzo, chieste a Commander Spellbook tramite l'Action `import`
+ * Combo infinite del mazzo, chieste a Commander Spellbook tramite l'Action `import`
  * (dal browser non risponde). `null` se la richiesta fallisce: il wizard le fa dichiarare a mano.
  * @param {object} input
  * @param {string[]} input.commanders
@@ -142,7 +142,7 @@ export async function findDeckCombos({ commanders, cards, lookup, request }) {
     const done = await request(
       JSON.stringify({ commanders, cards: cards.map((c) => ({ name: c.name, qty: c.qty })) }),
     );
-    return twoCardCombos(done.combos ?? [], lookup);
+    return infiniteCombos(done.combos ?? [], lookup);
   } catch {
     return null;
   }

@@ -8,7 +8,7 @@ import {
   detectSuspects,
   manualCombo,
   tierChoices,
-  twoCardCombos,
+  infiniteCombos,
 } from './deck-features.js';
 
 const scryfall = createScryfall({ fetchImpl: fakeScryfallFetch, pauseMs: 0 });
@@ -66,12 +66,12 @@ describe('detectSuspects', () => {
   });
 });
 
-describe('twoCardCombos', () => {
-  it('somma il valore di mana dei due pezzi e scarta le combo non decisive o a più carte', async () => {
+describe('infiniteCombos', () => {
+  it('somma il valore di mana dei pezzi (qualsiasi numero) e scarta le combo non infinite', async () => {
     const cards = cardsOf("Thassa's Oracle", 'Demonic Consultation', 'Sol Ring');
     const lookup = await scryfall.lookup(cards.map((c) => c.name));
     const found = await spellbook.findCombos({ commanders: [], cards });
-    expect(twoCardCombos(found, lookup)).toEqual([
+    expect(infiniteCombos(found, lookup)).toEqual([
       {
         id: '742-1295',
         cards: ["Thassa's Oracle", 'Demonic Consultation'],
@@ -79,9 +79,22 @@ describe('twoCardCombos', () => {
         manaValue: 3,
       },
     ]);
-    const three = { id: 'x', cards: ['A', 'B', 'C'], produces: [], infinite: true };
     const soft = { id: 'y', cards: ['A', 'B'], produces: ['Gain life'], infinite: false };
-    expect(twoCardCombos([three, soft], lookup)).toEqual([]);
+    expect(infiniteCombos([soft], lookup)).toEqual([]);
+  });
+
+  it('una combo con tre carte conta: il valore di mana è la somma di tutte', async () => {
+    const cards = cardsOf('Isochron Scepter', 'Dramatic Reversal', 'Sol Ring');
+    const lookup = await scryfall.lookup(cards.map((c) => c.name));
+    const three = {
+      id: 'x',
+      cards: ['Isochron Scepter', 'Dramatic Reversal', 'Sol Ring'],
+      produces: ['Infinite mana'],
+      infinite: true,
+    };
+    expect(infiniteCombos([three], lookup)).toEqual([
+      { id: 'x', cards: three.cards, produces: three.produces, manaValue: 5 },
+    ]);
   });
 
   it('la combo scelta a mano vale 7 (tardiva) o 0 (rapida)', () => {

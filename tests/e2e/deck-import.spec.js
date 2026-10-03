@@ -138,7 +138,7 @@ test.describe('import da testo @core', () => {
     await expect(page.locator('.deck').filter({ hasText: 'Tymna the Weaver' })).toBeVisible();
   });
 
-  test('una combo a due carte rapida porta il pavimento a F4', async ({ page }) => {
+  test('una combo infinita rapida porta il pavimento a F4', async ({ page }) => {
     await paste(
       page,
       "Commander\n1 Tymna the Weaver\n\nDeck\n1 Thassa's Oracle\n1 Demonic Consultation\n1 Sol Ring",
@@ -172,7 +172,7 @@ test.describe('import da testo @core', () => {
     await toWizard(page);
     await expect(page.getByTestId('combos-unavailable')).toBeVisible();
     await expect(page.getByTestId('wizard-floor')).toHaveText('F3');
-    await page.getByLabel('Combo infinita a due carte (scelta a mano)').selectOption('rapid');
+    await page.getByLabel('Combo infinita (scelta a mano)').selectOption('rapid');
     await expect(page.getByTestId('wizard-floor')).toHaveText('F4');
     await page.getByTestId('wizard-save').click();
     await expect(page).toHaveURL(/#\/mazzi$/);

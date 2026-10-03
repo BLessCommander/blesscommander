@@ -14,7 +14,7 @@ import { it } from '../i18n/it.js';
  */
 const props = defineProps({
   gameChangers: { type: Array, required: true },
-  /** Combo a due carte trovate; `null` se Commander Spellbook non ha risposto. */
+  /** Combo infinite trovate (qualsiasi numero di carte); `null` se Commander Spellbook non ha risposto. */
   combos: { type: Array, default: null },
   suspects: { type: Object, required: true },
   busy: { type: Boolean, default: false },

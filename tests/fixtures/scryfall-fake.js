@@ -19,7 +19,15 @@ const GAME_CHANGERS = new Set([
   'vampiric tutor',
 ]);
 // Valore di mana delle carte usate nelle combo dei test.
-const CMC = { "thassa's oracle": 2, 'demonic consultation': 1, 'kenrith, the returned king': 5 };
+const CMC = {
+  "thassa's oracle": 2,
+  'demonic consultation': 1,
+  'kenrith, the returned king': 5,
+  'restoration angel': 4,
+  'felidar guardian': 4,
+  'isochron scepter': 2,
+  'dramatic reversal': 3,
+};
 const ORACLE_TEXT = {
   armageddon: 'Destroy all lands.',
   'time warp': 'Target player takes an extra turn after this one.',
