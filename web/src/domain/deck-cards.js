@@ -5,7 +5,7 @@
 /**
  * @typedef {{ name: string, qty: number, scryfallId?: string, isGameChanger?: boolean }} DeckCard
  * @typedef {DeckCard & { known: boolean, cmc: number, typeLine: string, colors: string[],
- *   manaCost: string, type: string }} DetailedCard
+ *   manaCost: string, type: string, producedMana: string[] }} DetailedCard
  * @typedef {{ key: string, count: number, cards: DetailedCard[] }} CardGroup
  */
 
@@ -13,7 +13,7 @@ export const GROUP_BY = ['type', 'cmc', 'color'];
 export const SORT_BY = ['name', 'cmc'];
 
 /** Tipo principale, in ordine di precedenza: una terra-creatura è una terra. */
-const TYPE_ORDER = [
+export const TYPE_ORDER = [
   'Creature',
   'Planeswalker',
   'Battle',
@@ -67,6 +67,7 @@ export function detailCards(cards, info) {
       cmc: data?.cmc ?? 0,
       typeLine: data?.typeLine ?? '',
       colors: data?.colors ?? [],
+      producedMana: data?.producedMana ?? [],
       manaCost: data?.manaCost ?? '',
       type: data ? primaryType(data.typeLine) : UNKNOWN,
     };

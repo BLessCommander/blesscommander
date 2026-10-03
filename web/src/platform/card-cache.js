@@ -42,7 +42,7 @@ export function createCardCache({
       const found = {};
       const missing = [];
       for (const id of new Set(ids)) {
-        const hit = await read(`id:${id}`);
+        const hit = await read(`id2:${id}`);
         if (hit) found[id] = hit;
         else missing.push(id);
       }
@@ -50,7 +50,7 @@ export function createCardCache({
         const fetched = await scryfall.lookupIds(missing);
         for (const [id, card] of Object.entries(fetched)) {
           found[id] = card;
-          await write(`id:${id}`, card);
+          await write(`id2:${id}`, card);
         }
       }
       return found;
@@ -66,7 +66,7 @@ export function createCardCache({
       const found = {};
       const missing = [];
       for (const name of new Set(names)) {
-        const hit = await read(`name:${cardKey(name)}`);
+        const hit = await read(`name2:${cardKey(name)}`);
         if (hit) found[cardKey(name)] = hit;
         else missing.push(name);
       }
@@ -74,8 +74,8 @@ export function createCardCache({
         const { cards } = await scryfall.lookup(missing);
         for (const [key, card] of Object.entries(cards)) {
           found[key] = card;
-          await write(`name:${key}`, card);
-          await write(`id:${card.scryfallId}`, card);
+          await write(`name2:${key}`, card);
+          await write(`id2:${card.scryfallId}`, card);
         }
       }
       return found;

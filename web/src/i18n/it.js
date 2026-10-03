@@ -236,6 +236,48 @@ export const it = {
       noData: 'Dati della carta non disponibili. Sono mostrati solo nome e quantità.',
     },
   },
+  deckStats: {
+    title: 'Statistiche',
+    tabsLabel: 'Statistiche del mazzo',
+    tabs: { overview: 'Panoramica', curve: 'Curva', colors: 'Colori', draw: 'Pescata' },
+    noData: 'I dati delle carte non sono disponibili: le statistiche non si possono calcolare.',
+    unknownNote: (n) =>
+      n === 1
+        ? '1 carta senza dati non entra nei conteggi.'
+        : `${n} carte senza dati non entrano nei conteggi.`,
+    cards: 'Carte',
+    spells: 'Magie',
+    lands: 'Terre',
+    average: 'Costo medio',
+    typesTitle: 'Tipi di carta',
+    curveIntro: 'Quante magie hai per ogni costo di mana (le terre non contano).',
+    curveByColor: 'Curva per colore',
+    curveSummary: (counts) =>
+      `Carte per costo di mana: ${counts
+        .map((n, i) => `${i === counts.length - 1 ? `${i}+` : i}: ${n}`)
+        .join(', ')}`,
+    cmcLabel: (key) => (key === '8' ? 'Costo 8 o più' : `Costo ${key}`),
+    colorsIntro:
+      'Costo: quanto pesa ogni colore nei costi delle magie. Produzione: quante carte del mazzo producono quel colore di mana.',
+    cost: 'Costo',
+    production: 'Produzione',
+    pips: (pips, cards) => `${pips} simboli · ${cards === 1 ? '1 carta' : `${cards} carte`}`,
+    sources: (n) => (n === 1 ? '1 carta' : `${n} carte`),
+    probability: 'Probabilità',
+    modes: { atLeast: 'almeno', exactly: 'esattamente', atMost: 'al massimo' },
+    wanted: 'Quante carte',
+    categoryBy: 'Raggruppa per',
+    by: { type: 'Tipo', cmc: 'Costo di mana', color: 'Colore' },
+    draws: 'Carte pescate',
+    drawSummary: (mode, wanted, draws, size) =>
+      `Probabilità di pescare ${mode} ${wanted} carte della categoria nelle prime ${draws} carte di un mazzo da ${size}.`,
+    oddsCaption: 'Probabilità di pescata per categoria',
+    colCategory: 'Categoria',
+    colQty: 'Nel mazzo',
+    colOdds: 'Probabilità',
+    lessThanOne: '<1%',
+    moreThan99: '>99%',
+  },
   importDeck: {
     intro:
       'Incolla la lista del mazzo (da Archidekt, Moxfield o altro: "Esporta → Copia testo"). Poi controlli le carte e scegli i comandanti.',

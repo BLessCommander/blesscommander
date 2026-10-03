@@ -3,8 +3,10 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import CardImage from '../components/CardImage.vue';
 import DeckCardsView from '../components/DeckCardsView.vue';
+import DeckStats from '../components/DeckStats.vue';
 import TierStepChart from '../components/TierStepChart.vue';
 import WinTypeDonut from '../components/WinTypeDonut.vue';
+import { useCardData } from '../composables/use-card-data.js';
 import { opponentTables, tierHistory, winTypeList } from '../domain/deck-stats.js';
 import { it } from '../i18n/it.js';
 import { sharedCardCache } from '../platform/card-cache.js';
@@ -31,6 +33,8 @@ const nameOf = computed(
 // Game changer e combo stanno nell'ultima versione salvata, non nello snapshot.
 const features = ref({ state: 'loading', gameChangers: [], combos: [] });
 const versionCards = ref([]);
+// Dati delle carte letti una volta sola e condivisi da elenco e statistiche.
+const cardData = useCardData(() => versionCards.value);
 async function loadFeatures() {
   features.value = { state: 'loading', gameChangers: [], combos: [] };
   versionCards.value = [];
@@ -143,7 +147,21 @@ const comboLabel = (combo) =>
 
       <section v-if="features.state === 'ready'" class="card" data-testid="deck-card-list">
         <h2>{{ it.deckCards.title }}</h2>
-        <DeckCardsView :cards="versionCards" :combos="features.combos" />
+        <DeckCardsView
+          :cards="versionCards"
+          :combos="features.combos"
+          :info="cardData.info.value"
+          :data-state="cardData.state.value"
+        />
+      </section>
+
+      <section v-if="features.state === 'ready'" class="card" data-testid="deck-stats-card">
+        <h2>{{ it.deckStats.title }}</h2>
+        <DeckStats
+          :cards="versionCards"
+          :info="cardData.info.value"
+          :data-state="cardData.state.value"
+        />
       </section>
 
       <section class="card" data-testid="deck-history">

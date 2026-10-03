@@ -10,7 +10,6 @@ import {
   UNKNOWN,
 } from '../domain/deck-cards.js';
 import { it } from '../i18n/it.js';
-import { sharedCardCache } from '../platform/card-cache.js';
 import { readStorage, writeStorage } from '../platform/storage.js';
 import { watchMinWidth } from '../platform/viewport.js';
 import CardDetail from './CardDetail.vue';
@@ -23,6 +22,10 @@ const props = defineProps({
   cards: { type: Array, required: true },
   /** Combo salvate nella versione: `{ cards: string[], produces?: string[] }`. */
   combos: { type: Array, default: () => [] },
+  /** Dati di Scryfall per id (vedi `useCardData`). */
+  info: { type: Object, required: true },
+  /** `loading`, `ready` o `failed`. */
+  dataState: { type: String, default: 'ready' },
 });
 const t = it.deckCards;
 
@@ -70,31 +73,7 @@ const selectedView = computed({
   },
 });
 
-// Costo, tipo e colori non stanno nel mazzo: si leggono da Scryfall (con la cache del browser).
-const info = ref({});
-const dataState = ref('loading');
-watch(
-  () => props.cards,
-  async (cards) => {
-    const ids = [...new Set(cards.map((c) => c.scryfallId).filter(Boolean))];
-    if (ids.length === 0) {
-      info.value = {};
-      dataState.value = 'ready';
-      return;
-    }
-    dataState.value = 'loading';
-    try {
-      info.value = await sharedCardCache().byIds(ids);
-      dataState.value = 'ready';
-    } catch {
-      info.value = {};
-      dataState.value = 'failed';
-    }
-  },
-  { immediate: true },
-);
-
-const detailed = computed(() => detailCards(props.cards, info.value));
+const detailed = computed(() => detailCards(props.cards, props.info));
 const groups = computed(() =>
   groupCards(detailed.value, {
     groupBy: groupBy.value,
@@ -113,7 +92,7 @@ const flat = computed(() => groups.value.flatMap((g) => g.cards));
 const selectedIndex = computed(() => flat.value.findIndex((c) => c.name === selectedName.value));
 const selected = computed(() => flat.value[selectedIndex.value] ?? null);
 const selectedInfo = computed(() =>
-  selected.value?.scryfallId ? (info.value[selected.value.scryfallId] ?? null) : null,
+  selected.value?.scryfallId ? (props.info[selected.value.scryfallId] ?? null) : null,
 );
 const selectedCombos = computed(() =>
   selected.value ? combosOfCard(selected.value.name, props.combos) : [],
@@ -147,7 +126,7 @@ const sortChoice = computed({
 });
 
 function groupName(key) {
-  if (key === UNKNOWN) return dataState.value === 'failed' ? t.title : t.unknown;
+  if (key === UNKNOWN) return props.dataState === 'failed' ? t.title : t.unknown;
   if (groupBy.value === 'type') return t.types[key];
   if (groupBy.value === 'color') return t.colors[key];
   return t.cmc(key);
@@ -327,6 +306,7 @@ const colorText = (card) => COLOR_ORDER.filter((c) => card.colors.includes(c)).j
 <style scoped>
 .dc {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
 }
 

@@ -9,7 +9,7 @@
 
 /**
  * @typedef {{ name: string, scryfallId: string, manaCost: string, cmc: number, colorIdentity: string[],
- *   colors: string[], typeLine: string, image: string | null, isGameChanger: boolean, oracleText: string }} CardInfo
+ *   colors: string[], producedMana: string[], typeLine: string, image: string | null, isGameChanger: boolean, oracleText: string }} CardInfo
  * @typedef {{ cards: Record<string, CardInfo>, notFound: string[] }} CardLookup  chiavi: `cardKey` del nome richiesto
  * @typedef {{ lookup: (names: string[]) => Promise<CardLookup>,
  *   lookupIds: (ids: string[]) => Promise<Record<string, CardInfo>> }} Scryfall  `lookupIds`: chiavi = id Scryfall
@@ -62,6 +62,7 @@ export function normalizeCard(raw) {
     cmc: raw.cmc ?? 0,
     colorIdentity: raw.color_identity ?? [],
     colors: raw.colors ?? raw.card_faces?.[0]?.colors ?? [],
+    producedMana: raw.produced_mana ?? [],
     typeLine: raw.type_line ?? face?.type_line ?? '',
     image: raw.image_uris?.small ?? face?.image_uris?.small ?? null,
     isGameChanger: raw.game_changer === true,
