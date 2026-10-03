@@ -132,7 +132,11 @@ const tmv = (deck) => (typeof deck.tier?.tmv === 'number' ? deck.tier.tmv.toFixe
               {{ deck.tier?.current ?? deck.declaredTier }}
             </span>
             <div class="deck__main">
-              <h3 class="deck__name">{{ deck.name }}</h3>
+              <h3 class="deck__name">
+                <RouterLink :to="`/mazzi/${deck.id}`" class="deck__link">{{
+                  deck.name
+                }}</RouterLink>
+              </h3>
               <p
                 v-if="deck.optimistic"
                 class="deck__pending"
@@ -169,6 +173,13 @@ const tmv = (deck) => (typeof deck.tier?.tmv === 'number' ? deck.tier.tmv.toFixe
 </template>
 
 <style scoped>
+.deck__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  color: inherit;
+}
+
 .deck-filter {
   display: flex;
   flex-wrap: wrap;
