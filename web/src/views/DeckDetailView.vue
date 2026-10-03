@@ -143,7 +143,7 @@ const comboLabel = (combo) =>
 
       <section v-if="features.state === 'ready'" class="card" data-testid="deck-card-list">
         <h2>{{ it.deckCards.title }}</h2>
-        <DeckCardsView :cards="versionCards" />
+        <DeckCardsView :cards="versionCards" :combos="features.combos" />
       </section>
 
       <section class="card" data-testid="deck-history">

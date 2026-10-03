@@ -1,16 +1,28 @@
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
-import { detailCards, groupCards, GROUP_BY, SORT_BY, UNKNOWN } from '../domain/deck-cards.js';
+import { useOverlay } from '../composables/use-overlay.js';
+import {
+  combosOfCard,
+  detailCards,
+  groupCards,
+  GROUP_BY,
+  SORT_BY,
+  UNKNOWN,
+} from '../domain/deck-cards.js';
 import { it } from '../i18n/it.js';
 import { sharedCardCache } from '../platform/card-cache.js';
 import { readStorage, writeStorage } from '../platform/storage.js';
 import { watchMinWidth } from '../platform/viewport.js';
+import CardDetail from './CardDetail.vue';
 import CardImage from './CardImage.vue';
+import AppModal from './ui/AppModal.vue';
 
 /** Le carte di un mazzo in quattro viste, con raggruppamento, ordine e filtro (C-08c). */
 const props = defineProps({
   /** Carte della versione salvata: `{ name, qty, scryfallId?, isGameChanger? }`. */
   cards: { type: Array, required: true },
+  /** Combo salvate nella versione: `{ cards: string[], produces?: string[] }`. */
+  combos: { type: Array, default: () => [] },
 });
 const t = it.deckCards;
 
@@ -94,6 +106,35 @@ const groups = computed(() =>
 const total = computed(() => props.cards.reduce((sum, c) => sum + (c.qty ?? 1), 0));
 const shown = computed(() => groups.value.reduce((sum, g) => sum + g.count, 0));
 
+// Dettaglio di una carta: una sola finestra (`?overlay=card`); le frecce scorrono le carte mostrate.
+const overlay = useOverlay('card');
+const selectedName = ref(null);
+const flat = computed(() => groups.value.flatMap((g) => g.cards));
+const selectedIndex = computed(() => flat.value.findIndex((c) => c.name === selectedName.value));
+const selected = computed(() => flat.value[selectedIndex.value] ?? null);
+const selectedInfo = computed(() =>
+  selected.value?.scryfallId ? (info.value[selected.value.scryfallId] ?? null) : null,
+);
+const selectedCombos = computed(() =>
+  selected.value ? combosOfCard(selected.value.name, props.combos) : [],
+);
+function show(card) {
+  selectedName.value = card.name;
+  overlay.open();
+}
+function step(delta) {
+  const next = flat.value[selectedIndex.value + delta];
+  if (next) selectedName.value = next.name;
+}
+// Aperta con un link diretto o dopo un ricaricamento non c'è nessuna carta scelta: si richiude.
+watch(
+  () => [overlay.isOpen.value, selected.value],
+  ([open, card]) => {
+    if (open && !card) overlay.close();
+  },
+  { immediate: true },
+);
+
 // Ordine e direzione in un solo menu: sul telefono due menu affiancati non entrano.
 const SORT_CHOICES = SORT_BY.flatMap((by) => [`${by}-asc`, `${by}-desc`]);
 const sortChoice = computed({
@@ -173,7 +214,9 @@ const colorText = (card) => COLOR_ORDER.filter((c) => card.colors.includes(c)).j
         </h3>
         <ul class="pile__list">
           <li v-for="c in g.cards" :key="c.name" class="pile__card" data-testid="card-item">
-            <CardImage :scryfall-id="c.scryfallId" :name="c.name" top />
+            <button type="button" class="hit" data-testid="card-open" @click="show(c)">
+              <CardImage :scryfall-id="c.scryfallId" :name="c.name" top />
+            </button>
             <span v-if="c.qty > 1" class="qty-badge">×{{ c.qty }}</span>
           </li>
         </ul>
@@ -189,9 +232,11 @@ const colorText = (card) => COLOR_ORDER.filter((c) => card.colors.includes(c)).j
         </summary>
         <ul class="rows">
           <li v-for="c in g.cards" :key="c.name" class="row" data-testid="card-item">
-            <span class="row__qty">{{ c.qty }}×</span>
-            <span class="row__name">{{ c.name }}</span>
-            <span class="row__cost muted">{{ costText(c) }}</span>
+            <button type="button" class="hit row__btn" data-testid="card-open" @click="show(c)">
+              <span class="row__qty">{{ c.qty }}×</span>
+              <span class="row__name">{{ c.name }}</span>
+              <span class="row__cost muted">{{ costText(c) }}</span>
+            </button>
           </li>
         </ul>
       </details>
@@ -205,7 +250,9 @@ const colorText = (card) => COLOR_ORDER.filter((c) => card.colors.includes(c)).j
         </h3>
         <ul class="grid">
           <li v-for="c in g.cards" :key="c.name" class="grid__card" data-testid="card-item">
-            <CardImage :scryfall-id="c.scryfallId" :name="c.name" />
+            <button type="button" class="hit" data-testid="card-open" @click="show(c)">
+              <CardImage :scryfall-id="c.scryfallId" :name="c.name" />
+            </button>
             <span v-if="c.qty > 1" class="qty-badge">×{{ c.qty }}</span>
           </li>
         </ul>
@@ -233,7 +280,11 @@ const colorText = (card) => COLOR_ORDER.filter((c) => card.colors.includes(c)).j
         <tbody>
           <tr v-for="c in g.cards" :key="c.name" data-testid="card-item">
             <td :data-label="t.cols.qty">{{ c.qty }}</td>
-            <th scope="row" :data-label="t.cols.name">{{ c.name }}</th>
+            <th scope="row" :data-label="t.cols.name">
+              <button type="button" class="hit hit--text" data-testid="card-open" @click="show(c)">
+                {{ c.name }}
+              </button>
+            </th>
             <td :data-label="t.cols.type">{{ c.typeLine || '—' }}</td>
             <td :data-label="t.cols.cmc">{{ costText(c) }}</td>
             <td :data-label="t.cols.colors">{{ colorText(c) }}</td>
@@ -241,6 +292,35 @@ const colorText = (card) => COLOR_ORDER.filter((c) => card.colors.includes(c)).j
         </tbody>
       </table>
     </div>
+
+    <AppModal name="card" :title="selected?.name ?? ''">
+      <CardDetail v-if="selected" :card="selected" :info="selectedInfo" :combos="selectedCombos" />
+      <template #footer>
+        <div v-if="selected" class="dc__pager">
+          <button
+            type="button"
+            class="btn btn--secondary"
+            data-testid="card-prev"
+            :disabled="selectedIndex <= 0"
+            @click="step(-1)"
+          >
+            {{ t.detail.prev }}
+          </button>
+          <span class="muted" data-testid="card-position">{{
+            t.detail.position(selectedIndex + 1, flat.length)
+          }}</span>
+          <button
+            type="button"
+            class="btn btn--secondary"
+            data-testid="card-next"
+            :disabled="selectedIndex >= flat.length - 1"
+            @click="step(1)"
+          >
+            {{ t.detail.next }}
+          </button>
+        </div>
+      </template>
+    </AppModal>
   </div>
 </template>
 
@@ -341,7 +421,7 @@ const colorText = (card) => COLOR_ORDER.filter((c) => card.colors.includes(c)).j
 
 .pile__card {
   position: relative;
-  height: 2.25rem;
+  height: 2.75rem;
   overflow: hidden;
   border-radius: 8px 8px 0 0;
 }
@@ -391,12 +471,64 @@ const colorText = (card) => COLOR_ORDER.filter((c) => card.colors.includes(c)).j
 }
 
 .row {
+  border-top: 1px solid var(--border);
+}
+
+.row__btn {
   display: grid;
   grid-template-columns: 2.25rem minmax(0, 1fr) auto;
   gap: 0.5rem;
   align-items: center;
-  min-height: 2.25rem;
-  border-top: 1px solid var(--border);
+  min-height: var(--tap);
+}
+
+/* Ogni carta è un pulsante: tutta la sua area (riga, striscia, immagine) si può toccare. */
+.hit {
+  display: block;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  border-radius: inherit;
+}
+
+.hit:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+
+.hit--text {
+  min-height: var(--tap);
+  font-weight: inherit;
+  overflow-wrap: anywhere;
+}
+
+.pile__card .hit {
+  height: 100%;
+}
+
+.dc__pager {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  width: 100%;
+}
+
+/* Il contatore sta in una riga sopra i due pulsanti, che si dividono la larghezza. */
+.dc__pager > span {
+  flex: 1 0 100%;
+  order: -1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.dc__pager > .btn {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .row__qty {

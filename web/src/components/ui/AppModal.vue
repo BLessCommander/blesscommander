@@ -37,7 +37,8 @@ const titleId = `modal-${props.name}-title`;
             <AppIcon name="close" />
           </button>
         </header>
-        <div class="modal__body"><slot /></div>
+        <!-- Può scorrere: deve essere raggiungibile con la tastiera. -->
+        <div class="modal__body" tabindex="0"><slot /></div>
         <footer v-if="$slots.footer" class="modal__footer"><slot name="footer" /></footer>
       </div>
     </div>

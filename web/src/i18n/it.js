@@ -221,6 +221,20 @@ export const it = {
     cmc: (key) => (key === '7' ? 'Costo 7 o più' : `Costo ${key}`),
     cols: { qty: 'Qtà', name: 'Nome', type: 'Tipo', cmc: 'Costo', colors: 'Colori' },
     gameChanger: 'Game changer',
+    detail: {
+      prev: 'Precedente',
+      next: 'Successiva',
+      position: (index, total) => `${index} di ${total}`,
+      qty: 'Quantità nel mazzo',
+      cost: 'Costo di mana',
+      type: 'Tipo',
+      colors: 'Colori',
+      text: 'Testo della carta',
+      gameChanger: 'Game changer',
+      combos: 'Combo del mazzo',
+      comboWith: (names) => `Con ${names.join(' + ')}`,
+      noData: 'Dati della carta non disponibili. Sono mostrati solo nome e quantità.',
+    },
   },
   importDeck: {
     intro:

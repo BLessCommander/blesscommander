@@ -185,6 +185,11 @@
     flex: 1;
     padding: var(--space);
     overflow-y: auto;
+
+    &:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: -3px;
+    }
   }
 
   &__footer {

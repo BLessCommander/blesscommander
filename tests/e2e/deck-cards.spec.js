@@ -4,13 +4,21 @@ import { test, expect } from './fixtures.js';
 // C-08c: le carte del mazzo in pile, lista, griglia e tabella, con raggruppa, ordina e cerca.
 
 const SCRYFALL = {
-  'id-sol': { name: 'Sol Ring', cmc: 1, type_line: 'Artifact', colors: [], mana_cost: '{1}' },
+  'id-sol': {
+    name: 'Sol Ring',
+    cmc: 1,
+    type_line: 'Artifact',
+    colors: [],
+    mana_cost: '{1}',
+    oracle_text: '{T}: Add {C}{C}.',
+  },
   'id-counter': {
     name: 'Counterspell',
     cmc: 2,
     type_line: 'Instant',
     colors: ['U'],
     mana_cost: '{U}{U}',
+    oracle_text: 'Counter target spell.',
   },
   'id-atraxa': {
     name: 'Atraxa, Praetors Voice',
@@ -29,11 +37,12 @@ const SCRYFALL = {
 };
 const CARDS = [
   { name: 'Sol Ring', qty: 1, scryfallId: 'id-sol' },
-  { name: 'Counterspell', qty: 1, scryfallId: 'id-counter' },
+  { name: 'Counterspell', qty: 1, scryfallId: 'id-counter', isGameChanger: true },
   { name: 'Atraxa, Praetors Voice', qty: 1, scryfallId: 'id-atraxa' },
   { name: 'Island', qty: 10, scryfallId: 'id-island' },
   { name: 'Carta senza dati', qty: 1 },
 ];
+const COMBOS = [{ cards: ['Sol Ring', 'Counterspell'], produces: ['Infinite mana'] }];
 
 /** Scryfall finto con carte diverse tra loro (per id). */
 async function mockCards(page) {
@@ -55,18 +64,21 @@ async function mockCards(page) {
 }
 
 /** Fa leggere alla scheda un mazzo con queste carte. */
-const withCards = (page, cards) =>
-  page.evaluate((list) => {
-    const pinia = document.querySelector('#app').__vue_app__.config.globalProperties.$pinia;
-    pinia._s.get('data').getDeck = async () => ({
-      deck: { currentVersion: 1 },
-      versions: [{ version: 1, cards: list, gameChangers: [], combos: [] }],
-    });
-  }, cards);
+const withCards = (page, cards, combos = []) =>
+  page.evaluate(
+    ({ list, comboList }) => {
+      const pinia = document.querySelector('#app').__vue_app__.config.globalProperties.$pinia;
+      pinia._s.get('data').getDeck = async () => ({
+        deck: { currentVersion: 1 },
+        versions: [{ version: 1, cards: list, gameChangers: [], combos: comboList }],
+      });
+    },
+    { list: cards, comboList: combos },
+  );
 
 async function openDeck(page) {
   await page.goto('/#/mazzi');
-  await withCards(page, CARDS);
+  await withCards(page, CARDS, COMBOS);
   await page.getByRole('link', { name: 'Mazzo Ottimizzato' }).click();
   await expect(page.getByTestId('deck-cards')).toBeVisible();
   await expect(page.getByTestId('cards-count')).toHaveText('14 carte');
@@ -171,5 +183,91 @@ test.describe('carte del mazzo @core', () => {
       );
       expect(overflow, label).toBeLessThanOrEqual(0);
     }
+  });
+});
+
+test.describe('dettaglio carta @core', () => {
+  test.beforeEach(async ({ page }) => {
+    await mockScryfall(page);
+    await mockCardImages(page);
+    await mockCards(page);
+  });
+
+  const open = (page, name) =>
+    page.getByTestId('card-item').filter({ hasText: name }).getByTestId('card-open').click();
+  const dialog = (page) => page.getByRole('dialog');
+
+  test('toccando una carta si apre il dettaglio, in ogni vista @ui', async ({ page }) => {
+    await openDeck(page);
+    const views = isWide(page)
+      ? ['Pile', 'Lista', 'Griglia', 'Tabella']
+      : ['Lista', 'Griglia', 'Tabella'];
+    for (const label of views) {
+      await page.getByTestId('cards-view').selectOption({ label });
+      await open(page, 'Counterspell');
+      await expect(dialog(page)).toBeVisible();
+      await expect(dialog(page).getByRole('heading', { name: 'Counterspell' })).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(dialog(page)).toBeHidden();
+    }
+  });
+
+  test('mostra tipo, costo, testo, game changer, combo e quantità @ui', async ({ page }) => {
+    await openDeck(page);
+    await page.getByTestId('cards-view').selectOption({ label: 'Lista' });
+    await open(page, 'Counterspell');
+    const detail = page.getByTestId('card-detail');
+    await expect(detail).toContainText('Instant');
+    await expect(detail).toContainText('U U');
+    await expect(detail).toContainText('Blu');
+    await expect(detail).toContainText('Counter target spell.');
+    await expect(page.getByTestId('detail-game-changer')).toBeVisible();
+    await expect(page.getByTestId('detail-combos')).toContainText('Con Sol Ring');
+    await expect(page.getByTestId('detail-combos')).toContainText('Infinite mana');
+    await expect(page.getByTestId('detail-qty')).toHaveText('1');
+  });
+
+  test('le frecce passano alla carta precedente e successiva @ui', async ({ page }) => {
+    await openDeck(page);
+    await page.getByTestId('cards-view').selectOption({ label: 'Lista' });
+    await open(page, 'Atraxa');
+    await expect(page.getByTestId('card-position')).toHaveText('1 di 5');
+    await expect(page.getByTestId('card-prev')).toBeDisabled();
+    await page.getByTestId('card-next').click();
+    await expect(dialog(page).getByRole('heading', { name: 'Counterspell' })).toBeVisible();
+    await expect(page.getByTestId('card-position')).toHaveText('2 di 5');
+    await page.getByTestId('card-prev').click();
+    await expect(dialog(page).getByRole('heading', { name: /Atraxa/ })).toBeVisible();
+    for (let i = 0; i < 4; i += 1) await page.getByTestId('card-next').click();
+    await expect(page.getByTestId('card-position')).toHaveText('5 di 5');
+    await expect(page.getByTestId('card-next')).toBeDisabled();
+  });
+
+  test('il tasto indietro chiude il dettaglio senza lasciare la scheda', async ({ page }) => {
+    await openDeck(page);
+    await page.getByTestId('cards-view').selectOption({ label: 'Lista' });
+    await open(page, 'Sol Ring');
+    await expect(dialog(page)).toBeVisible();
+    await expect(page).toHaveURL(/overlay=card/);
+    await page.goBack();
+    await expect(dialog(page)).toBeHidden();
+    await expect(page.getByTestId('deck-cards')).toBeVisible();
+  });
+
+  test('il pulsante chiude il dettaglio', async ({ page }) => {
+    await openDeck(page);
+    await page.getByTestId('cards-view').selectOption({ label: 'Lista' });
+    await open(page, 'Sol Ring');
+    await dialog(page).getByRole('button', { name: 'Chiudi la finestra' }).click();
+    await expect(dialog(page)).toBeHidden();
+  });
+
+  test('una carta senza dati mostra nome e quantità', async ({ page }) => {
+    await openDeck(page);
+    await page.getByTestId('cards-view').selectOption({ label: 'Lista' });
+    await open(page, 'Carta senza dati');
+    await expect(dialog(page).getByRole('heading', { name: 'Carta senza dati' })).toBeVisible();
+    await expect(page.getByTestId('card-detail')).toContainText('Dati della carta non disponibili');
+    await expect(page.getByTestId('detail-qty')).toHaveText('1');
   });
 });

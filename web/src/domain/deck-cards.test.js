@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { colorGroup, detailCards, groupCards, primaryType, UNKNOWN } from './deck-cards.js';
+import {
+  colorGroup,
+  combosOfCard,
+  detailCards,
+  groupCards,
+  primaryType,
+  UNKNOWN,
+} from './deck-cards.js';
 
 const info = {
   a: { cmc: 1, typeLine: 'Artifact', colors: [], manaCost: '{1}' },
@@ -103,5 +110,36 @@ describe('groupCards', () => {
 
   it('senza carte non dà gruppi', () => {
     expect(groupCards([], {})).toEqual([]);
+  });
+});
+
+describe('combosOfCard', () => {
+  const combos = [
+    { cards: ['Sol Ring', 'Counterspell'], produces: ['Infinite mana'] },
+    { cards: ['Fire // Ice', 'Atraxa'] },
+    { cards: ['Island', 'Forest'], produces: [] },
+  ];
+
+  it('trova le combo che contengono la carta', () => {
+    expect(combosOfCard('Counterspell', combos)).toEqual([
+      { cards: ['Sol Ring', 'Counterspell'], produces: ['Infinite mana'] },
+    ]);
+  });
+
+  it('confronta senza maiuscole, accenti e con la sola prima faccia', () => {
+    expect(combosOfCard('sol ring', combos)).toHaveLength(1);
+    expect(combosOfCard('Fire', combos)).toHaveLength(1);
+    expect(combosOfCard('Fire // Ice', combos)).toHaveLength(1);
+    expect(combosOfCard('Ice', combos)).toHaveLength(0);
+  });
+
+  it('dà un elenco vuoto senza combo o per carte che non ne hanno', () => {
+    expect(combosOfCard('Carta strana', combos)).toEqual([]);
+    expect(combosOfCard('Sol Ring', undefined)).toEqual([]);
+    expect(combosOfCard('Sol Ring', [{ name: 'senza carte' }])).toEqual([]);
+  });
+
+  it('aggiunge `produces` vuoto quando manca', () => {
+    expect(combosOfCard('Atraxa', combos)[0].produces).toEqual([]);
   });
 });

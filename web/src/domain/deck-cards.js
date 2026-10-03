@@ -73,6 +73,22 @@ export function detailCards(cards, info) {
   });
 }
 
+/** Nome della prima faccia, senza accenti né maiuscole: per confrontare nomi di fonti diverse. */
+const frontKey = (name) => normalize(String(name).split('//')[0].trim());
+
+/**
+ * Combo del mazzo a cui partecipa una carta.
+ * @param {string} name
+ * @param {{ cards?: string[], produces?: string[] }[]} combos
+ * @returns {{ cards: string[], produces: string[] }[]}
+ */
+export function combosOfCard(name, combos) {
+  const key = frontKey(name);
+  return (combos ?? [])
+    .filter((c) => Array.isArray(c?.cards) && c.cards.some((n) => frontKey(n) === key))
+    .map((c) => ({ cards: c.cards, produces: c.produces ?? [] }));
+}
+
 /** @param {DetailedCard} card @param {string} groupBy */
 function keyOf(card, groupBy) {
   if (!card.known) return UNKNOWN;
