@@ -18,6 +18,7 @@ const failure = (request, error) => ({ ...request, status: 'error', error });
  * @param {Record<string, string>} [input.authors] percorso → login dell'ultimo commit
  * @param {'allow'|'deny'} [input.unknownAuthor] autore ignoto: `deny` nell'Action vera
  * @param {typeof fetch} [input.fetchImpl]
+ * @param {(ms: number) => Promise<void>} [input.wait] attesa tra i tentativi (nei test: nessuna)
  * @returns {Promise<Record<string, object>>} richieste aggiornate, per percorso (solo quelle cambiate)
  */
 export async function runImport({
@@ -25,6 +26,7 @@ export async function runImport({
   authors = {},
   unknownAuthor = 'deny',
   fetchImpl = (...a) => fetch(...a),
+  wait,
 }) {
   let members = {};
   try {
@@ -55,7 +57,7 @@ export async function runImport({
         ? failure(request, result.error)
         : { ...request, status: 'done', ...result };
     } else if (request.source === 'archidekt') {
-      const result = await downloadDeck({ url: request.url, fetchImpl });
+      const result = await downloadDeck({ url: request.url, fetchImpl, wait });
       updates[path] = result.error
         ? failure(request, result.error)
         : { ...request, status: 'done', ...result };

@@ -38,16 +38,40 @@ export function archidektToText(json) {
   return { name: String(json.name ?? '').trim(), text };
 }
 
+const ATTEMPTS = 3;
+const defaultWait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Dai server di GitHub Archidekt rifiuta ogni tanto (403/404) anche mazzi pubblici che subito dopo
+ * si scaricano: si riprova qualche volta prima di arrendersi.
+ */
+async function fetchDeckWithRetry(fetchImpl, address, wait) {
+  let response;
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+    try {
+      response = await fetchImpl(address, { headers: HEADERS });
+    } catch (error) {
+      if (attempt === ATTEMPTS) throw error;
+      await wait(attempt * 1500);
+      continue;
+    }
+    const flaky = response.status === 403 || response.status === 404 || response.status >= 500;
+    if (!flaky || attempt === ATTEMPTS) return response;
+    await wait(attempt * 1500);
+  }
+  return response;
+}
+
 /**
  * Scarica un mazzo pubblico.
- * @param {{ url: string, fetchImpl: typeof fetch, base?: string }} input
+ * @param {{ url: string, fetchImpl: typeof fetch, base?: string, wait?: (ms: number) => Promise<void> }} input
  * @returns {Promise<{ deckName: string, result: string } | { error: string }>}
  */
-export async function downloadDeck({ url, fetchImpl, base = ARCHIDEKT_API }) {
+export async function downloadDeck({ url, fetchImpl, base = ARCHIDEKT_API, wait = defaultWait }) {
   const id = archidektDeckId(url);
   if (!id) return { error: 'Il link non è un mazzo di Archidekt' };
   try {
-    const response = await fetchImpl(`${base}/${id}/`, { headers: HEADERS });
+    const response = await fetchDeckWithRetry(fetchImpl, `${base}/${id}/`, wait);
     if (response.status === 403 || response.status === 404) {
       return { error: 'Mazzo non trovato o privato: rendilo pubblico su Archidekt' };
     }

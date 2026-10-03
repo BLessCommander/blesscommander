@@ -46,6 +46,8 @@ const reply = (status, body) => async () => ({
   json: async () => body,
 });
 
+const noWait = async () => {};
+
 describe('archidektDeckId', () => {
   it('legge l’id dai link di Archidekt', () => {
     expect(archidektDeckId('https://archidekt.com/decks/123456/nome-mazzo')).toBe('123456');
@@ -138,9 +140,44 @@ describe('runImport', () => {
       files: files(),
       authors: { 'requests/01.json': 'anna' },
       fetchImpl: reply(status, {}),
+      wait: noWait,
     });
     expect(updates['requests/01.json']).toMatchObject({ status: 'error' });
     expect(updates['requests/01.json'].error).toMatch(message);
+  });
+
+  it.each([403, 404, 502])(
+    'Archidekt rifiuta %i una volta e poi risponde: il mazzo si scarica',
+    async (status) => {
+      const calls = [];
+      const fetchImpl = async (...args) => {
+        calls.push(args[0]);
+        return calls.length === 1 ? reply(status, {})() : reply(200, deck)();
+      };
+      const updates = await runImport({
+        files: files(),
+        authors: { 'requests/01.json': 'anna' },
+        fetchImpl,
+        wait: noWait,
+      });
+      expect(updates['requests/01.json']).toMatchObject({ status: 'done' });
+      expect(calls).toHaveLength(2);
+    },
+  );
+
+  it('dopo 3 rifiuti si arrende e non insiste oltre', async () => {
+    let calls = 0;
+    const updates = await runImport({
+      files: files(),
+      authors: { 'requests/01.json': 'anna' },
+      fetchImpl: async () => {
+        calls++;
+        return reply(404, {})();
+      },
+      wait: noWait,
+    });
+    expect(updates['requests/01.json']).toMatchObject({ status: 'error' });
+    expect(calls).toBe(3);
   });
 
   it('rete assente: errore, non eccezione', async () => {
@@ -150,6 +187,7 @@ describe('runImport', () => {
       fetchImpl: async () => {
         throw new TypeError('rete');
       },
+      wait: noWait,
     });
     expect(updates['requests/01.json'].status).toBe('error');
   });
