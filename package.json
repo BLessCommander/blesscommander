@@ -23,6 +23,7 @@
     "seed:test": "node tests/seed/seed.js",
     "recalc": "node data-actions/src/cli.js",
     "build:data-repo": "node data-actions/src/build-data-repo.js",
+    "build:data-repo:live": "node data-actions/src/build-data-repo.js data-actions/dist/data-repo-live --live",
     "build:data-repo:test": "node data-actions/src/build-data-repo.js data-actions/dist/data-repo-test --test",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",

@@ -43,13 +43,24 @@ export function testRepoConfig(ownerLogin) {
 }
 
 /**
+ * Membri iniziali del repository reale: solo il proprietario, come admin (senza admin l'Action ignora l'elenco).
+ * @param {string} ownerLogin
+ */
+export function liveRepoMembers(ownerLogin) {
+  return {
+    [ownerLogin]: { displayName: ownerLogin, role: 'admin', joinedAt: '2026-10-03T00:00:00Z' },
+  };
+}
+
+/**
  * @param {string} [outDir]
- * @param {{ test?: boolean }} [options] `test`: repository di prova invece di quello reale
+ * @param {{ test?: boolean, live?: boolean }} [options] `test`: repository di prova; `live`: repository
+ *   reale con il proprietario come primo admin
  * @returns {Promise<string[]>} percorsi scritti, relativi alla cartella di uscita
  */
 export async function buildDataRepo(
   outDir = join(root, 'data-actions/dist/data-repo'),
-  { test = false } = {},
+  { test = false, live = false } = {},
 ) {
   const out = resolve(outDir);
   await rm(out, { recursive: true, force: true });
@@ -67,6 +78,14 @@ export async function buildDataRepo(
       join(out, 'config/members.json'),
       `${JSON.stringify(members, null, 2)}
 `,
+    );
+  }
+
+  if (live && !test) {
+    const progetto = JSON.parse(await readFile(join(root, 'docs/progetto.json'), 'utf8'));
+    await writeFile(
+      join(out, 'config/members.json'),
+      `${JSON.stringify(liveRepoMembers(progetto.ownerLogin), null, 2)}\n`,
     );
   }
 
@@ -116,8 +135,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const args = process.argv.slice(2);
   const test = args.includes('--test');
   const target = args.find((a) => !a.startsWith('--'));
-  await buildDataRepo(target, { test });
+  const live = args.includes('--live');
+  await buildDataRepo(target, { test, live });
   console.log(
-    `Repository dati${test ? ' di PROVA' : ''} iniziale pronto in ${resolve(target ?? 'data-actions/dist/data-repo')}`,
+    `Repository dati${test ? ' di PROVA' : live ? ' REALE' : ''} iniziale pronto in ${resolve(target ?? 'data-actions/dist/data-repo')}`,
   );
 }

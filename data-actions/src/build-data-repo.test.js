@@ -6,7 +6,23 @@ import { join } from 'node:path';
 import { buildSeed } from '../../tests/seed/seed.js';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { buildDataRepo, testRepoConfig } from './build-data-repo.js';
+import { buildDataRepo, liveRepoMembers, testRepoConfig } from './build-data-repo.js';
+
+describe('UT-ACT-LIVE: repository dati reale', () => {
+  it('con live: true il proprietario è l’unico membro, admin, e non c’è testMode', async () => {
+    expect(liveRepoMembers('G-E-M')['G-E-M'].role).toBe('admin');
+    const dir = await mkdtemp(join(tmpdir(), 'bc-live-'));
+    try {
+      await buildDataRepo(dir, { live: true });
+      const members = JSON.parse(await readFile(join(dir, 'config/members.json'), 'utf8'));
+      const group = JSON.parse(await readFile(join(dir, 'config/group.json'), 'utf8'));
+      expect(Object.keys(members)).toEqual(['G-E-M']);
+      expect(group.testMode).toBeUndefined();
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 30_000);
+});
 
 describe('UT-ACT: repository dati iniziale', () => {
   it('contiene template, schemi e motore, e l’Action compilata gira da sola', async () => {
