@@ -1,8 +1,0 @@
-
-Running 4 tests using 4 workers
-
-[1/4] [iphone] › tests\e2e\visual-review.spec.js:157:3 › screenshot mazzi-in-aggiornamento light @review
-[2/4] [iphone] › tests\e2e\visual-review.spec.js:157:3 › screenshot mazzi-in-aggiornamento dark @review
-[3/4] [desktop-chrome] › tests\e2e\visual-review.spec.js:157:3 › screenshot mazzi-in-aggiornamento light @review
-[4/4] [desktop-chrome] › tests\e2e\visual-review.spec.js:157:3 › screenshot mazzi-in-aggiornamento dark @review
-  4 passed (2.0s)
