@@ -15,6 +15,17 @@ const deck = {
     { quantity: 2, categories: ['Ramp'], card: { oracleCard: { name: 'Island' } } },
     { quantity: 1, categories: ['Sideboard'], card: { oracleCard: { name: 'Mana Crypt' } } },
     { quantity: 1, categories: ['Maybeboard'], card: { oracleCard: { name: 'Rhystic Study' } } },
+    // Più categorie: conta la principale (la prima).
+    {
+      quantity: 1,
+      categories: ['Ramp', 'Maybeboard'],
+      card: { oracleCard: { name: 'Felidar Guardian' } },
+    },
+    {
+      quantity: 1,
+      categories: ['Maybeboard', 'Ramp'],
+      card: { oracleCard: { name: 'Restoration Angel' } },
+    },
     {
       quantity: 1,
       categories: null,
@@ -63,14 +74,16 @@ describe('archidektDeckId', () => {
 });
 
 describe('archidektToText', () => {
-  it('divide comandante, mazzo e sideboard e salta le carte tolte', () => {
+  it('divide comandante, mazzo e sideboard, salta le carte tolte e conta la categoria principale', () => {
     const { name, text } = archidektToText(deck);
     expect(name).toBe('Mazzo di prova');
     expect(text).toBe(
       [
         'Commander\n1 Tymna the Weaver',
-        'Deck\n1 Sol Ring\n2 Island\n1 Fire // Ice',
-        'Sideboard\n1 Mana Crypt\n1 Rhystic Study',
+        // Felidar Guardian: principale «Ramp», secondaria «Maybeboard» → nel mazzo.
+        'Deck\n1 Sol Ring\n2 Island\n1 Felidar Guardian\n1 Fire // Ice',
+        // Restoration Angel: principale «Maybeboard» → fuori dal mazzo.
+        'Sideboard\n1 Mana Crypt\n1 Rhystic Study\n1 Restoration Angel',
       ].join('\n\n'),
     );
   });

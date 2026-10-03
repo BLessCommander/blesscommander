@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config';
 
 const progetto = JSON.parse(readFileSync(new URL('./docs/progetto.json', import.meta.url), 'utf8'));
 
-// Gli script Playwright (*.spec.js in tests/e2e) li esegue Playwright, non Vitest.
+// Gli script Playwright (*.spec.js in tests/e2e e tests/live) li esegue Playwright, non Vitest.
 export default defineConfig({
   // Stesse costanti che Vite inietta nell'app (web/vite.config.js).
   define: {
@@ -15,6 +15,12 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    exclude: ['**/node_modules/**', '**/dist/**', 'tests/e2e/**', 'test-results/**'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      'tests/e2e/**',
+      'tests/live/**',
+      'test-results/**',
+    ],
   },
 });

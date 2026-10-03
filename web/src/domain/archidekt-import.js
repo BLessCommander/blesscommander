@@ -12,7 +12,10 @@ const HEADERS = { accept: 'application/json' };
 
 /**
  * Converte la risposta di Archidekt in testo con le sezioni Commander / Deck / Sideboard (le
- * intestazioni che il parser dell'app conosce). Le categorie fuori dal mazzo finiscono in Sideboard.
+ * intestazioni che il parser dell'app conosce). Una carta può avere più categorie: su Archidekt conta
+ * la **principale** (la prima, quella con la stella), le altre sono secondarie. Se la principale è fuori
+ * dal mazzo (Maybeboard, Sideboard…) la carta finisce in Sideboard, altrimenti è nel mazzo anche se una
+ * categoria secondaria è «Maybeboard».
  * @returns {{ name: string, text: string }}
  */
 export function archidektToText(json) {
@@ -26,7 +29,7 @@ export function archidektToText(json) {
     const categories = entry.categories ?? [];
     const section = categories.includes('Commander')
       ? 'Commander'
-      : categories.some((c) => outside.has(c))
+      : outside.has(categories[0])
         ? 'Sideboard'
         : 'Deck';
     sections[section].push(`${entry.quantity ?? 1} ${name}`);

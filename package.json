@@ -27,7 +27,9 @@
     "build:data-repo:test": "node data-actions/src/build-data-repo.js data-actions/dist/data-repo-test --test",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
-    "test:visual-review": "playwright test visual-review --project=iphone --project=desktop-chrome"
+    "test:visual-review": "playwright test visual-review --project=iphone --project=desktop-chrome",
+    "live:diagnose": "node tests/live/diagnose-deck.mjs",
+    "test:live": "playwright test -c playwright.live.config.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
