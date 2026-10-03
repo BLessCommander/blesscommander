@@ -70,6 +70,14 @@ test.describe('import dei mazzi di un utente Archidekt @core', () => {
     await list.getByRole('checkbox', { name: 'Mazzo demo uno' }).check();
     await list.getByRole('checkbox', { name: 'Mazzo demo tre' }).check();
     await page.getByRole('button', { name: 'Importa 2 mazzi' }).click();
+    // Il wizard si apre per ogni mazzo, uno dopo l'altro.
+    await expect(page.getByTestId('deck-wizard')).toBeVisible({ timeout: 40_000 });
+    await expect(page.getByTestId('wizard-progress')).toContainText('Mazzo 1 di 2');
+    await page.getByTestId('wizard-save').click();
+    await expect(page.getByTestId('wizard-progress')).toContainText('Mazzo 2 di 2', {
+      timeout: 40_000,
+    });
+    await page.getByTestId('wizard-save').click();
     await expect(page.getByTestId('import-summary')).toBeVisible({ timeout: 40_000 });
     await expect(page.getByText('Tutti i 2 mazzi sono stati importati.')).toBeVisible();
     await expect(page.getByTestId('import-problems')).toHaveCount(0);
@@ -79,6 +87,27 @@ test.describe('import dei mazzi di un utente Archidekt @core', () => {
     await expect(page.locator('.deck__name').filter({ hasText: 'Mazzo demo uno' })).toBeVisible();
     await expect(page.locator('.deck__name').filter({ hasText: 'Mazzo demo tre' })).toBeVisible();
     await expect(page.locator('.deck__name').filter({ hasText: 'Mazzo demo due' })).toHaveCount(0);
+  });
+
+  test('si può saltare un mazzo nel wizard: gli altri si importano lo stesso', async ({ page }) => {
+    test.setTimeout(60_000);
+    await openUser(page);
+    await page.getByLabel('Nome utente su Archidekt').fill('r3dl0g');
+    await page.getByRole('button', { name: 'Cerca i mazzi' }).click();
+    const list = page.getByTestId('user-decks');
+    await expect(list).toBeVisible({ timeout: 15_000 });
+    await list.getByRole('checkbox', { name: 'Mazzo demo uno' }).check();
+    await list.getByRole('checkbox', { name: 'Mazzo demo tre' }).check();
+    await page.getByRole('button', { name: 'Importa 2 mazzi' }).click();
+    await expect(page.getByTestId('deck-wizard')).toBeVisible({ timeout: 40_000 });
+    await page.getByRole('button', { name: 'Salta questo mazzo' }).click();
+    await expect(page.getByTestId('wizard-progress')).toContainText('Mazzo 2 di 2', {
+      timeout: 40_000,
+    });
+    await page.getByTestId('wizard-save').click();
+    await expect(page.getByTestId('import-summary')).toBeVisible({ timeout: 40_000 });
+    await expect(page.getByText('Importati 1 mazzi su 2.')).toBeVisible();
+    await expect(page.getByTestId('import-problems')).toContainText('Mazzo demo uno: saltato');
   });
 
   test('"Seleziona tutti" spunta e toglie tutti i mazzi', async ({ page }) => {
@@ -99,8 +128,8 @@ test.describe('import dei mazzi di un utente Archidekt @core', () => {
   });
 });
 
-test.describe('elenco mazzi di un utente: fascia e nomi @core', () => {
-  test('ogni mazzo ha la sua fascia e il contatore dei selezionati @ui', async ({ page }) => {
+test.describe('elenco mazzi di un utente: nomi e contatore @core', () => {
+  test('il contatore dei selezionati; la fascia si sceglie nel wizard @ui', async ({ page }) => {
     await open(page);
     await page.getByLabel('Mazzi di un utente Archidekt').check();
     await page.getByLabel('Nome utente su Archidekt').fill('r3dl0g');
@@ -108,8 +137,7 @@ test.describe('elenco mazzi di un utente: fascia e nomi @core', () => {
     const list = page.getByTestId('user-decks');
     await expect(list).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText('0 di 3 selezionati')).toBeVisible();
-    await expect(list.getByRole('combobox')).toHaveCount(3);
-    await list.getByRole('combobox', { name: 'Fascia di Mazzo demo due' }).selectOption('F4');
+    await expect(list.getByRole('combobox')).toHaveCount(0);
     await list.getByRole('checkbox', { name: 'Mazzo demo due' }).check();
     await expect(page.getByText('1 di 3 selezionati')).toBeVisible();
     await expect(page.getByRole('combobox', { name: 'Fascia dichiarata' })).toHaveCount(0);

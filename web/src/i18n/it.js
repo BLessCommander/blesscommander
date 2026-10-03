@@ -138,14 +138,18 @@ export const it = {
       selectAll: 'Seleziona tutti',
       selectedCount: (n, total) => `${n} di ${total} selezionati`,
       cards: (n) => (n === 1 ? '1 carta' : `${n} carte`),
-      tierOf: (name) => `Fascia di ${name}`,
-      tierShort: 'Fascia',
-      tierHelp:
-        'La fascia è quella che dichiari per ogni mazzo: parte come provvisoria e la decidono poi le partite.',
+      wizardHelp:
+        'Per ogni mazzo scelto ti chiedo di confermare game changer, combo e carte sospette, e di scegliere la fascia.',
+      wizardOf: (n, total, name) => `Mazzo ${n} di ${total}: ${name}`,
+      skipDeck: 'Salta questo mazzo',
+      skipped: 'saltato',
+      preparingOthers: (done, total) =>
+        `Intanto preparo gli altri mazzi… ${done} di ${total} pronti.`,
       importSelected: (n) =>
         n === 0 ? 'Importa i mazzi scelti' : n === 1 ? 'Importa 1 mazzo' : `Importa ${n} mazzi`,
       otherNick: 'Cambia utente',
-      importing: (done, total) => `Importo i mazzi… ${Math.min(done + 1, total)} di ${total}`,
+      importing: (done, total) =>
+        `Preparo i mazzi (scarico la lista e cerco le combo)… ${Math.min(done + 1, total)} di ${total}. Ci vuole circa un minuto a mazzo.`,
       summary: (ok, total) =>
         ok === total
           ? ok === 1

@@ -1,14 +1,13 @@
 <script setup>
 import { computed, onBeforeUnmount, ref } from 'vue';
-import { importDecks } from '../domain/import-decks.js';
+import DeckWizard from './DeckWizard.vue';
+import { buildPreparedDeck, prepareDeck } from '../domain/import-decks.js';
 import { ImportRequestError, requestAndWait } from '../domain/import-request.js';
 import { it } from '../i18n/it.js';
 import { createScryfall } from '../platform/scryfall.js';
 import { useDataStore } from '../stores/data.js';
 
 const t = it.importDeck.user;
-const TIERS = ['F1', 'F2', 'F3', 'F4', 'F5'];
-const DEFAULT_TIER = 'F3';
 const data = useDataStore();
 const scryfall = createScryfall();
 
@@ -16,11 +15,14 @@ const POLL_MS = 3000;
 const POLL_LIMIT = 70;
 
 const nick = ref('');
-const phase = ref('idle'); // idle | searching | list | importing | done
+const phase = ref('idle'); // idle | searching | list | importing | wizard | done
 const error = ref('');
 const decks = ref([]);
 const selected = ref([]); // id dei mazzi spuntati
-const tiers = ref({}); // id → fascia dichiarata
+const chosen = ref([]); // mazzi scelti, nell'ordine
+const results = ref([]); // esito della preparazione di ogni mazzo scelto (vuoto finché non è pronto)
+const cursor = ref(0); // mazzo che sta guardando il wizard
+const saving = ref(false);
 const progress = ref({ done: 0, total: 0 });
 const outcomes = ref([]);
 
@@ -67,7 +69,6 @@ async function search() {
     const state = await ask('archidekt-user', value);
     decks.value = state.decks ?? [];
     selected.value = [];
-    tiers.value = Object.fromEntries(decks.value.map((d) => [d.id, DEFAULT_TIER]));
     outcomes.value = [];
     phase.value = 'list';
   } catch (e) {
@@ -77,35 +78,84 @@ async function search() {
   }
 }
 
-async function importSelected() {
-  const chosen = decks.value
-    .filter((d) => selected.value.includes(d.id))
-    .map((d) => ({ ...d, tier: tiers.value[d.id] ?? DEFAULT_TIER }));
-  if (!chosen.length) return;
-  error.value = '';
-  phase.value = 'importing';
-  progress.value = { done: 0, total: chosen.length };
-  outcomes.value = await importDecks({
-    decks: chosen,
-    declaredTier: DEFAULT_TIER,
-    requestDeck: (url) => ask('archidekt', url),
-    lookup: (names) => scryfall.lookup(names),
-    save: async (deck, version) => {
-      const saved = await data.write('saveDeck', deck);
-      await data.write('saveDeckVersion', saved.id, version);
-    },
-    now: () => new Date().toISOString(),
-    onProgress: (done, total) => {
-      progress.value = { done, total };
-    },
-  });
-  if (!stopped) phase.value = 'done';
+/** Dopo ogni mazzo preparato o deciso: mostra il wizard del prossimo mazzo pronto, oppure il riepilogo. */
+function step() {
+  if (stopped) return;
+  while (cursor.value < chosen.value.length) {
+    const result = results.value[cursor.value];
+    if (!result) {
+      phase.value = 'importing';
+      return;
+    }
+    if (result.status === 'ready') {
+      phase.value = 'wizard';
+      return;
+    }
+    cursor.value++;
+  }
+  phase.value = 'done';
 }
+
+/** Prepara i mazzi uno dopo l'altro (le richieste all'Action non vanno in parallelo). */
+async function prepareAll() {
+  for (const [index, entry] of chosen.value.entries()) {
+    const result = await prepareDeck({
+      entry,
+      requestDeck: (url) => ask('archidekt', url),
+      lookup: (names) => scryfall.lookup(names),
+      requestCombos: (deckJson) => ask('spellbook', deckJson),
+    });
+    if (stopped) return;
+    results.value[index] = result;
+    if (result.status !== 'ready') outcomes.value.push(result);
+    progress.value = { done: index + 1, total: chosen.value.length };
+    step();
+  }
+}
+
+function importSelected() {
+  chosen.value = decks.value.filter((d) => selected.value.includes(d.id));
+  if (!chosen.value.length) return;
+  error.value = '';
+  outcomes.value = [];
+  results.value = [];
+  cursor.value = 0;
+  progress.value = { done: 0, total: chosen.value.length };
+  phase.value = 'importing';
+  prepareAll();
+}
+
+const current = computed(() => results.value[cursor.value]);
+const preparing = computed(() => progress.value.done < progress.value.total);
+
+function decided(outcome) {
+  outcomes.value.push(outcome);
+  cursor.value++;
+  step();
+}
+
+async function confirmDeck(choice) {
+  const prepared = current.value;
+  saving.value = true;
+  try {
+    const { deck, version } = buildPreparedDeck(prepared, choice, new Date().toISOString());
+    const saved = await data.write('saveDeck', deck);
+    await data.write('saveDeckVersion', saved.id, version);
+    decided({ name: prepared.entry.name, status: 'imported' });
+  } catch (e) {
+    decided({ name: prepared.entry.name, status: 'failed', reason: e?.message || '' });
+  } finally {
+    saving.value = false;
+  }
+}
+
+const skipDeck = () => decided({ name: current.value.entry.name, status: 'skipped' });
 
 const reasonText = (outcome) => {
   if (outcome.status === 'review') {
     return outcome.reason?.includes('not-found') ? t.reviewNotFound : t.reviewNoCommander;
   }
+  if (outcome.status === 'skipped') return t.skipped;
   return outcome.reason || t.requestFailed;
 };
 const importedCount = computed(() => outcomes.value.filter((o) => o.status === 'imported').length);
@@ -189,16 +239,9 @@ const problems = computed(() => outcomes.value.filter((o) => o.status !== 'impor
               <span class="deck-pick__meta muted">{{ t.cards(deck.size) }}</span>
             </span>
           </label>
-          <label class="deck-pick__tier">
-            <span class="sr-only">{{ t.tierOf(deck.name) }}</span>
-            <span class="deck-pick__tier-label" aria-hidden="true">{{ t.tierShort }}</span>
-            <select v-model="tiers[deck.id]" :name="`tier-${deck.id}`">
-              <option v-for="tier in TIERS" :key="tier" :value="tier">{{ tier }}</option>
-            </select>
-          </label>
         </li>
       </ul>
-      <p class="muted">{{ t.tierHelp }}</p>
+      <p class="muted">{{ t.wizardHelp }}</p>
 
       <p v-if="error" class="notice notice--error" role="alert">{{ error }}</p>
       <div class="user-import__actions">
@@ -215,6 +258,25 @@ const problems = computed(() => outcomes.value.filter((o) => o.status !== 'impor
       <p class="import-waiting" role="status" aria-live="polite" data-testid="import-waiting">
         <span class="import-waiting__spinner" aria-hidden="true"></span>
         {{ t.importing(progress.done, progress.total) }}
+      </p>
+    </template>
+
+    <template v-else-if="phase === 'wizard' && current">
+      <p class="wizard-progress" role="status" data-testid="wizard-progress">
+        {{ t.wizardOf(cursor + 1, chosen.length, current.name) }}
+      </p>
+      <DeckWizard
+        :key="cursor"
+        :game-changers="current.gameChangers"
+        :combos="current.combos"
+        :suspects="current.suspects"
+        :busy="saving"
+        :back-label="t.skipDeck"
+        @back="skipDeck"
+        @confirm="confirmDeck"
+      />
+      <p v-if="preparing" class="muted" role="status" aria-live="polite">
+        {{ t.preparingOthers(progress.done, progress.total) }}
       </p>
     </template>
 
@@ -267,6 +329,16 @@ const problems = computed(() => outcomes.value.filter((o) => o.status !== 'impor
 
 .field input:disabled {
   opacity: 0.7;
+}
+
+.wizard-progress {
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 4px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .user-import__head h2 {
@@ -403,39 +475,6 @@ input:focus-visible + .deck-pick__box {
 
 .deck-pick__meta {
   font-size: 0.875rem;
-}
-
-.deck-pick__tier {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-left: 36px;
-}
-
-.deck-pick__tier-label {
-  color: var(--text-muted);
-  font-size: 0.875rem;
-}
-
-.deck-pick__tier select {
-  min-height: var(--tap);
-  min-width: 84px;
-  padding: 0 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text);
-  font: inherit;
-}
-
-@media (min-width: 576px) {
-  .deck-pick__row {
-    grid-template-columns: 1fr auto;
-  }
-
-  .deck-pick__tier {
-    padding-left: 0;
-  }
 }
 
 .import-waiting {

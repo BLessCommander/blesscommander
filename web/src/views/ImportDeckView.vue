@@ -10,7 +10,7 @@ import {
   parseDeckText,
   toggleCommander,
 } from '../domain/deck-parser.js';
-import { detectSuspects, twoCardCombos } from '../domain/deck-features.js';
+import { findDeckCombos, wizardInput } from '../domain/deck-features.js';
 import DeckWizard from '../components/DeckWizard.vue';
 import ImportArchidektUser from '../components/ImportArchidektUser.vue';
 import AppIcon from '../components/ui/AppIcon.vue';
@@ -52,15 +52,14 @@ const notFound = computed(() =>
     cards.value.some((c) => cardKey(c.name) === cardKey(n)),
   ),
 );
-const gameChangerNames = computed(() =>
-  cards.value
-    .filter((c) => lookup.value?.cards[cardKey(c.name)]?.isGameChanger)
-    .map((c) => lookup.value.cards[cardKey(c.name)].name),
+const wizardData = computed(() =>
+  lookup.value
+    ? wizardInput(cards.value, lookup.value)
+    : { gameChangers: [], suspects: { massLand: [], extraTurns: [] } },
 );
+const gameChangerNames = computed(() => wizardData.value.gameChangers);
 const gameChangers = computed(() => gameChangerNames.value.length);
-const suspects = computed(() =>
-  lookup.value ? detectSuspects(cards.value, lookup.value) : { massLand: [], extraTurns: [] },
-);
+const suspects = computed(() => wizardData.value.suspects);
 const check = computed(() => checkImport(lines.value, lookup.value));
 const isCommander = (card) => card.section === 'commander';
 
@@ -135,26 +134,23 @@ async function analyze() {
   if (!check.value.ok) return;
   error.value = '';
   step.value = 'analyzing';
-  try {
-    // Dal browser Spellbook non risponde (CORS): la richiesta passa dall'Action `import`, come Archidekt.
-    const request = JSON.stringify({
-      commanders: commanders.value,
-      cards: cards.value.map((c) => ({ name: c.name, qty: c.qty })),
-    });
-    const done = await requestAndWait({
-      create: (s, u) => data.write('requestImport', s, u),
-      get: (id) => data.getImportRequest(id),
-      source: 'spellbook',
-      url: request,
-      wait,
-      pollMs: POLL_MS,
-      limit: POLL_LIMIT,
-      isStopped: () => stopped,
-    });
-    combos.value = twoCardCombos(done.combos ?? [], lookup.value);
-  } catch {
-    combos.value = null;
-  }
+  // Dal browser Spellbook non risponde (CORS): la richiesta passa dall'Action `import`, come Archidekt.
+  combos.value = await findDeckCombos({
+    commanders: commanders.value,
+    cards: cards.value,
+    lookup: lookup.value,
+    request: (deckJson) =>
+      requestAndWait({
+        create: (s, u) => data.write('requestImport', s, u),
+        get: (id) => data.getImportRequest(id),
+        source: 'spellbook',
+        url: deckJson,
+        wait,
+        pollMs: POLL_MS,
+        limit: POLL_LIMIT,
+        isStopped: () => stopped,
+      }),
+  });
   step.value = 'wizard';
 }
 

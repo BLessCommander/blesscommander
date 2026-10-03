@@ -112,3 +112,38 @@ export function deckFloor(input, params = DEFAULT_PARAMS) {
     params,
   );
 }
+
+/**
+ * Ciò che il wizard mostra per un mazzo: game changer e carte sospette.
+ * @param {{ name: string }[]} cards carte del mazzo (senza duplicati)
+ * @param {CardLookup} lookup
+ */
+export function wizardInput(cards, lookup) {
+  return {
+    gameChangers: cards
+      .map((c) => lookup.cards[cardKey(c.name)])
+      .filter((info) => info?.isGameChanger)
+      .map((info) => info.name),
+    suspects: detectSuspects(cards, lookup),
+  };
+}
+
+/**
+ * Combo a due carte del mazzo, chieste a Commander Spellbook tramite l'Action `import`
+ * (dal browser non risponde). `null` se la richiesta fallisce: il wizard le fa dichiarare a mano.
+ * @param {object} input
+ * @param {string[]} input.commanders
+ * @param {{ name: string, qty: number }[]} input.cards
+ * @param {CardLookup} input.lookup
+ * @param {(deckJson: string) => Promise<{ combos?: Combo[] }>} input.request
+ */
+export async function findDeckCombos({ commanders, cards, lookup, request }) {
+  try {
+    const done = await request(
+      JSON.stringify({ commanders, cards: cards.map((c) => ({ name: c.name, qty: c.qty })) }),
+    );
+    return twoCardCombos(done.combos ?? [], lookup);
+  } catch {
+    return null;
+  }
+}

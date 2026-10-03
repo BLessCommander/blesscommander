@@ -18,6 +18,8 @@ const props = defineProps({
   combos: { type: Array, default: null },
   suspects: { type: Object, required: true },
   busy: { type: Boolean, default: false },
+  /** Testo del pulsante secondario (di norma «Modifica la lista»). */
+  backLabel: { type: String, default: () => it.importDeck.back },
 });
 const emit = defineEmits(['back', 'confirm']);
 
@@ -157,7 +159,7 @@ function confirm() {
 
     <div class="actions">
       <button type="button" class="btn btn--secondary" :disabled="busy" @click="emit('back')">
-        {{ it.importDeck.back }}
+        {{ backLabel }}
       </button>
       <button type="button" class="btn" :disabled="busy" data-testid="wizard-save" @click="confirm">
         {{ it.importDeck.save }}
@@ -197,9 +199,39 @@ function confirm() {
   font-weight: 600;
 }
 .check input {
+  appearance: none;
+  position: relative;
+  flex: none;
   width: 1.5rem;
   height: 1.5rem;
-  flex: none;
+  margin: 0;
+  border: 2px solid var(--text-muted);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.check input:checked {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.check input:checked::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 6px;
+  width: 6px;
+  height: 11px;
+  border: solid var(--on-accent);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.check input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.field small,
+small.muted {
+  font-size: 0.875rem;
 }
 .chips,
 .plain-list {
@@ -229,5 +261,8 @@ function confirm() {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+.actions .btn {
+  flex: 1 1 12rem;
 }
 </style>

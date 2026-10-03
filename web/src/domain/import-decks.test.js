@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { fakeScryfallFetch } from '../../../tests/fixtures/scryfall-fake.js';
 import { createScryfall } from '../platform/scryfall.js';
-import { importDecks } from './import-decks.js';
+import { buildPreparedDeck, prepareDeck } from './import-decks.js';
 import { ImportRequestError, requestAndWait } from './import-request.js';
 
 const scryfall = createScryfall({ fetchImpl: fakeScryfallFetch, pauseMs: 0 });
@@ -17,51 +17,90 @@ const lists = {
   'https://archidekt.com/decks/3': 'Commander\n1 Tymna the Weaver\n\nDeck\n1 Carta inesistente',
 };
 
-describe('importDecks', () => {
-  it('salva solo i mazzi completi e dice perché gli altri no', async () => {
-    const saved = [];
-    const progress = [];
-    const outcomes = await importDecks({
-      decks,
-      declaredTier: 'F2',
-      requestDeck: async (url) => {
-        if (!(url in lists)) throw new Error('Mazzo privato');
-        return { deckName: 'Nome Archidekt', result: lists[url] };
+const comboAnswer = { combos: [] };
+const prepare = (entry, over = {}) =>
+  prepareDeck({
+    entry,
+    requestDeck: async (url) => {
+      if (!(url in lists)) throw new Error('Mazzo privato');
+      return { deckName: 'Nome Archidekt', result: lists[url] };
+    },
+    lookup: (names) => scryfall.lookup(names),
+    requestCombos: async () => comboAnswer,
+    ...over,
+  });
+
+describe('prepareDeck', () => {
+  it('prepara i mazzi completi e dice perché gli altri no', async () => {
+    const results = [];
+    for (const entry of decks) results.push(await prepare(entry));
+    expect(results.map((r) => r.status)).toEqual(['ready', 'review', 'review', 'failed']);
+    expect(results[1]).toMatchObject({ name: 'Senza comandante', reason: 'no-commander' });
+    expect(results[2]).toMatchObject({ name: 'Carta strana', reason: 'not-found' });
+    expect(results[3]).toMatchObject({ name: 'Non risponde', reason: 'Mazzo privato' });
+    expect(results[0]).toMatchObject({ name: 'Nome Archidekt', combos: [] });
+  });
+
+  it('porta al wizard game changer, carte sospette e combo', async () => {
+    const url = 'https://archidekt.com/decks/9';
+    const ready = await prepare(
+      { name: 'Ricco', url },
+      {
+        requestDeck: async () => ({
+          result:
+            "Commander\n1 Tymna the Weaver\n\nDeck\n1 Rhystic Study\n1 Armageddon\n1 Thassa's Oracle\n1 Demonic Consultation",
+        }),
+        requestCombos: async () => ({
+          combos: [
+            {
+              id: '742-1295',
+              cards: ["Thassa's Oracle", 'Demonic Consultation'],
+              produces: ['Win the game'],
+              infinite: true,
+            },
+          ],
+        }),
       },
-      lookup: (names) => scryfall.lookup(names),
-      save: async (deck, version) => saved.push({ deck, version }),
-      now: () => '2026-10-03T10:00:00Z',
-      onProgress: (done, total) => progress.push([done, total]),
+    );
+    expect(ready.gameChangers).toEqual(['Rhystic Study']);
+    expect(ready.suspects).toEqual({ massLand: ['Armageddon'], extraTurns: [] });
+    expect(ready.combos).toHaveLength(1);
+    expect(ready.combos[0].manaValue).toBe(3);
+  });
+
+  it('se la ricerca delle combo fallisce il mazzo va avanti con combo null (scelta a mano)', async () => {
+    const ready = await prepare(decks[0], {
+      requestCombos: async () => {
+        throw new Error('Commander Spellbook non risponde');
+      },
     });
-    expect(outcomes).toEqual([
-      { name: 'Buono', status: 'imported' },
-      { name: 'Senza comandante', status: 'review', reason: 'no-commander' },
-      { name: 'Carta strana', status: 'review', reason: 'not-found' },
-      { name: 'Non risponde', status: 'failed', reason: 'Mazzo privato' },
-    ]);
-    expect(saved).toHaveLength(1);
-    expect(saved[0].deck).toMatchObject({
+    expect(ready.status).toBe('ready');
+    expect(ready.combos).toBeNull();
+  });
+});
+
+describe('buildPreparedDeck', () => {
+  it('salva nome di Archidekt, fascia dichiarata e esito del wizard', async () => {
+    const ready = await prepare(decks[0]);
+    const assessment = {
+      floor: 'F1',
+      massLandDestruction: false,
+      chainExtraTurns: false,
+      combos: [],
+    };
+    const { deck, version } = buildPreparedDeck(
+      ready,
+      { declaredTier: 'F2', assessment },
+      '2026-10-03T10:00:00Z',
+    );
+    expect(deck).toMatchObject({
       name: 'Nome Archidekt',
       commanders: ['Tymna the Weaver'],
       declaredTier: 'F2',
+      selfAssessment: { mld: false, extraTurns: false },
       source: { type: 'archidekt', url: 'https://archidekt.com/decks/1' },
     });
-    expect(progress.at(-1)).toEqual([4, 4]);
-  });
-
-  it('un errore nel salvataggio non ferma gli altri mazzi', async () => {
-    let calls = 0;
-    const outcomes = await importDecks({
-      decks: decks.slice(0, 1).concat(decks.slice(0, 1)),
-      declaredTier: 'F3',
-      requestDeck: async (url) => ({ result: lists[url] }),
-      lookup: (names) => scryfall.lookup(names),
-      save: async () => {
-        if (++calls === 1) throw new Error('Scrittura non riuscita');
-      },
-      now: () => '2026-10-03T10:00:00Z',
-    });
-    expect(outcomes.map((o) => o.status)).toEqual(['failed', 'imported']);
+    expect(version).toMatchObject({ floor: 'F1', combos: [] });
   });
 });
 
@@ -99,26 +138,5 @@ describe('requestAndWait', () => {
     await expect(
       requestAndWait({ ...base, ...pending, isStopped: () => true }),
     ).rejects.toMatchObject({ kind: 'stopped' });
-  });
-});
-
-describe('importDecks: nome e fascia per mazzo', () => {
-  it('il nome è quello di Archidekt e ogni mazzo ha la sua fascia', async () => {
-    const saved = [];
-    await importDecks({
-      decks: [
-        { name: 'Nome dall’elenco', url: 'https://archidekt.com/decks/1', tier: 'F4' },
-        { name: 'Altro', url: 'https://archidekt.com/decks/1' },
-      ],
-      declaredTier: 'F2',
-      requestDeck: async (url) => ({ deckName: 'Jodah', result: lists[url] }),
-      lookup: (names) => scryfall.lookup(names),
-      save: async (deck) => saved.push(deck),
-      now: () => '2026-10-03T10:00:00Z',
-    });
-    expect(saved.map((d) => [d.name, d.declaredTier])).toEqual([
-      ['Jodah', 'F4'],
-      ['Jodah', 'F2'],
-    ]);
   });
 });

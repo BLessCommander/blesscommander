@@ -1,61 +1,67 @@
 import { buildDeckFromImport, checkImport } from './deck-import.js';
-import { deckCards, parseDeckText } from './deck-parser.js';
+import { findDeckCombos, wizardInput } from './deck-features.js';
+import { commanderNames, deckCards, mergeDuplicates, parseDeckText } from './deck-parser.js';
 
 /**
- * @typedef {{ name: string, url: string, tier?: string }} DeckToImport `tier` è la fascia dichiarata per quel mazzo
- * @typedef {{ name: string, status: 'imported' | 'review' | 'failed', reason?: string }} ImportOutcome
+ * @typedef {{ name: string, url: string }} DeckToImport
+ * @typedef {{ name: string, status: 'imported' | 'review' | 'failed' | 'skipped', reason?: string }} ImportOutcome
+ * @typedef {{ status: 'ready', entry: DeckToImport, name: string, lines: any[], lookup: any,
+ *   combos: any[] | null, gameChangers: string[], suspects: { massLand: string[], extraTurns: string[] } }} PreparedDeck
  */
 
 /**
- * Importa più mazzi di Archidekt, uno dopo l'altro (le scritture sul repository non vanno in parallelo).
- * Un mazzo va salvato solo se la lista è completa: comandante presente e carte tutte trovate.
+ * Prepara un mazzo di Archidekt per il wizard: scarica la lista, cerca le carte e le combo.
+ * Un mazzo va avanti solo se la lista è completa: comandante presente e carte tutte trovate.
  * Gli altri restano da importare a mano dal loro link (`review`) oppure sono falliti (`failed`).
  * @param {object} input
- * @param {DeckToImport[]} input.decks
- * @param {string} input.declaredTier fascia per i mazzi che non ne indicano una
+ * @param {DeckToImport} input.entry
  * @param {(url: string) => Promise<{ deckName?: string, result: string }>} input.requestDeck
  * @param {(names: string[]) => Promise<any>} input.lookup
- * @param {(deck: any, version: any) => Promise<void>} input.save
- * @param {() => string} input.now
- * @param {(done: number, total: number) => void} [input.onProgress]
- * @returns {Promise<ImportOutcome[]>}
+ * @param {(deckJson: string) => Promise<{ combos?: any[] }>} input.requestCombos
+ * @returns {Promise<PreparedDeck | ImportOutcome>}
  */
-export async function importDecks({
-  decks,
-  declaredTier,
-  requestDeck,
-  lookup,
-  save,
-  now,
-  onProgress,
-}) {
-  /** @type {ImportOutcome[]} */
-  const outcomes = [];
-  for (const [index, entry] of decks.entries()) {
-    onProgress?.(index, decks.length);
-    try {
-      const state = await requestDeck(entry.url);
-      const lines = parseDeckText(state.result);
-      const found = await lookup(deckCards(lines).map((l) => l.name));
-      const check = checkImport(lines, found);
-      if (!check.ok) {
-        outcomes.push({ name: entry.name, status: 'review', reason: check.reasons.join(',') });
-        continue;
-      }
-      const { deck, version } = buildDeckFromImport({
-        name: state.deckName || entry.name || '',
-        lines,
-        lookup: found,
-        declaredTier: entry.tier ?? declaredTier,
-        importedAt: now(),
-        sourceUrl: entry.url,
-      });
-      await save(deck, version);
-      outcomes.push({ name: entry.name, status: 'imported' });
-    } catch (error) {
-      outcomes.push({ name: entry.name, status: 'failed', reason: error?.message || '' });
-    }
+export async function prepareDeck({ entry, requestDeck, lookup, requestCombos }) {
+  try {
+    const state = await requestDeck(entry.url);
+    const lines = parseDeckText(state.result);
+    const found = await lookup(deckCards(lines).map((l) => l.name));
+    const check = checkImport(lines, found);
+    if (!check.ok) return { name: entry.name, status: 'review', reason: check.reasons.join(',') };
+    const cards = mergeDuplicates(deckCards(lines));
+    const combos = await findDeckCombos({
+      commanders: commanderNames(lines),
+      cards,
+      lookup: found,
+      request: requestCombos,
+    });
+    return {
+      status: 'ready',
+      entry,
+      name: state.deckName || entry.name || '',
+      lines,
+      lookup: found,
+      combos,
+      ...wizardInput(cards, found),
+    };
+  } catch (error) {
+    return { name: entry.name, status: 'failed', reason: error?.message || '' };
   }
-  onProgress?.(decks.length, decks.length);
-  return outcomes;
+}
+
+/**
+ * Mazzo e versione da salvare, con la scelta fatta nel wizard.
+ * @param {PreparedDeck} prepared
+ * @param {{ declaredTier: string, assessment: any }} choice
+ * @param {string} importedAt
+ */
+export function buildPreparedDeck(prepared, { declaredTier, assessment }, importedAt) {
+  return buildDeckFromImport({
+    name: prepared.name,
+    lines: prepared.lines,
+    lookup: prepared.lookup,
+    declaredTier,
+    assessment,
+    importedAt,
+    sourceUrl: prepared.entry.url,
+  });
 }
