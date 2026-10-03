@@ -61,7 +61,7 @@
 | C-13 | [ ] | Storico partite con filtri | C-10 | 03 | UC-21 |
 | C-14 | [ ] | Pagina Regolamento generata dai parametri + pagina Gruppo con parametri del motore | C-03, C-01 | 01, 02 | UC-22 |
 | C-15 | [ ] | Pubblicazione: scansione segreti, repository del codice reso pubblico (con conferma), GitHub Pages via Actions, CI con test, pubblicazione automatica del motore nel repo dati | C-01…C-14 | 06 (§6.11) | CI, UC-28 |
-| C-16 | [~] | Passaggio al live su GitHub (richiesto dall'utente). **Fatto:** Action `import`, motore e schemi su `-data` (commit 15aaf11, `config/` intatta); codice reso pubblico; Pages attivo su https://blesscommander.github.io/blesscommander/ (workflow `pages.yml`, senza token si vede solo l'accesso); scansione segreti pulita. **Resta:** import dal vivo provato dall'utente con token vero; push del commit e4be866. Originale: pubblicare su `blesscommander-data` workflow `recalc` e `import` + `engine/` + `config/` con l'admin vero (comandi su GitHub: spiegare e chiedere conferma uno per uno, regola 11); membri; app su GitHub Pages collegata al repository vero; scansione segreti prima di rendere pubblico il codice. L'utente autorizza la pubblicazione dell'Action `import` | C-06 | 06 (§6.11) | UC-28 |
+| C-16 | [x] | Passaggio al live su GitHub (richiesto dall'utente). **Fatto:** Action `import`, motore e schemi su `-data` (commit 15aaf11, `config/` intatta); codice reso pubblico; Pages attivo su https://blesscommander.github.io/blesscommander/ (workflow `pages.yml`, senza token si vede solo l'accesso); scansione segreti pulita. Accesso con token vero e import dal vivo provati dall'utente: funzionano. Originale: pubblicare su `blesscommander-data` workflow `recalc` e `import` + `engine/` + `config/` con l'admin vero (comandi su GitHub: spiegare e chiedere conferma uno per uno, regola 11); membri; app su GitHub Pages collegata al repository vero; scansione segreti prima di rendere pubblico il codice. L'utente autorizza la pubblicazione dell'Action `import` | C-06 | 06 (§6.11) | UC-28 |
 
 ---
 
@@ -105,10 +105,10 @@
 
 > Aggiornato da Claude a fine sessione. Massimo 15 righe: è ciò che la sessione successiva legge per ripartire senza rileggere tutto.
 
-- **Ultima voce lavorata:** C-16 (`[~]`): live su GitHub fatto, manca la prova dell'import dal vivo e il push dell'ultimo commit (`e4be866`, banner di aggiornamento).
-- **Stato:** B-01–B-12, C-01–C-06b fatte. Vitest 62, Playwright (preview 2, data-pages 8+8, access 18) e lint verdi. Sito online: mostra solo l'accesso senza token.
+- **Ultima voce lavorata:** C-16 (fatta): live su GitHub, accesso con token e import dal vivo provati dall'utente. Tutto pubblicato su `main`.
+- **Stato:** B-01–B-12, C-01–C-06b, C-16 fatte. Vitest 62, Playwright (preview 2, data-pages 8+8, access 18) e lint verdi. Sito online: mostra solo l'accesso senza token.
 - **File principali:** `.github/workflows/pages.yml`, `web/src/App.vue` (stato `signed-out`), `web/src/config/environment-mode.js`, `data-actions/src/build-data-repo.js` (`--live`), `web/src/data/github-provider.js` (`pendingKind`), `SyncBanner.vue`, `tests/e2e/preview.spec.js` (seconda build pubblica).
 - **Scelte:** `VITE_PUBLIC_SITE=true` solo nel workflow di Pages; `npm run dev`/`preview` restano demo. Il banner «in aggiornamento» solo per scritture in `decks/ games/ votes/ config/`, con testo per tipo. Su `-data` non si sovrascrive `config/` (ha i membri veri).
-- **Problemi aperti:** import dal vivo mai provato con token vero; `access.spec.js` instabile (C-04d); Moxfield (S-01); `-data-test` da popolare. Se Playwright dà «connection refused», non lanciare due comandi insieme.
-- **Voci nuove:** C-06d (nome mazzo già usato: aggiorna o rinomina), C-06e (latenza dopo l'import), C-16b (rifinitura pagina Accesso), C-06c (grafica import).
-- **Prossimo passo consigliato:** chiudere C-16 (push + prova import), poi C-06d/C-06e o C-07 (wizard di autovalutazione).
+- **Problemi aperti:** `access.spec.js` instabile (C-04d); Moxfield (S-01); `-data-test` da popolare. Se Playwright dà «connection refused», non lanciare due comandi insieme.
+- **Voci nuove:** C-06f (elimina mazzo: archivio se ha partite), C-06d (nome mazzo già usato: aggiorna o rinomina), C-06e (latenza dopo l'import), C-16b (rifinitura pagina Accesso), C-06c (grafica import).
+- **Prossimo passo consigliato:** C-06e (latenza dopo l'import) e C-06d (nome già usato), poi C-06f; oppure C-07 (wizard di autovalutazione).
