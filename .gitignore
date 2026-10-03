@@ -4,6 +4,7 @@ dist-public/
 coverage/
 test-results/
 review-screenshots/
+.claude/settings.local.json
 playwright-report/
 .env
 .env.*
