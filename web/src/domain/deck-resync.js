@@ -1,5 +1,7 @@
+import { tierId, tierNumber } from '@blesscommander/tier-engine';
 import { buildDeckFromImport, checkImport } from './deck-import.js';
-import { parseDeckText } from './deck-parser.js';
+import { CHAIN_EXTRA_TURNS_FROM, deckFloor, wizardInput } from './deck-features.js';
+import { commanderNames, deckCards, mergeDuplicates, parseDeckText } from './deck-parser.js';
 
 /**
  * @typedef {{ name: string, qty: number }} VersionCard
@@ -62,6 +64,8 @@ export function planResync({ deck, current, fetched, lookup, now }) {
 
   return {
     status: 'update',
+    cards: mergeDuplicates(deckCards(lines)),
+    commanders: commanderNames(lines),
     deck: {
       ...deck,
       name: built.deck.name,
@@ -80,3 +84,77 @@ export function planResync({ deck, current, fetched, lookup, now }) {
     },
   };
 }
+
+const sameSet = (a, b) => a.length === b.length && sameList(a, b);
+const comboKeys = (combos) =>
+  (combos ?? [])
+    .filter((c) => c.cards?.length)
+    .map((c) => [...c.cards].sort().join('+'))
+    .sort();
+
+/**
+ * Dopo un aggiornamento che cambia le carte: ricontrolla game changer, combo e carte sospette.
+ * - `needsWizard` è vero se qualcosa è cambiato (game changer, combo, carte sospette nuove), se le
+ *   combo non si sono potute verificare o se la versione salvata non ha un pavimento (mazzi vecchi);
+ * - altrimenti `assessment` è già pronto e l'aggiornamento si salva senza chiedere nulla.
+ * Le risposte di prima (terre distrutte, turni extra) restano: si chiede solo per le carte nuove.
+ * @param {object} input
+ * @param {any} input.deck mazzo salvato
+ * @param {any} [input.current] ultima versione salvata
+ * @param {{ cards: { name: string, qty: number }[] }} input.plan esito di `planResync` (`update`)
+ * @param {any} input.lookup dati Scryfall delle carte scaricate
+ * @param {any[] | null} input.combos combo a due carte; `null` se Spellbook non ha risposto
+ */
+export function planRecheck({ deck, current, plan, lookup, combos }) {
+  const { gameChangers, suspects } = wizardInput(plan.cards, lookup);
+  const before = new Set((current?.cards ?? []).map((c) => c.name));
+  const fresh = (names) => names.filter((n) => !before.has(n));
+  const newMassLand = fresh(suspects.massLand);
+  const newExtraTurns = fresh(suspects.extraTurns);
+
+  const prev = deck.selfAssessment ?? {};
+  const massLand =
+    prev.mld === undefined ? suspects.massLand.length > 0 : prev.mld || newMassLand.length > 0;
+  const chainExtraTurns =
+    prev.extraTurns === undefined
+      ? suspects.extraTurns.length >= CHAIN_EXTRA_TURNS_FROM
+      : prev.extraTurns ||
+        (newExtraTurns.length > 0 && suspects.extraTurns.length >= CHAIN_EXTRA_TURNS_FROM);
+
+  const manual = (current?.combos ?? []).filter((c) => !c.cards?.length);
+  const usedCombos = combos ?? manual;
+  const floor = deckFloor({
+    gameChangers: gameChangers.length,
+    massLandDestruction: massLand,
+    chainExtraTurns,
+    combos: usedCombos,
+  });
+  const needsWizard =
+    current?.floor === undefined ||
+    combos === null ||
+    !sameSet(gameChangers, current.gameChangers ?? []) ||
+    !sameSet(comboKeys(combos), comboKeys(current.combos)) ||
+    newMassLand.length > 0 ||
+    newExtraTurns.length > 0;
+  const declaredTier = tierId(Math.max(tierNumber(deck.declaredTier), tierNumber(floor)));
+
+  return {
+    needsWizard,
+    input: { gameChangers, suspects, combos },
+    defaults: { massLand, chainExtraTurns, declaredTier },
+    assessment: { floor, massLandDestruction: massLand, chainExtraTurns, combos: usedCombos },
+    declaredTier,
+  };
+}
+
+/**
+ * Versione da salvare con l'esito del controllo (pavimento, combo, segnalazioni).
+ * @param {any} version versione di `planResync`
+ * @param {{ floor: string, massLandDestruction: boolean, chainExtraTurns: boolean, combos: any[] }} assessment
+ */
+export const withAssessment = (version, assessment) => ({
+  ...version,
+  floor: assessment.floor,
+  combos: assessment.combos,
+  flags: { mld: assessment.massLandDestruction, extraTurns: assessment.chainExtraTurns },
+});

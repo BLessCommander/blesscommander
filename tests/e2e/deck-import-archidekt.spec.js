@@ -167,15 +167,36 @@ test.describe('aggiorna il mazzo da Archidekt @core', () => {
     await expect(resync).toHaveCount(1); // gli altri mazzi di esempio non vengono da Archidekt
     await expect(resync).toHaveText('Aggiorna da Archidekt');
 
+    // Nel mazzo di esempio entra un game changer: il wizard si riapre per ricontrollare.
     await resync.click();
+    await expect(page.getByTestId('deck-wizard')).toBeVisible({ timeout: 40_000 });
+    await expect(page.getByRole('dialog', { name: 'Ricontrolla il mazzo' })).toBeVisible();
+    await expect(page.getByTestId('wizard-game-changers').locator('.chip')).toHaveText([
+      'Rhystic Study',
+    ]);
+    await page.getByTestId('wizard-save').click();
     await expect(page.getByTestId('resync-status')).toContainText(
       'Mazzo aggiornato: 1 carta entrata.',
       { timeout: 30_000 },
     );
+    await expect(page.getByTestId('deck-wizard')).toHaveCount(0);
 
     await resync.click();
     await expect(page.getByTestId('resync-status')).toContainText('già aggiornato', {
       timeout: 30_000,
     });
+  });
+
+  test('si può annullare il ricontrollo: il mazzo salvato non cambia', async ({ page }) => {
+    test.setTimeout(60_000);
+    await importOne(page);
+    await page.getByTestId('resync').click();
+    await expect(page.getByTestId('deck-wizard')).toBeVisible({ timeout: 40_000 });
+    await page.getByRole('button', { name: 'Annulla l’aggiornamento' }).click();
+    await expect(page.getByTestId('deck-wizard')).toHaveCount(0);
+    await expect(page.getByTestId('resync-status')).toContainText('Aggiornamento annullato');
+    // Non è stato salvato nulla: l'aggiornamento si può rifare.
+    await page.getByTestId('resync').click();
+    await expect(page.getByTestId('deck-wizard')).toBeVisible({ timeout: 40_000 });
   });
 });

@@ -18,14 +18,22 @@ const props = defineProps({
   combos: { type: Array, default: null },
   suspects: { type: Object, required: true },
   busy: { type: Boolean, default: false },
+  /** Risposte di partenza (riconferma di un mazzo già valutato): terre, turni extra, fascia. */
+  initial: { type: Object, default: () => ({}) },
+  title: { type: String, default: () => it.importDeck.wizard.title },
+  intro: { type: String, default: () => it.importDeck.wizard.intro },
+  /** Pulsanti sempre visibili in fondo (dentro una finestra che scorre). */
+  sticky: { type: Boolean, default: false },
   /** Testo del pulsante secondario (di norma «Modifica la lista»). */
   backLabel: { type: String, default: () => it.importDeck.back },
 });
 const emit = defineEmits(['back', 'confirm']);
 
 const t = it.importDeck.wizard;
-const massLand = ref(props.suspects.massLand.length > 0);
-const chainExtraTurns = ref(props.suspects.extraTurns.length >= CHAIN_EXTRA_TURNS_FROM);
+const massLand = ref(props.initial.massLand ?? props.suspects.massLand.length > 0);
+const chainExtraTurns = ref(
+  props.initial.chainExtraTurns ?? props.suspects.extraTurns.length >= CHAIN_EXTRA_TURNS_FROM,
+);
 const manual = ref('none'); // none | late | rapid, solo se le combo non sono verificate
 
 const combos = computed(() => {
@@ -42,7 +50,7 @@ const floor = computed(() =>
   }),
 );
 const choices = computed(() => tierChoices(floor.value));
-const declared = ref(floor.value);
+const declared = ref(props.initial.declaredTier ?? floor.value);
 // Se il pavimento sale sopra la fascia scelta, la fascia lo segue.
 watch(floor, (value) => {
   if (choices.value.find((c) => c.tier === declared.value)?.disabled) declared.value = value;
@@ -67,10 +75,10 @@ function confirm() {
 </script>
 
 <template>
-  <section class="stack" data-testid="deck-wizard" :aria-label="t.title">
+  <section class="stack" data-testid="deck-wizard" :aria-label="title">
     <header>
-      <h2>{{ t.title }}</h2>
-      <p class="muted">{{ t.intro }}</p>
+      <h2>{{ title }}</h2>
+      <p class="muted">{{ intro }}</p>
     </header>
 
     <div class="card stack" data-testid="wizard-game-changers">
@@ -157,7 +165,7 @@ function confirm() {
       </label>
     </div>
 
-    <div class="actions">
+    <div class="actions" :class="{ 'actions--sticky': sticky }">
       <button type="button" class="btn btn--secondary" :disabled="busy" @click="emit('back')">
         {{ backLabel }}
       </button>
@@ -264,5 +272,17 @@ small.muted {
 }
 .actions .btn {
   flex: 1 1 12rem;
+}
+.actions--sticky {
+  position: sticky;
+  /* A filo del bordo della finestra: il corpo della finestra ha un margine interno in basso. */
+  bottom: calc(var(--space) * -1);
+  z-index: 1;
+  row-gap: 0.5rem;
+  margin: 0 calc(var(--space) * -1) calc(var(--space) * -1);
+  padding: 0.75rem var(--space) calc(0.75rem + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -6px 12px -8px rgb(0 0 0 / 35%);
 }
 </style>

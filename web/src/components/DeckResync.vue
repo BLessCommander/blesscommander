@@ -1,7 +1,11 @@
 <script setup>
-import { onBeforeUnmount, ref } from 'vue';
+import { onBeforeUnmount, ref, shallowRef, watch } from 'vue';
+import { useOverlay } from '../composables/use-overlay.js';
 import { deckCards, parseDeckText } from '../domain/deck-parser.js';
-import { planResync } from '../domain/deck-resync.js';
+import { findDeckCombos } from '../domain/deck-features.js';
+import { planRecheck, planResync, withAssessment } from '../domain/deck-resync.js';
+import AppModal from './ui/AppModal.vue';
+import DeckWizard from './DeckWizard.vue';
 import { ImportRequestError, requestAndWait } from '../domain/import-request.js';
 import { it } from '../i18n/it.js';
 import { createScryfall } from '../platform/scryfall.js';
@@ -21,6 +25,18 @@ const POLL_LIMIT = 70;
 
 const working = ref(false);
 const result = ref(null); // { kind: 'ok' | 'same' | 'error', text }
+// Aggiornamento in attesa della conferma nel wizard. `shallowRef`: i dati vanno poi al provider, che
+// li copia con structuredClone e non regge i proxy profondi di Vue.
+const pending = shallowRef(null);
+const saving = ref(false);
+
+// Il ricontrollo si apre in una finestra a larghezza piena (nella scheda del mazzo non c'è spazio).
+const overlayName = `recheck-${props.deck.id}`;
+const overlay = useOverlay(overlayName);
+watch(overlay.isOpen, (open) => {
+  // Chiusa con il tasto indietro o toccando fuori: equivale ad annullare.
+  if (!open && pending.value && !saving.value) cancelRecheck();
+});
 
 let stopped = false;
 onBeforeUnmount(() => {
@@ -38,9 +54,58 @@ function summaryText({ added, removed, changed, renamed }) {
   return parts.join(', ');
 }
 
+/** Salva l'aggiornamento: nuova versione (con l'esito del controllo, se c'è) e mazzo aggiornato. */
+async function commit({ deck, plan, recheck, choice }) {
+  const assessment = choice?.assessment ?? recheck?.assessment;
+  if (plan.version) {
+    const version = assessment ? withAssessment(plan.version, assessment) : plan.version;
+    await data.write('saveDeckVersion', deck.id, version);
+  }
+  const fresh = (await data.getDeck(deck.id)).deck;
+  await data.write('saveDeck', {
+    ...fresh,
+    name: plan.deck.name,
+    commanders: plan.deck.commanders,
+    colorIdentity: plan.deck.colorIdentity,
+    source: plan.deck.source,
+    ...(choice?.declaredTier ? { declaredTier: choice.declaredTier } : {}),
+    ...(assessment
+      ? {
+          selfAssessment: {
+            ...fresh.selfAssessment,
+            mld: assessment.massLandDestruction,
+            extraTurns: assessment.chainExtraTurns,
+          },
+        }
+      : {}),
+  });
+  result.value = { kind: 'ok', text: t.updated(summaryText(plan.summary)) };
+}
+
+async function confirmRecheck(choice) {
+  const { deck, plan, recheck } = pending.value;
+  saving.value = true;
+  try {
+    await commit({ deck, plan, recheck, choice });
+    pending.value = null;
+    overlay.close();
+  } catch {
+    result.value = { kind: 'error', text: t.saveFailed };
+  } finally {
+    saving.value = false;
+  }
+}
+
+function cancelRecheck() {
+  pending.value = null;
+  overlay.close();
+  result.value = { kind: 'same', text: t.cancelled };
+}
+
 async function resync() {
   working.value = true;
   result.value = null;
+  pending.value = null;
   try {
     const { deck, versions } = await data.getDeck(props.deck.id);
     const current = versions.find((v) => v.version === deck.currentVersion) ?? versions.at(-1);
@@ -68,17 +133,31 @@ async function resync() {
       result.value = { kind: 'same', text: t.same };
     } else if (plan.status === 'review') {
       result.value = { kind: 'error', text: t.review };
+    } else if (!plan.version) {
+      await commit({ deck, plan });
     } else {
-      if (plan.version) await data.write('saveDeckVersion', deck.id, plan.version);
-      const fresh = (await data.getDeck(deck.id)).deck;
-      await data.write('saveDeck', {
-        ...fresh,
-        name: plan.deck.name,
-        commanders: plan.deck.commanders,
-        colorIdentity: plan.deck.colorIdentity,
-        source: plan.deck.source,
+      // Le carte sono cambiate: si ricontrollano game changer, combo e carte sospette.
+      const combos = await findDeckCombos({
+        commanders: plan.commanders,
+        cards: plan.cards,
+        lookup,
+        request: (deckJson) =>
+          requestAndWait({
+            create: (s, u) => data.write('requestImport', s, u),
+            get: (id) => data.getImportRequest(id),
+            source: 'spellbook',
+            url: deckJson,
+            wait,
+            pollMs: POLL_MS,
+            limit: POLL_LIMIT,
+            isStopped: () => stopped,
+          }),
       });
-      result.value = { kind: 'ok', text: t.updated(summaryText(plan.summary)) };
+      const recheck = planRecheck({ deck, current, plan, lookup, combos });
+      if (recheck.needsWizard) {
+        pending.value = { deck, plan, recheck };
+        overlay.open();
+      } else await commit({ deck, plan, recheck, choice: { declaredTier: recheck.declaredTier } });
     }
   } catch (e) {
     if (stopped) return;
@@ -120,6 +199,22 @@ async function resync() {
       <span v-if="working" class="resync__spinner" aria-hidden="true"></span>
       {{ working ? t.waiting : result.text }}
     </p>
+    <AppModal :name="overlayName" :title="t.recheckTitle">
+      <DeckWizard
+        v-if="pending"
+        :game-changers="pending.recheck.input.gameChangers"
+        :combos="pending.recheck.input.combos"
+        :suspects="pending.recheck.input.suspects"
+        :initial="pending.recheck.defaults"
+        :title="t.recheckSection"
+        :intro="t.recheckIntro"
+        sticky
+        :back-label="t.cancel"
+        :busy="saving"
+        @back="cancelRecheck"
+        @confirm="confirmRecheck"
+      />
+    </AppModal>
   </div>
 </template>
 

@@ -291,11 +291,18 @@ for (const theme of THEMES) {
     await page.getByTestId('wizard-save').click();
     await page.waitForURL(/#\/mazzi$/);
     await page.getByTestId('resync').click();
+    // Nel mazzo di esempio entra un game changer: prima il wizard di ricontrollo, poi l'esito.
+    await page.getByTestId('deck-wizard').waitFor({ timeout: 40000 });
+    await mkdir('review-screenshots', { recursive: true });
+    await page.screenshot({
+      path: `review-screenshots/mazzi-ricontrollo-${testInfo.project.name}-${theme}.png`,
+      // Solo la parte visibile: la finestra è a posizione fissa e scorre da sola.
+    });
+    await page.getByTestId('wizard-save').click();
     await page
       .getByTestId('resync-status')
       .getByText('Mazzo aggiornato')
       .waitFor({ timeout: 30000 });
-    await mkdir('review-screenshots', { recursive: true });
     await page.screenshot({
       path: `review-screenshots/mazzi-aggiorna-${testInfo.project.name}-${theme}.png`,
       fullPage: true,

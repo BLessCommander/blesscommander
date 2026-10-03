@@ -103,7 +103,16 @@ export const it = {
       button: 'Aggiorna da Archidekt',
       buttonFor: (name) => `Aggiorna da Archidekt: ${name}`,
       working: 'Aggiorno…',
-      waiting: 'Scarico il mazzo da Archidekt e lo confronto con quello salvato… circa un minuto.',
+      waiting:
+        'Scarico il mazzo da Archidekt, lo confronto con quello salvato e cerco le combo… circa due minuti.',
+      recheckTitle: 'Ricontrolla il mazzo',
+      recheckSection: 'Cosa controllare',
+      recheckIntro:
+        'Il mazzo è cambiato: con le carte nuove cambiano game changer, combo o carte sospette. Controlla di nuovo e conferma: l’aggiornamento si salva solo se confermi.',
+      cancel: 'Annulla l’aggiornamento',
+      cancelled: 'Aggiornamento annullato: il mazzo salvato non è cambiato.',
+      saveFailed:
+        'Non sono riuscito a salvare l’aggiornamento. Riprova: il mazzo salvato non è cambiato.',
       same: 'Il mazzo è già aggiornato: nessuna modifica su Archidekt.',
       updated: (summary) => `Mazzo aggiornato: ${summary}.`,
       review:
