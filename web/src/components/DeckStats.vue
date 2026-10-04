@@ -28,6 +28,8 @@ const props = defineProps({
   dataState: { type: String, default: 'ready' },
   /** Salt score per carta (nome → punteggio EDHREC 0–4), se il mazzo viene da Archidekt. */
   salt: { type: Object, default: () => ({}) },
+  /** Identità di colore del mazzo: la produzione di mana fuori da questi colori non conta. */
+  colorIdentity: { type: Array, default: undefined },
 });
 const t = it.deckStats;
 const names = it.deckCards;
@@ -49,7 +51,7 @@ const unknownCount = computed(() =>
 );
 const curve = computed(() => manaCurve(detailed.value));
 const byColor = computed(() => curveByColor(detailed.value));
-const balance = computed(() => colorBalance(detailed.value));
+const balance = computed(() => colorBalance(detailed.value, props.colorIdentity));
 const types = computed(() => typeBreakdown(detailed.value));
 const knownTotal = computed(() => types.value.reduce((sum, row) => sum + row.count, 0));
 const lands = computed(() => types.value.find((row) => row.type === 'Land')?.count ?? 0);

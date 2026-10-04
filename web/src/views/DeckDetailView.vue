@@ -166,6 +166,7 @@ const comboLabel = (combo) =>
           :info="cardData.info.value"
           :data-state="cardData.state.value"
           :salt="deckSalt"
+          :color-identity="deck.colorIdentity"
         />
       </section>
 

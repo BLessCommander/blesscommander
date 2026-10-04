@@ -66,10 +66,14 @@ function pipsOf(manaCost) {
 
 /**
  * Colori richiesti dalle magie (simboli e carte) e colori che il mazzo sa produrre (carte).
+ * Con `identity` (identità di colore del mazzo) contano solo i colori che si possono usare: una carta
+ * come Arcane Signet o Command Tower per Scryfall produce tutti e cinque i colori, ma in un mazzo
+ * U/R produce solo U e R. L'incolore conta sempre.
  * @param {DetailedCard[]} cards
+ * @param {string[]} [identity] identità di colore del mazzo; senza, nessun filtro
  * @returns {Record<string, { pips: number, costCards: number, sources: number }>}
  */
-export function colorBalance(cards) {
+export function colorBalance(cards, identity) {
   const result = Object.fromEntries(
     MANA_COLORS.map((c) => [c, { pips: 0, costCards: 0, sources: 0 }]),
   );
@@ -83,7 +87,9 @@ export function colorBalance(cards) {
       }
     }
     for (const color of new Set(card.producedMana ?? [])) {
-      if (result[color]) result[color].sources += qty;
+      if (!result[color]) continue;
+      if (identity && color !== 'C' && !identity.includes(color)) continue;
+      result[color].sources += qty;
     }
   }
   return result;

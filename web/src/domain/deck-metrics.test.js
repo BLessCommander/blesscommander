@@ -260,3 +260,62 @@ describe('saltSummary', () => {
     }
   });
 });
+
+const MANA = ['W', 'U', 'B', 'R', 'G', 'C'];
+
+describe('colorBalance con l’identità di colore', () => {
+  const signet = detailCards(
+    [
+      { name: 'Arcane Signet', qty: 1, scryfallId: 'signet' },
+      { name: 'Command Tower', qty: 1, scryfallId: 'tower' },
+      { name: 'Island', qty: 4, scryfallId: 'island' },
+      { name: 'Sol Ring', qty: 1, scryfallId: 'sol' },
+    ],
+    {
+      signet: {
+        cmc: 2,
+        typeLine: 'Artifact',
+        colors: [],
+        manaCost: '{2}',
+        producedMana: ['W', 'U', 'B', 'R', 'G'],
+      },
+      tower: {
+        cmc: 0,
+        typeLine: 'Land',
+        colors: [],
+        manaCost: '',
+        producedMana: ['W', 'U', 'B', 'R', 'G'],
+      },
+      island: {
+        cmc: 0,
+        typeLine: 'Basic Land — Island',
+        colors: [],
+        manaCost: '',
+        producedMana: ['U'],
+      },
+      sol: { cmc: 1, typeLine: 'Artifact', colors: [], manaCost: '{1}', producedMana: ['C'] },
+    },
+  );
+
+  it('senza identità conta tutto quello che Scryfall dice che produce', () => {
+    const balance = colorBalance(signet);
+    expect(balance.W.sources).toBe(2);
+    expect(balance.G.sources).toBe(2);
+    expect(balance.U.sources).toBe(6);
+  });
+
+  it('con l’identità conta solo i colori che il mazzo può usare', () => {
+    const balance = colorBalance(signet, ['U', 'R']);
+    expect(balance.U.sources).toBe(6);
+    expect(balance.R.sources).toBe(2);
+    expect(balance.W.sources).toBe(0);
+    expect(balance.B.sources).toBe(0);
+    expect(balance.G.sources).toBe(0);
+  });
+
+  it('l’incolore conta sempre, anche con un comandante incolore', () => {
+    const balance = colorBalance(signet, []);
+    expect(balance.C.sources).toBe(1);
+    expect(MANA.filter((c) => balance[c].sources > 0)).toEqual(['C']);
+  });
+});

@@ -35,6 +35,15 @@ const SCRYFALL = {
     produced_mana: ['U'],
   },
 };
+// Produce tutti i colori per Scryfall, ma il mazzo ne usa solo alcuni (identità di colore).
+SCRYFALL['id-signet'] = {
+  name: 'Arcane Signet',
+  cmc: 2,
+  type_line: 'Artifact',
+  colors: [],
+  mana_cost: '{2}',
+  produced_mana: ['W', 'U', 'B', 'R', 'G'],
+};
 const CARDS = [
   { name: 'Sol Ring', qty: 1, scryfallId: 'id-sol' },
   { name: 'Counterspell', qty: 2, scryfallId: 'id-counter', isGameChanger: true },
@@ -130,6 +139,27 @@ test.describe('statistiche del mazzo @core', () => {
     await expect(blue.getByTestId('color-production')).toContainText('10 carte');
     const red = page.locator('[data-testid="stat-color"][data-color="R"]');
     await expect(red.getByTestId('color-cost')).toContainText('0 simboli');
+  });
+
+  test('la produzione di mana conta solo i colori dell’identità del mazzo @ui', async ({
+    page,
+  }) => {
+    await mockCards(page);
+    await page.goto('/#/mazzi');
+    await withCards(page, [...CARDS, { name: 'Arcane Signet', qty: 3, scryfallId: 'id-signet' }]);
+    await page.getByRole('link', { name: 'Mazzo Ottimizzato' }).click();
+    await expect(page.getByTestId('stat-cards')).toHaveText('18');
+    await page.getByTestId('stats-tab-colors').click();
+    const production = (color) =>
+      page
+        .locator(`[data-testid="stat-color"][data-color="${color}"]`)
+        .getByTestId('color-production');
+    // Il mazzo demo è U/B/G: i Signet contano per questi colori, non per bianco e rosso.
+    await expect(production('U')).toContainText('13 carte');
+    await expect(production('B')).toContainText('3 carte');
+    await expect(production('G')).toContainText('3 carte');
+    await expect(production('W')).toContainText('0 carte');
+    await expect(production('R')).toContainText('0 carte');
   });
 
   test('la probabilità di pescata si calcola e cambia con le scelte @ui', async ({ page }) => {
