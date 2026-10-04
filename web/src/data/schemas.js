@@ -63,6 +63,8 @@ export const SCHEMAS = {
       selfAssessment: object({ mld: bool, extraTurns: bool, notes: { type: 'string' } }, []),
       // Salt score di EDHREC (0–4) per carta, preso da Archidekt: nome → punteggio.
       salt: { type: 'object', additionalProperties: { type: 'number', minimum: 0 } },
+      // Etichette scelte dal proprietario per ritrovare i mazzi (filtro nella pagina Mazzi).
+      tags: { type: 'array', items: { type: 'string', minLength: 1, maxLength: 24 }, maxItems: 8 },
     },
     ['id', 'ownerLogin', 'name', 'commanders', 'colorIdentity', 'currentVersion', 'declaredTier'],
   ),

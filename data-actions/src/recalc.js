@@ -145,6 +145,7 @@ export function runRecalc({ files, authors = {}, unknownAuthor = 'deny', baselin
       colorIdentity: deck.colorIdentity,
       declaredTier: deck.declaredTier,
       ...(deck.source ? { source: deck.source } : {}),
+      ...(deck.tags?.length ? { tags: deck.tags } : {}),
       tier: derived.tier,
       stats: derived.stats,
     };

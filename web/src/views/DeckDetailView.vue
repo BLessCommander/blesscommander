@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import CardImage from '../components/CardImage.vue';
 import DeckCardsView from '../components/DeckCardsView.vue';
 import DeckStats from '../components/DeckStats.vue';
+import DeckTags from '../components/DeckTags.vue';
 import TierStepChart from '../components/TierStepChart.vue';
 import WinTypeDonut from '../components/WinTypeDonut.vue';
 import { useCardData } from '../composables/use-card-data.js';
@@ -24,6 +25,9 @@ const history = computed(() => (deck.value ? tierHistory(snapshot.value, deck.va
 const winTypes = computed(() => (deck.value ? winTypeList(deck.value) : []));
 const opponents = computed(() =>
   deck.value ? opponentTables(snapshot.value, deck.value.id) : { beaten: [], beatenBy: [] },
+);
+const canEditTags = computed(
+  () => deck.value?.ownerLogin === data.user?.login || data.user?.role === 'admin',
 );
 const number = (value, digits) => (typeof value === 'number' ? value.toFixed(digits) : t.noValue);
 const nameOf = computed(
@@ -121,6 +125,12 @@ const comboLabel = (combo) =>
             {{ t.colors }}: {{ deck.colorIdentity.join(' ') }}
           </p>
           <p v-if="deck.tier?.status" class="muted">{{ t.status }}: {{ deck.tier.status }}</p>
+          <DeckTags
+            v-if="!deck.optimistic"
+            :deck-id="deck.id"
+            :tags="deck.tags ?? []"
+            :can-edit="canEditTags"
+          />
         </div>
       </header>
 

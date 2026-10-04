@@ -290,6 +290,12 @@ describe('resyncedDeck (il mazzo che si salva dopo l’aggiornamento)', () => {
     expect(resyncedDeck(fresh, result).salt).toEqual({ 'Sol Ring': 0.35 });
   });
 
+  it('i tag scelti dal proprietario sopravvivono all’aggiornamento', async () => {
+    const tagged = { ...fresh, tags: ['veloce', 'combo'] };
+    const result = await plan(base, 'Jodah v2', undefined, tagged);
+    expect(resyncedDeck(tagged, result).tags).toEqual(['veloce', 'combo']);
+  });
+
   it('senza salt nell’aggiornamento quello salvato resta', async () => {
     const result = await plan(base, 'Jodah v2', undefined, fresh);
     expect(resyncedDeck(fresh, result).salt).toEqual({ 'Sol Ring': 0.1 });

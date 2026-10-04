@@ -109,6 +109,13 @@ export const it = {
       collapseAll: 'Chiudi tutti',
       noneMine: 'Non hai ancora mazzi: importane uno dalla pagina Importa.',
     },
+    tags: {
+      filter: 'Tag',
+      all: 'Tutti i tag',
+      option: (tag, n) => `${tag} (${n})`,
+      list: 'Tag del mazzo',
+      noneMatch: 'Nessun mazzo ha questo tag.',
+    },
     updating: 'In aggiornamento…',
     import: 'Importa mazzo',
     resync: {
@@ -143,6 +150,22 @@ export const it = {
     owner: 'Di',
     declared: 'Fascia dichiarata',
     status: 'Stato',
+    tags: {
+      title: 'Tag',
+      none: 'Nessun tag.',
+      label: 'Nuovo tag',
+      placeholder: 'Es. veloce, combo, casual',
+      add: 'Aggiungi',
+      remove: (tag) => `Togli il tag ${tag}`,
+      saving: 'Salvo…',
+      saveFailed: 'Non sono riuscito a salvare i tag. Riprova.',
+      reasons: {
+        empty: 'Scrivi un tag.',
+        'too-long': 'Il tag può avere al massimo 24 caratteri.',
+        duplicate: 'Questo tag c’è già.',
+        'too-many': 'Un mazzo può avere al massimo 8 tag.',
+      },
+    },
     metricsTitle: 'Metriche',
     tmvName: 'TMV',
     tmvHelp:

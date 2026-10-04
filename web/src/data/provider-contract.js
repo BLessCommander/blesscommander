@@ -59,6 +59,23 @@ export function runProviderContract(name, make, logins) {
       ).rejects.toMatchObject({ code: 'invalid' });
     });
 
+    it('salva e rilegge i tag del mazzo (e rifiuta tag non validi)', async () => {
+      const provider = make(logins.player1);
+      const deck = await provider.saveDeck({ ...newDeck, tags: ['veloce', 'casual'] });
+      expect((await provider.getDeck(deck.id)).deck.tags).toEqual(['veloce', 'casual']);
+      const { currentVersion } = deck;
+      const updated = await provider.saveDeck({ ...deck, tags: ['combo'] });
+      const read = await provider.getDeck(updated.id);
+      expect(read.deck.tags).toEqual(['combo']);
+      expect(read.deck.currentVersion).toBe(currentVersion);
+      await expect(provider.saveDeck({ ...newDeck, tags: [''] })).rejects.toMatchObject({
+        code: 'invalid',
+      });
+      await expect(provider.saveDeck({ ...newDeck, tags: ['x'.repeat(25)] })).rejects.toMatchObject(
+        { code: 'invalid' },
+      );
+    });
+
     it('rifiuta dati non validi con DataError "invalid"', async () => {
       const provider = make(logins.player1);
       await expect(provider.saveDeck({ name: 'X', declaredTier: 'F9' })).rejects.toMatchObject({

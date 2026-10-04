@@ -293,6 +293,37 @@ for (const theme of THEMES) {
   });
 }
 
+// Tag ai mazzi (C-08e): scheda con tag e campo, elenco con i tag e il filtro attivo.
+for (const theme of THEMES) {
+  test(`screenshot mazzi-tag ${theme} @review`, async ({ page }, testInfo) => {
+    test.skip(
+      !['iphone', 'desktop-chrome'].includes(testInfo.project.name),
+      'solo iphone e desktop',
+    );
+    await mockScryfall(page);
+    await page.emulateMedia({ colorScheme: theme });
+    await page.goto('/#/mazzi');
+    await page.getByRole('link', { name: 'Mazzo Ottimizzato' }).click();
+    for (const tag of ['veloce', 'combo', 'giocato spesso al sabato']) {
+      await page.getByTestId('tag-input').fill(tag);
+      await page.getByTestId('tag-add').click();
+      await page.getByText(tag, { exact: true }).first().waitFor();
+    }
+    await mkdir('review-screenshots', { recursive: true });
+    await page.screenshot({
+      path: `review-screenshots/mazzo-tag-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+    await page.getByRole('link', { name: /Tutti i mazzi/ }).click();
+    await page.getByTestId('tag-filter').selectOption({ label: 'combo (1)' });
+    await page.locator('.deck').first().waitFor();
+    await page.screenshot({
+      path: `review-screenshots/mazzi-filtro-tag-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+  });
+}
+
 // Aggiornamento di un mazzo da Archidekt (C-06c/S-02): lista mazzi con il tasto e l'esito (demo).
 for (const theme of THEMES) {
   test(`screenshot mazzi-aggiorna ${theme} @review`, async ({ page }, testInfo) => {

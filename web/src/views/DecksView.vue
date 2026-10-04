@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import DeckResync from '../components/DeckResync.vue';
 import { filterGroups, groupDecksByOwner } from '../domain/deck-groups.js';
+import { filterGroupsByTag, usedTags } from '../domain/deck-tags.js';
 import { sortedDecks } from '../domain/snapshot-stats.js';
 import { it } from '../i18n/it.js';
 import { useDataStore } from '../stores/data.js';
@@ -27,11 +28,19 @@ const groups = computed(() =>
 );
 const mineGroup = computed(() => groups.value.find((g) => g.mine) ?? null);
 const filter = ref('all'); // `all` oppure il login di un giocatore
-const shownGroups = computed(() => filterGroups(groups.value, filter.value));
+const tagFilter = ref('all'); // `all` oppure un tag
+const tagOptions = computed(() => usedTags(decks.value));
+// Un tag che non esiste più (mazzo cambiato) equivale a «tutti».
+const activeTag = computed(() =>
+  tagOptions.value.some((o) => o.tag === tagFilter.value) ? tagFilter.value : 'all',
+);
+const shownGroups = computed(() =>
+  filterGroupsByTag(filterGroups(groups.value, filter.value), activeTag.value),
+);
 // Aperto/chiuso scelto dall'utente; senza scelta è aperto solo il gruppo dei miei mazzi.
 const overrides = reactive({});
 const isOpen = (group) =>
-  filter.value !== 'all' && shownGroups.value.length === 1
+  activeTag.value !== 'all' || (filter.value !== 'all' && shownGroups.value.length === 1)
     ? true
     : (overrides[group.login] ?? group.mine);
 const toggle = (group) => {
@@ -72,6 +81,15 @@ const tmv = (deck) => (typeof deck.tier?.tmv === 'number' ? deck.tier.tmv.toFixe
             </option>
           </select>
         </label>
+        <label v-if="tagOptions.length" class="deck-filter__field">
+          <span>{{ t.tags.filter }}</span>
+          <select v-model="tagFilter" name="tagFilter" data-testid="tag-filter">
+            <option value="all">{{ t.tags.all }}</option>
+            <option v-for="o in tagOptions" :key="o.tag" :value="o.tag">
+              {{ t.tags.option(o.tag, o.count) }}
+            </option>
+          </select>
+        </label>
         <div v-if="filter === 'all' && groups.length > 1" class="deck-filter__all">
           <button
             type="button"
@@ -91,6 +109,10 @@ const tmv = (deck) => (typeof deck.tier?.tmv === 'number' ? deck.tier.tmv.toFixe
           </button>
         </div>
       </div>
+
+      <p v-if="activeTag !== 'all' && shownGroups.length === 0" class="muted">
+        {{ t.tags.noneMatch }}
+      </p>
 
       <p v-if="!mineGroup && data.user" class="muted" data-testid="no-own-decks">
         {{ t.groups.noneMine }}
@@ -149,6 +171,14 @@ const tmv = (deck) => (typeof deck.tier?.tmv === 'number' ? deck.tier.tmv.toFixe
                 {{ (deck.commanders ?? []).join(' · ') }} · {{ t.owner }}
                 <span class="nowrap">{{ deck.ownerLogin }}</span>
               </p>
+              <ul
+                v-if="deck.tags?.length"
+                class="deck__tags"
+                :aria-label="t.tags.list"
+                data-testid="deck-tags-list"
+              >
+                <li v-for="tag in deck.tags" :key="tag" class="deck__tag">{{ tag }}</li>
+              </ul>
               <DeckResync v-if="canResync(deck)" :deck="deck" />
             </div>
             <dl class="deck__stats">
@@ -178,6 +208,24 @@ const tmv = (deck) => (typeof deck.tier?.tmv === 'number' ? deck.tier.tmv.toFixe
   align-items: center;
   min-height: var(--tap);
   color: inherit;
+}
+
+.deck__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0.25rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.deck__tag {
+  padding: 0.125rem 0.625rem;
+  font-size: 0.8125rem;
+  color: var(--text);
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+  border-radius: 999px;
 }
 
 .deck-filter {
