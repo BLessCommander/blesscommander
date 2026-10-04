@@ -59,12 +59,14 @@ export function archidektSalt(json) {
   return salt;
 }
 
-const ATTEMPTS = 3;
+// 5 tentativi con attese di 3, 6, 9 e 12 secondi: circa 30 secondi in tutto.
+const ATTEMPTS = 5;
+const WAIT_STEP_MS = 3000;
 const defaultWait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * Dai server di GitHub Archidekt rifiuta ogni tanto (403/404) anche mazzi pubblici che subito dopo
- * si scaricano: si riprova qualche volta prima di arrendersi.
+ * si scaricano, soprattutto se il mazzo è appena stato creato: si riprova qualche volta prima di arrendersi.
  */
 async function fetchDeckWithRetry(fetchImpl, address, wait) {
   let response;
@@ -73,12 +75,12 @@ async function fetchDeckWithRetry(fetchImpl, address, wait) {
       response = await fetchImpl(address, { headers: HEADERS });
     } catch (error) {
       if (attempt === ATTEMPTS) throw error;
-      await wait(attempt * 1500);
+      await wait(attempt * WAIT_STEP_MS);
       continue;
     }
     const flaky = response.status === 403 || response.status === 404 || response.status >= 500;
     if (!flaky || attempt === ATTEMPTS) return response;
-    await wait(attempt * 1500);
+    await wait(attempt * WAIT_STEP_MS);
   }
   return response;
 }
@@ -94,7 +96,10 @@ export async function downloadDeck({ url, fetchImpl, base = ARCHIDEKT_API, wait 
   try {
     const response = await fetchDeckWithRetry(fetchImpl, `${base}/${id}/`, wait);
     if (response.status === 403 || response.status === 404) {
-      return { error: 'Mazzo non trovato o privato: rendilo pubblico su Archidekt' };
+      return {
+        error:
+          'Archidekt non ha dato il mazzo. Se è privato, rendilo pubblico; se è pubblico (o appena creato), a volte rifiuta i nostri server: riprova tra un minuto',
+      };
     }
     if (!response.ok) return { error: `Archidekt ha risposto con errore ${response.status}` };
     const json = await response.json();

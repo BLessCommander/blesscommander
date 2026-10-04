@@ -197,7 +197,7 @@ describe('runImport', () => {
     },
   );
 
-  it('dopo 3 rifiuti si arrende e non insiste oltre', async () => {
+  it('dopo 5 rifiuti si arrende e non insiste oltre', async () => {
     let calls = 0;
     const updates = await runImport({
       files: files(),
@@ -209,7 +209,7 @@ describe('runImport', () => {
       wait: noWait,
     });
     expect(updates['requests/01.json']).toMatchObject({ status: 'error' });
-    expect(calls).toBe(3);
+    expect(calls).toBe(5);
   });
 
   it('rete assente: errore, non eccezione', async () => {
