@@ -126,6 +126,115 @@ export const it = {
     seats: 'Posti al tavolo',
     seat: (n) => `Posto ${n}`,
     toMatches: 'Vai alle partite',
+    soon: 'in arrivo',
+    soonHint:
+      'Le voci «in arrivo» ci sono già ma non si possono scegliere: il motore delle fasce per ora calcola solo il Commander classico a 3 e 4 giocatori.',
+    deckBuilding: 'Costruzione del mazzo',
+    optionsTitle: 'Carte e opzioni di tavolo',
+    groups: { table: 'Modalità di tavolo', roles: 'Ruoli nascosti' },
+    catalog: {
+      tableModes: {
+        ffa56: { name: 'Tutti contro tutti (5–6 giocatori)', note: 'ufficiale' },
+        '1v1': { name: '1 contro 1 a 40 vita', note: 'casual' },
+        '2v2': {
+          name: 'Two-Headed Giant / 2v2',
+          note: 'ufficiale: squadre da due, vita e turni condivisi',
+        },
+        '3v3': { name: 'Squadre 3v3 a turni condivisi', note: 'ufficiale' },
+        emperor: {
+          name: 'Emperor',
+          note: 'ufficiale: squadre da tre, vince chi elimina l’imperatore avversario',
+        },
+        star: {
+          name: 'Star / Pentagramma',
+          note: 'community: 5 giocatori monocolore, ognuno contro i due colori nemici',
+        },
+        'grand-melee': {
+          name: 'Grand Melee',
+          note: 'ufficiale: tavoli molto numerosi, più turni in contemporanea',
+        },
+        treachery: {
+          name: 'Treachery',
+          note: 'community: Leader, Guardiano, Assassino, Traditore, con abilità per ruolo',
+        },
+        kingdoms: {
+          name: 'Kingdoms',
+          note: 'community: predecessore di Treachery, ruoli più semplici',
+        },
+      },
+      deckBuilding: {
+        commander: {
+          name: 'Commander (EDH)',
+          note: 'ufficiale: 100 carte singleton, comandante leggendario, 40 vita',
+        },
+        cedh: { name: 'cEDH', note: 'community: regole Commander, mazzi ottimizzati al massimo' },
+        duel: {
+          name: 'Duel Commander',
+          note: 'community: 1v1, 20 vita, lista ban propria, niente danno da comandante',
+        },
+        pauper: {
+          name: 'Pauper Commander (PDH)',
+          note: 'community: comandante non comune, resto solo comuni',
+        },
+        'pauper-edh': { name: 'Pauper EDH', note: 'community: anche il comandante comune' },
+        peasant: {
+          name: 'Peasant Commander',
+          note: 'community: solo comuni e non comuni',
+        },
+        oathbreaker: {
+          name: 'Oathbreaker',
+          note: 'community: 60 carte, planeswalker + magia firma, 20 vita, lista ban propria',
+        },
+        brawl: { name: 'Brawl', note: 'ufficiale: pool di carte ristretto, 60 carte' },
+        'historic-brawl': {
+          name: 'Historic Brawl',
+          note: 'ufficiale (Arena): 100 carte, pool di Arena',
+        },
+        'tiny-leaders': {
+          name: 'Tiny Leaders',
+          note: 'community: solo carte di costo ≤ 3, pensato per il 1v1',
+        },
+        predh: {
+          name: 'PreDH',
+          note: 'community: solo carte precedenti al supporto ufficiale di Commander',
+        },
+        vanguard: {
+          name: 'Vanguard Commander',
+          note: 'community: carta Vanguard come comandante',
+        },
+        draft: {
+          name: 'Commander Draft',
+          note: 'ufficiale: mazzo costruito in draft con set dedicati',
+        },
+        sealed: {
+          name: 'Commander Sealed',
+          note: 'ufficiale/casual: mazzo costruito da buste aperte sul momento',
+        },
+        cube: { name: 'Commander Cube', note: 'community: draft da un cube per Commander' },
+        un: { name: 'Un-Commander', note: 'casual: ammesse le carte dei set «Un»' },
+      },
+      options: {
+        archenemy: {
+          name: 'Archenemy',
+          note: 'ufficiale: un giocatore con mazzo di schemi contro tutti',
+        },
+        planechase: { name: 'Planechase', note: 'ufficiale: piani che cambiano le regole' },
+        bounty: {
+          name: 'Bounty / Taglie',
+          note: 'ufficiale (Outlaws of Thunder Junction): mazzetto di taglie da riscuotere',
+        },
+        monarch: { name: 'Monarca dalla partenza', note: 'casual' },
+        initiative: { name: 'Iniziativa dalla partenza', note: 'casual' },
+        'influence-range': {
+          name: 'Raggio d’influenza',
+          note: 'ufficiale (opzione): interazione solo entro una certa distanza',
+        },
+        'attack-neighbour': {
+          name: 'Attacca a sinistra / a destra',
+          note: 'ufficiale (opzione): si attacca solo un vicino',
+        },
+      },
+    },
   },
   decks: {
     intro: 'Mazzi raggruppati per giocatore. Il tuo gruppo è aperto.',

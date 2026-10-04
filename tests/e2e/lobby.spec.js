@@ -59,6 +59,33 @@ test.describe('lobby @core', () => {
     );
   });
 
+  test('le altre modalità ci sono ma sono inibite («in arrivo»)', async ({ page }) => {
+    await page.goto('/#/nuovo-tavolo');
+    // Modalità di tavolo e ruoli nascosti: 11 voci, solo le prime due (a 4 e a 3) si possono scegliere.
+    const format = page.getByTestId('lobby-format');
+    await expect(format.locator('option')).toHaveCount(11);
+    await expect(format.locator('option:not([disabled])')).toHaveText([
+      'Tutti contro tutti (4 giocatori)',
+      'Tutti contro tutti a 3 (3 giocatori)',
+    ]);
+    await expect(format.locator('option', { hasText: 'Treachery' })).toHaveAttribute(
+      'disabled',
+      '',
+    );
+    await expect(format.locator('option', { hasText: 'Treachery' })).toContainText('in arrivo');
+
+    // Costruzione del mazzo: 16 voci, solo Commander (EDH) attiva.
+    const building = page.getByTestId('lobby-deck-building');
+    await expect(building.locator('option')).toHaveCount(16);
+    await expect(building.locator('option:not([disabled])')).toHaveText(['Commander (EDH)']);
+
+    // Carte e opzioni di tavolo: 7 caselle, tutte spente e non selezionabili.
+    const boxes = page.getByTestId('lobby-options').getByRole('checkbox');
+    await expect(boxes).toHaveCount(7);
+    for (const box of await boxes.all()) await expect(box).toBeDisabled();
+    await expect(page.getByTestId('lobby-soon-hint')).toContainText('Commander classico a 3 e 4');
+  });
+
   test('il formato a 3 non accetta un quarto giocatore', async ({ page }) => {
     await page.goto('/#/nuovo-tavolo');
     await page.getByTestId('lobby-format').selectOption('ffa3');

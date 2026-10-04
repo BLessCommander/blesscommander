@@ -1,7 +1,8 @@
 import { buildConfig } from '@blesscommander/tier-engine';
+import { TABLE_MODES } from './lobby-catalog.js';
 
-// Formati che la lobby offre (SPEC 02 §3.10): squadre, ruoli e Star arrivano con voci a parte.
-const LOBBY_FORMAT_IDS = ['ffa4', 'ffa3', 'ffa56', '1v1'];
+// Formati che si possono davvero scegliere: quelli accesi nel catalogo (per ora ffa4 e ffa3).
+const LOBBY_FORMAT_IDS = TABLE_MODES.filter((m) => m.enabled).map((m) => m.id);
 
 /**
  * @typedef {object} LobbyPick

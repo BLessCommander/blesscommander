@@ -1,11 +1,33 @@
 import { describe, expect, it } from 'vitest';
+import { it as itTexts } from '../i18n/it.js';
+import { DECK_BUILDING, TABLE_MODES, TABLE_OPTIONS } from './lobby-catalog.js';
 import { activeGameOf, buildLobbyGame, lobbyFormats, lobbyProblems, seatOrder } from './lobby.js';
 
 const picks = (...logins) => logins.map((login) => ({ login, deckId: `deck-${login}` }));
 
 describe('lobbyFormats', () => {
-  it('offre tutti contro tutti a 3, 4, 5–6 e il 1v1', () => {
-    expect(lobbyFormats().map((f) => f.id)).toEqual(['ffa4', 'ffa3', 'ffa56', '1v1']);
+  it('per ora si possono scegliere solo tutti contro tutti a 4 e a 3', () => {
+    expect(lobbyFormats().map((f) => f.id)).toEqual(['ffa4', 'ffa3']);
+  });
+
+  it('il catalogo ha tutte le voci e solo Commander classico a 3 e 4 è acceso', () => {
+    const enabled = (list) => list.filter((e) => e.enabled).map((e) => e.id);
+    expect(TABLE_MODES).toHaveLength(11);
+    expect(DECK_BUILDING).toHaveLength(16);
+    expect(TABLE_OPTIONS).toHaveLength(7);
+    expect(enabled(TABLE_MODES)).toEqual(['ffa4', 'ffa3']);
+    expect(enabled(DECK_BUILDING)).toEqual(['commander']);
+    expect(enabled(TABLE_OPTIONS)).toEqual([]);
+  });
+
+  it('ogni voce del catalogo ha nome e nota nei testi', () => {
+    for (const [list, key] of [
+      [TABLE_MODES.filter((m) => !m.enabled), 'tableModes'],
+      [DECK_BUILDING, 'deckBuilding'],
+      [TABLE_OPTIONS, 'options'],
+    ]) {
+      for (const { id } of list) expect(itTexts.lobby.catalog[key][id]?.name, id).toBeTruthy();
+    }
   });
 
   it('usa i parametri del gruppo senza perdere i limiti di giocatori', () => {

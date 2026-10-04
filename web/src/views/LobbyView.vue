@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { activeGameOf, buildLobbyGame, lobbyFormats, lobbyProblems } from '../domain/lobby.js';
+import { DECK_BUILDING, TABLE_MODES, TABLE_OPTIONS } from '../domain/lobby-catalog.js';
 import { it } from '../i18n/it.js';
 import { useDataStore } from '../stores/data.js';
 
@@ -31,6 +32,34 @@ const formats = computed(() => lobbyFormats(config.value));
 const format = computed(
   () => formats.value.find((f) => f.id === formatId.value) ?? formats.value[0],
 );
+
+// Il catalogo mostra tutte le modalità; solo quelle accese (e note al motore) si possono scegliere.
+const soonLabel = (name) => `${name} — ${t.soon}`;
+const tableGroups = computed(() =>
+  ['table', 'roles']
+    .map((key) => ({
+      key,
+      label: t.groups[key],
+      items: TABLE_MODES.filter((m) => m.group === key).map((m) => {
+        const engine = formats.value.find((f) => f.id === m.id);
+        return {
+          ...m,
+          enabled: m.enabled && Boolean(engine),
+          label:
+            m.enabled && engine
+              ? t.formatOption(engine)
+              : soonLabel(t.catalog.tableModes[m.id].name),
+        };
+      }),
+    }))
+    .filter((g) => g.items.length),
+);
+const deckBuildingItems = DECK_BUILDING.map((d) => {
+  const text = t.catalog.deckBuilding[d.id];
+  return { ...d, label: d.enabled ? text.name : soonLabel(text.name) };
+});
+const optionItems = TABLE_OPTIONS.map((o) => ({ ...o, ...t.catalog.options[o.id] }));
+
 const nameOf = (login) => data.members?.[login]?.displayName ?? login;
 const me = computed(() => data.user?.login ?? '');
 
@@ -184,9 +213,43 @@ const start = async () => {
       <label class="field">
         <span>{{ t.format }}</span>
         <select v-model="formatId" name="format" data-testid="lobby-format">
-          <option v-for="f in formats" :key="f.id" :value="f.id">{{ t.formatOption(f) }}</option>
+          <optgroup v-for="g in tableGroups" :key="g.key" :label="g.label">
+            <option v-for="m in g.items" :key="m.id" :value="m.id" :disabled="!m.enabled">
+              {{ m.label }}
+            </option>
+          </optgroup>
         </select>
       </label>
+
+      <label class="field">
+        <span>{{ t.deckBuilding }}</span>
+        <select name="deckBuilding" data-testid="lobby-deck-building">
+          <option
+            v-for="d in deckBuildingItems"
+            :key="d.id"
+            :value="d.id"
+            :disabled="!d.enabled"
+            :selected="d.id === 'commander'"
+          >
+            {{ d.label }}
+          </option>
+        </select>
+      </label>
+
+      <fieldset class="options" data-testid="lobby-options">
+        <legend>{{ t.optionsTitle }}</legend>
+        <label v-for="o in optionItems" :key="o.id" class="option option--off">
+          <input type="checkbox" disabled :name="`option-${o.id}`" />
+          <span class="option__text">
+            <span
+              ><strong>{{ o.name }}</strong>
+              <span class="option__badge muted">· {{ t.soon }}</span></span
+            >
+            <small class="muted">{{ o.note }}</small>
+          </span>
+        </label>
+      </fieldset>
+      <p class="muted" data-testid="lobby-soon-hint">{{ t.soonHint }}</p>
 
       <fieldset class="players">
         <legend>{{ t.players }}</legend>
@@ -287,6 +350,67 @@ const start = async () => {
   border: 1px solid var(--text-muted);
   border-radius: var(--radius-sm);
   color-scheme: light dark;
+}
+
+.options {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.options legend {
+  padding: 0;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+/* Inibita ma leggibile: bordo tratteggiato e testo pieno, senza opacità sul testo. */
+.option--off {
+  border: 1px dashed var(--text-muted);
+  background: transparent;
+}
+
+.option--off .muted,
+.option--off small {
+  color: var(--text-muted);
+}
+
+.option--off input {
+  accent-color: var(--text-muted);
+}
+
+.option__badge {
+  margin-left: 0.25rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.option input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+}
+
+.option__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .lobby > form,
