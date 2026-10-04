@@ -80,15 +80,38 @@ test.describe('lobby @core', () => {
     await expect(page.getByLabel('Mazzo di Giocatore 1')).toHaveValue(/^01DMTEST/);
   });
 
-  test('il promemoria ricompare se si riapre la pagina durante la partita', async ({ page }) => {
+  test('riaprendo la pagina durante la partita il modulo c’è ancora e rimanda a «In corso»', async ({
+    page,
+  }) => {
     await setupTableF2(page);
     await page.getByTestId('lobby-start').click();
     await expect(page.getByTestId('lobby-reminder')).toBeVisible();
 
     await page.goto('/#/mazzi');
+    await expect(page.getByRole('heading', { name: 'Mazzi', level: 1 })).toBeVisible();
     await page.goto('/#/nuovo-tavolo');
+    await expect(page.getByTestId('lobby-reminder')).toHaveCount(0);
+    await expect(page.getByTestId('lobby-start')).toBeVisible();
+    await expect(page.getByTestId('lobby-open-games')).toContainText('1 partita in corso');
+    await page.getByTestId('lobby-open-games').getByRole('link').click();
+    await expect(page.getByTestId('live-list')).toBeVisible();
+  });
+
+  test('si può avviare un altro tavolo mentre una partita è in corso', async ({ page }) => {
+    await setupTableF2(page);
+    await page.getByTestId('lobby-start').click();
     await expect(page.getByTestId('lobby-reminder')).toBeVisible();
-    await expect(page.getByTestId('lobby-start')).toHaveCount(0);
+
+    await page.getByTestId('lobby-another').click();
+    await expect(page.getByTestId('lobby-start')).toBeVisible();
+    await addF2Decks(page);
+    await page.getByTestId('lobby-tier').selectOption('F2');
+    for (const login of PLAYERS) await seat(page, login).click();
+    await page.getByTestId('lobby-start').click();
+    await expect(page.getByTestId('lobby-reminder')).toBeVisible();
+
+    await page.getByTestId('lobby-to-live').click();
+    await expect(page.getByTestId('live-list').locator('li.game')).toHaveCount(2);
   });
 
   test('un altro registratore vede chi girerà il dado', async ({ page }) => {

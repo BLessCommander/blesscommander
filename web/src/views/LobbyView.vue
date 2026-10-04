@@ -2,7 +2,6 @@
 import { TIER_IDS } from '@blesscommander/tier-engine';
 import { computed, onMounted, ref, watch } from 'vue';
 import {
-  activeGameOf,
   buildLobbyGame,
   deckTier,
   decksForTier,
@@ -176,9 +175,24 @@ const problems = computed(() =>
 const canAddMore = (login) =>
   Boolean(pickOf(login)) || picks.value.length < (format.value?.giocatoriMax ?? 0);
 
-const activeGame = computed(
-  () => activeGameOf(data.snapshotWithPending, me.value) ?? started.value,
-);
+// Il promemoria compare solo subito dopo «Inizia»: le partite aperte si riprendono da «In corso»,
+// così si può preparare un altro tavolo mentre una partita è in corso.
+const activeGame = computed(() => {
+  if (!started.value) return null;
+  const current = data.snapshotWithPending?.games.find((g) => g.id === started.value.id);
+  return current && !['lobby', 'in_corso'].includes(current.status) ? null : started.value;
+});
+const openCount = computed(() => data.openGames.length);
+
+/** Torna al modulo vuoto per un altro tavolo (la partita avviata resta in «In corso»). */
+const newTable = () => {
+  started.value = null;
+  picks.value = [];
+  tableTier.value = '';
+  firstLogin.value = '';
+  recorderLogin.value = '';
+  if (me.value) toggle(me.value);
+};
 const reminder = computed(() => {
   const game = activeGame.value;
   if (!game) return null;
@@ -255,11 +269,25 @@ const start = async () => {
           data-testid="close-game-link"
           >{{ t.closeGame }}</RouterLink
         >
-        <RouterLink to="/partite" class="btn btn--secondary">{{ t.toMatches }}</RouterLink>
+        <RouterLink to="/in-corso" class="btn btn--secondary" data-testid="lobby-to-live">{{
+          t.toLive
+        }}</RouterLink>
+        <button
+          type="button"
+          class="btn btn--secondary"
+          data-testid="lobby-another"
+          @click="newTable"
+        >
+          {{ t.anotherTable }}
+        </button>
       </div>
     </section>
 
     <form v-else class="stack" @submit.prevent="start">
+      <p v-if="openCount" class="notice" data-testid="lobby-open-games" role="status">
+        {{ it.liveGames.badge(openCount) }}.
+        <RouterLink to="/in-corso">{{ t.openGamesLink }}</RouterLink>
+      </p>
       <label class="field">
         <span>{{ t.format }}</span>
         <select v-model="formatId" name="format" data-testid="lobby-format">

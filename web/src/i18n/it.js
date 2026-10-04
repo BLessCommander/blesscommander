@@ -209,6 +209,9 @@ export const it = {
     seats: 'Posti al tavolo',
     seat: (n) => `Posto ${n}`,
     toMatches: 'Vai alle partite',
+    toLive: 'Partite in corso',
+    anotherTable: 'Prepara un altro tavolo',
+    openGamesLink: 'Apri «In corso» per riprenderle.',
     closeGame: 'Chiudi la partita',
     soon: 'in arrivo',
     soonHint:

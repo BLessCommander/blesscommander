@@ -53,9 +53,11 @@ test.describe('partite in corso @core', () => {
     await startTable(page);
     // Sul telefono il menu si apre dal pulsante; da 768px c'è già la barra laterale (a icone o estesa).
     const menuButton = page.getByRole('button', { name: 'Apri il menu' });
-    if (await menuButton.isVisible()) await menuButton.click();
-    await expect(page.getByTestId('live-badge').first()).toHaveText('1');
-    await page.getByRole('link', { name: 'In corso' }).first().click();
+    const phone = await menuButton.isVisible();
+    if (phone) await menuButton.click();
+    const menu = phone ? page.getByRole('dialog', { name: 'Menu' }) : page.locator('.sidebar');
+    await expect(menu.getByTestId('live-badge')).toHaveText('1');
+    await menu.getByRole('link', { name: 'In corso' }).click();
     await expect(page.getByTestId('live-list')).toBeVisible();
   });
 
