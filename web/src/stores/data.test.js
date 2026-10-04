@@ -195,6 +195,64 @@ describe('useDataStore (modalità demo)', () => {
       expect(data.snapshotWithPending).toBe(data.snapshot);
     });
 
+    it('le partite non ricalcolate sopravvivono a un ricarico (memoria del dispositivo)', async () => {
+      const data = useDataStore();
+      await data.load();
+      data.snapshot = { ...data.snapshot, pending: true };
+      data.rememberGame({ ...base, id: 'resta', status: 'in_corso' });
+
+      // «Ricarico»: store nuovo, snapshot ancora senza la partita.
+      setActivePinia(createPinia());
+      const reloaded = useDataStore();
+      reloaded.snapshot = { ...data.snapshot, games: [] };
+      reloaded.restoreOptimisticGames();
+      expect(reloaded.optimisticGames.map((g) => g.id)).toEqual(['resta']);
+      expect(reloaded.snapshotWithPending.games.map((g) => g.id)).toEqual(['resta']);
+
+      // Quando il ricalcolo l'ha letta (stesso stato) si toglie, anche dalla memoria.
+      reloaded.snapshot = {
+        ...reloaded.snapshot,
+        games: [{ ...base, id: 'resta', status: 'in_corso' }],
+      };
+      reloaded.pruneOptimisticGames();
+      setActivePinia(createPinia());
+      const again = useDataStore();
+      again.snapshot = { ...reloaded.snapshot, games: [] };
+      again.restoreOptimisticGames();
+      expect(again.optimisticGames).toEqual([]);
+    });
+
+    it('openGames: partite aperte dell’utente, comprese quelle provvisorie', async () => {
+      const data = useDataStore();
+      await data.load();
+      const me = data.user.login;
+      data.snapshot = { ...data.snapshot, pending: true };
+      expect(data.openGames).toEqual([]);
+      data.rememberGame({
+        ...base,
+        id: 'mia',
+        status: 'in_corso',
+        recorderLogin: me,
+        players: [{ login: me, deckId: 'd', seat: 1 }],
+      });
+      data.rememberGame({
+        ...base,
+        id: 'altrui',
+        status: 'in_corso',
+        recorderLogin: 'x',
+        players: [{ login: 'x', deckId: 'd', seat: 1 }],
+      });
+      expect(data.openGames.map((g) => g.id)).toEqual(['mia']);
+      data.rememberGame({
+        ...base,
+        id: 'mia',
+        status: 'ufficiale',
+        recorderLogin: me,
+        players: [{ login: me, deckId: 'd', seat: 1 }],
+      });
+      expect(data.openGames).toEqual([]);
+    });
+
     it('write("updateGame") ricorda la partita restituita dal provider', async () => {
       const data = useDataStore();
       await data.load();

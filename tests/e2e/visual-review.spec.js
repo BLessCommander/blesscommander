@@ -377,6 +377,33 @@ for (const theme of THEMES) {
   });
 }
 
+// Partite in corso (C-10c): elenco con una partita avviata (registratore io) e pagina vuota.
+for (const theme of THEMES) {
+  test(`screenshot partite-in-corso ${theme} @review`, async ({ page }, testInfo) => {
+    test.skip(
+      !['iphone', 'desktop-chrome'].includes(testInfo.project.name),
+      'solo iphone e desktop',
+    );
+    await page.emulateMedia({ colorScheme: theme });
+    await mkdir('review-screenshots', { recursive: true });
+    await page.goto('/#/in-corso');
+    await page.getByTestId('live-empty').waitFor();
+    await page.screenshot({
+      path: `review-screenshots/in-corso-vuoto-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+    await setupTableF2(page);
+    await page.getByTestId('lobby-start').click();
+    await page.getByTestId('lobby-reminder').waitFor();
+    await page.goto('/#/in-corso');
+    await page.getByTestId('live-list').waitFor();
+    await page.screenshot({
+      path: `review-screenshots/in-corso-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+  });
+}
+
 // Aggiornamento di un mazzo da Archidekt (C-06c/S-02): lista mazzi con il tasto e l'esito (demo).
 for (const theme of THEMES) {
   test(`screenshot mazzi-aggiorna ${theme} @review`, async ({ page }, testInfo) => {

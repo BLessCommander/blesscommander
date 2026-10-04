@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia';
 import { createDataProvider } from '../data/index.js';
+import { OPEN_GAMES_KEY, openGamesOf, parseGames, serializeGames } from '../domain/open-games.js';
+import { readStorage, writeStorage } from '../platform/storage.js';
 
 // Fuori dallo store: un oggetto reattivo (proxy) non può usare i campi privati (#) del provider.
 /** @type {import('../data/data-provider.js').DataProvider | null} */
@@ -68,6 +70,10 @@ export const useDataStore = defineStore('data', {
     refreshing: (state) => state.snapshot?.pending === true,
     /** Che cosa attende il ricalcolo (`deck`, `game`, `vote`, `config`, `initial`); per scegliere il testo. */
     refreshingKind: (state) => state.snapshot?.pendingKind ?? 'game',
+    /** Partite aperte (lobby o in corso) di chi accede, anche quelle non ancora ricalcolate. */
+    openGames() {
+      return openGamesOf(this.snapshotWithPending, this.user?.login);
+    },
     /** Chi ha una partita in lobby o in corso non riceve notifiche (regola 1). */
     notificationsPaused: (state) =>
       Boolean(
@@ -98,6 +104,7 @@ export const useDataStore = defineStore('data', {
         });
         this.user = await provider.getCurrentUser();
         this.snapshot = await provider.getSnapshot();
+        this.restoreOptimisticGames();
         unsubscribe ??= provider.onSnapshotChange((snapshot) => {
           this.snapshot = snapshot;
           this.pruneOptimisticDecks();
@@ -176,6 +183,22 @@ export const useDataStore = defineStore('data', {
     rememberGame(game) {
       if (!game?.id) return;
       this.optimisticGames = [...this.optimisticGames.filter((g) => g.id !== game.id), game];
+      this.persistOptimisticGames();
+    },
+
+    /** Le partite non ancora ricalcolate si tengono sul dispositivo: dopo un ricarico non spariscono. */
+    persistOptimisticGames() {
+      writeStorage(OPEN_GAMES_KEY, serializeGames(this.optimisticGames, Date.now()));
+    },
+
+    /** Ripristina le partite salvate sul dispositivo; poi si tolgono quelle che lo snapshot ha già. */
+    restoreOptimisticGames() {
+      const known = new Set(this.optimisticGames.map((g) => g.id));
+      const saved = parseGames(readStorage(OPEN_GAMES_KEY), Date.now()).filter(
+        (g) => !known.has(g.id),
+      );
+      this.optimisticGames = [...this.optimisticGames, ...saved];
+      this.pruneOptimisticGames();
     },
 
     /** Si toglie la partita provvisoria quando lo snapshot ha lo stesso stato, o il ricalcolo è finito. */
@@ -183,10 +206,11 @@ export const useDataStore = defineStore('data', {
       if (!this.snapshot) return;
       if (!this.snapshot.pending) {
         this.optimisticGames = [];
-        return;
+      } else {
+        const status = new Map(this.snapshot.games.map((g) => [g.id, g.status]));
+        this.optimisticGames = this.optimisticGames.filter((g) => status.get(g.id) !== g.status);
       }
-      const status = new Map(this.snapshot.games.map((g) => [g.id, g.status]));
-      this.optimisticGames = this.optimisticGames.filter((g) => status.get(g.id) !== g.status);
+      this.persistOptimisticGames();
     },
 
     /** Mazzo e versioni salvate (vedi `DataProvider.getDeck`). */

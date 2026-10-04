@@ -10,6 +10,7 @@ const views = {
   decks: () => import('./views/DecksView.vue'),
   importDeck: () => import('./views/ImportDeckView.vue'),
   lobby: () => import('./views/LobbyView.vue'),
+  liveGames: () => import('./views/LiveGamesView.vue'),
   group: () => import('./views/GroupView.vue'),
   rules: () => import('./views/RulesView.vue'),
   profile: () => import('./views/ProfileView.vue'),

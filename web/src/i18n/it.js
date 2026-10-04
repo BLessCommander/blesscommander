@@ -26,6 +26,21 @@ export const it = {
     access: { title: 'Accesso', nav: 'Accesso' },
     notifications: { title: 'Notifiche', nav: 'Notifiche' },
     closeGame: { title: 'Chiudi partita', nav: 'Chiudi partita' },
+    liveGames: { title: 'Partite in corso', nav: 'In corso' },
+  },
+  liveGames: {
+    intro:
+      'Le partite che hai aperto o in cui giochi. Da qui riprendi la sessione anche se hai chiuso o aggiornato la pagina.',
+    loading: 'Carico le partite…',
+    empty: 'Nessuna partita in corso.',
+    emptyHint: 'Quando avvii un tavolo, la partita compare qui finché non viene chiusa.',
+    badge: (n) => (n === 1 ? '1 partita in corso' : `${n} partite in corso`),
+    refreshing: 'In aggiornamento: la partita compare nell’elenco ufficiale tra circa un minuto.',
+    recorder: (name) => `Registratore: ${name}`,
+    youRecord: 'Il registratore sei tu',
+    notRecorder: 'Solo il registratore può chiudere la partita.',
+    close: 'Chiudi la partita',
+    newTable: 'Nuovo tavolo',
   },
   closeGame: {
     intro: 'Tre scelte: chi ha vinto, il turno letto sul dado e come ha vinto.',

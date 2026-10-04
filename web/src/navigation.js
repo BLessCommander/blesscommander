@@ -25,6 +25,7 @@ export const NAV_ITEMS = Object.freeze(
       quick: true,
       center: true,
     },
+    { name: 'liveGames', path: '/in-corso', icon: 'play', group: 'main' },
     { name: 'matches', path: '/partite', icon: 'history', group: 'main' },
     { name: 'stats', path: '/statistiche', icon: 'chart', group: 'main', quick: true },
     { name: 'rules', path: '/regolamento', icon: 'book', group: 'more' },
