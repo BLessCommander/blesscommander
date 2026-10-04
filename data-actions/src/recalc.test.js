@@ -50,6 +50,23 @@ describe('UT-ACT: Action recalc', () => {
     expect(derived['derived/snapshot.json'].games).toHaveLength(60);
   });
 
+  it.each([
+    ['senza vincitore', { winners: [] }, 'manca il vincitore'],
+    ['senza turno', { winTurn: undefined }, 'manca il turno'],
+    ['con un tipo di vittoria sconosciuto', { winType: 'magia' }, 'non è noto'],
+  ])('scarta e annota una chiusura %s, senza fermare il ricalcolo', (_name, change, reason) => {
+    const files = seedFiles();
+    const [path] = gamePaths(files);
+    const { errors, derived } = runRecalc({
+      files: edit(files, path, change),
+      unknownAuthor: 'allow',
+    });
+    expect(errors).toHaveLength(1);
+    expect(errors[0].path).toBe(path);
+    expect(errors[0].reason).toContain(reason);
+    expect(derived['derived/snapshot.json'].games).toHaveLength(59);
+  });
+
   it('è deterministico: due esecuzioni danno lo stesso risultato', () => {
     const a = runRecalc({ files: seedFiles(), unknownAuthor: 'allow' });
     const b = runRecalc({ files: seedFiles(), unknownAuthor: 'allow' });

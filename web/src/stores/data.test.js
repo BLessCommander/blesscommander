@@ -135,6 +135,75 @@ describe('useDataStore (modalità demo)', () => {
     });
   });
 
+  describe('partite provvisorie (C-10)', () => {
+    const base = {
+      id: 'g1',
+      formatId: 'ffa4',
+      recorderLogin: 'x',
+      players: [{ login: 'x', deckId: 'd' }],
+    };
+
+    it('una partita chiusa compare subito come ufficiale, marcata, anche se lo snapshot è vecchio', async () => {
+      const data = useDataStore();
+      await data.load();
+      data.snapshot = {
+        ...data.snapshot,
+        pending: true,
+        games: [...data.snapshot.games, { ...base, status: 'in_corso' }],
+      };
+      data.rememberGame({ ...base, status: 'ufficiale', winTurn: 7 });
+      const shown = data.snapshotWithPending.games.find((g) => g.id === 'g1');
+      expect(shown).toMatchObject({ status: 'ufficiale', winTurn: 7, optimistic: true });
+      expect(data.snapshot.games.find((g) => g.id === 'g1').status).toBe('in_corso');
+    });
+
+    it('una partita appena creata e non ancora nello snapshot si vede, senza doppioni', async () => {
+      const data = useDataStore();
+      await data.load();
+      data.snapshot = { ...data.snapshot, pending: true };
+      data.rememberGame({ ...base, status: 'in_corso' });
+      data.rememberGame({ ...base, status: 'in_corso', startedAt: 'ora' });
+      const mine = data.snapshotWithPending.games.filter((g) => g.id === 'g1');
+      expect(mine).toHaveLength(1);
+      expect(mine[0].optimistic).toBe(true);
+    });
+
+    it('si toglie quando lo snapshot ha lo stesso stato o il ricalcolo è finito', async () => {
+      const data = useDataStore();
+      await data.load();
+      data.snapshot = { ...data.snapshot, pending: true };
+      data.rememberGame({ ...base, status: 'ufficiale' });
+      data.pruneOptimisticGames();
+      expect(data.optimisticGames).toHaveLength(1); // ancora in attesa
+
+      data.snapshot = {
+        ...data.snapshot,
+        games: [...data.snapshot.games, { ...base, status: 'ufficiale' }],
+      };
+      data.pruneOptimisticGames();
+      expect(data.optimisticGames).toHaveLength(0);
+
+      data.rememberGame({ ...base, id: 'g2', status: 'in_corso' });
+      data.snapshot = { ...data.snapshot, pending: false };
+      data.pruneOptimisticGames();
+      expect(data.optimisticGames).toHaveLength(0);
+    });
+
+    it('senza partite provvisorie lo snapshot resta lo stesso oggetto', async () => {
+      const data = useDataStore();
+      await data.load();
+      expect(data.snapshotWithPending).toBe(data.snapshot);
+    });
+
+    it('write("updateGame") ricorda la partita restituita dal provider', async () => {
+      const data = useDataStore();
+      await data.load();
+      const game = data.snapshot.games.find((g) => g.status === 'ufficiale');
+      const saved = await data.write('updateGame', game.id, { notes: 'x' });
+      expect(data.optimisticGames.some((g) => g.id === saved.id)).toBe(true);
+    });
+  });
+
   it("dismissDropped svuota l'avviso", () => {
     const data = useDataStore();
     data.dropped = [{ method: 'saveDeck', message: 'no' }];

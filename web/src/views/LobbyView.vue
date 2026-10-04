@@ -176,13 +176,16 @@ const problems = computed(() =>
 const canAddMore = (login) =>
   Boolean(pickOf(login)) || picks.value.length < (format.value?.giocatoriMax ?? 0);
 
-const activeGame = computed(() => started.value ?? activeGameOf(data.snapshot, me.value));
+const activeGame = computed(
+  () => activeGameOf(data.snapshotWithPending, me.value) ?? started.value,
+);
 const reminder = computed(() => {
   const game = activeGame.value;
   if (!game) return null;
   const firstPlayer = [...game.players].sort((a, b) => (a.seat ?? 99) - (b.seat ?? 99))[0];
   const firstName = nameOf(firstPlayer?.login);
   return {
+    id: game.id,
     text:
       game.recorderLogin === me.value
         ? t.reminderForRecorder(firstName)
@@ -244,7 +247,16 @@ const start = async () => {
           <strong>{{ t.seat(p.seat) }}</strong> · {{ nameOf(p.login) }} · {{ deckName(p.deckId) }}
         </li>
       </ol>
-      <RouterLink to="/partite" class="btn btn--secondary">{{ t.toMatches }}</RouterLink>
+      <div class="reminder__actions">
+        <RouterLink
+          v-if="reminder.id && activeGame.recorderLogin === me"
+          :to="`/partite/${reminder.id}/chiudi`"
+          class="btn"
+          data-testid="close-game-link"
+          >{{ t.closeGame }}</RouterLink
+        >
+        <RouterLink to="/partite" class="btn btn--secondary">{{ t.toMatches }}</RouterLink>
+      </div>
     </section>
 
     <form v-else class="stack" @submit.prevent="start">
@@ -594,8 +606,10 @@ const start = async () => {
   padding: calc(var(--space) * 1.5);
 }
 
-.reminder .btn {
-  justify-self: start;
+.reminder__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space);
   margin-top: var(--space);
 }
 

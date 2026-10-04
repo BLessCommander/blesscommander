@@ -348,6 +348,35 @@ for (const theme of THEMES) {
   });
 }
 
+// Chiusura partita (C-10): modulo compilato con i dettagli aperti, poi il riepilogo dopo il salvataggio.
+for (const theme of THEMES) {
+  test(`screenshot chiusura-partita ${theme} @review`, async ({ page }, testInfo) => {
+    test.skip(
+      !['iphone', 'desktop-chrome'].includes(testInfo.project.name),
+      'solo iphone e desktop',
+    );
+    await page.emulateMedia({ colorScheme: theme });
+    await setupTableF2(page);
+    await page.getByTestId('lobby-start').click();
+    await page.getByTestId('close-game-link').click();
+    await page.getByTestId('close-winner').getByRole('radio', { name: 'Giocatore 2' }).check();
+    await page.getByTestId('close-turn-input').fill('7');
+    await page.getByTestId('close-wintype').getByRole('radio', { name: 'Combo' }).check();
+    await page.getByTestId('close-details').locator('summary').click();
+    await mkdir('review-screenshots', { recursive: true });
+    await page.screenshot({
+      path: `review-screenshots/chiusura-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+    await page.getByTestId('close-save').click();
+    await page.getByTestId('close-done').waitFor();
+    await page.screenshot({
+      path: `review-screenshots/chiusura-fatto-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+  });
+}
+
 // Aggiornamento di un mazzo da Archidekt (C-06c/S-02): lista mazzi con il tasto e l'esito (demo).
 for (const theme of THEMES) {
   test(`screenshot mazzi-aggiorna ${theme} @review`, async ({ page }, testInfo) => {

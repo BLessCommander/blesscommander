@@ -33,18 +33,36 @@ export const useDataStore = defineStore('data', {
     notifications: [],
     /** @type {any[]} mazzi appena salvati che lo snapshot non contiene ancora (fino al ricalcolo) */
     optimisticDecks: [],
+    /** @type {any[]} partite create o chiuse che lo snapshot non mostra ancora (fino al ricalcolo) */
+    optimisticGames: [],
   }),
   getters: {
-    /** Mazzi dello snapshot più quelli salvati e non ancora ricalcolati, con `optimistic: true`. */
+    /**
+     * Mazzi e partite dello snapshot più quelli salvati e non ancora ricalcolati, con `optimistic: true`.
+     * Una partita provvisoria sostituisce quella dello snapshot se lo stato è diverso (es. appena chiusa).
+     */
     snapshotWithPending: (state) => {
       if (!state.snapshot) return null;
       const known = new Set(state.snapshot.decks.map((d) => d.id));
       const extra = state.optimisticDecks
         .filter((d) => !known.has(d.id))
         .map((d) => ({ ...d, optimistic: true }));
-      return extra.length
-        ? { ...state.snapshot, decks: [...state.snapshot.decks, ...extra] }
-        : state.snapshot;
+      const games = state.snapshot.games ?? [];
+      const byId = new Map(state.optimisticGames.map((g) => [g.id, g]));
+      const merged = games.map((g) => {
+        const mine = byId.get(g.id);
+        byId.delete(g.id);
+        return mine && mine.status !== g.status ? { ...mine, optimistic: true } : g;
+      });
+      const newGames = [...byId.values()].map((g) => ({ ...g, optimistic: true }));
+      if (!extra.length && !newGames.length && merged.every((g, i) => g === games[i])) {
+        return state.snapshot;
+      }
+      return {
+        ...state.snapshot,
+        decks: [...state.snapshot.decks, ...extra],
+        games: [...merged, ...newGames],
+      };
     },
     /** Il ricalcolo delle fasce non ha ancora letto le ultime modifiche. */
     refreshing: (state) => state.snapshot?.pending === true,
@@ -83,6 +101,7 @@ export const useDataStore = defineStore('data', {
         unsubscribe ??= provider.onSnapshotChange((snapshot) => {
           this.snapshot = snapshot;
           this.pruneOptimisticDecks();
+          this.pruneOptimisticGames();
           this.syncStatus();
         });
         await this.loadActingAs();
@@ -122,6 +141,7 @@ export const useDataStore = defineStore('data', {
         const result = await provider[method](...args);
         if (method === 'saveDeck') this.rememberDeck(result);
         else if (method === 'saveDeckVersion') this.rememberDeckVersion(args[0], result);
+        else if (method === 'createGame' || method === 'updateGame') this.rememberGame(result);
         return result;
       } finally {
         this.syncStatus();
@@ -150,6 +170,23 @@ export const useDataStore = defineStore('data', {
       }
       const known = new Set(this.snapshot.decks.map((d) => d.id));
       this.optimisticDecks = this.optimisticDecks.filter((d) => !known.has(d.id));
+    },
+
+    /** Una partita salvata più volte (avvio, poi chiusura) tiene solo l'ultima versione. */
+    rememberGame(game) {
+      if (!game?.id) return;
+      this.optimisticGames = [...this.optimisticGames.filter((g) => g.id !== game.id), game];
+    },
+
+    /** Si toglie la partita provvisoria quando lo snapshot ha lo stesso stato, o il ricalcolo è finito. */
+    pruneOptimisticGames() {
+      if (!this.snapshot) return;
+      if (!this.snapshot.pending) {
+        this.optimisticGames = [];
+        return;
+      }
+      const status = new Map(this.snapshot.games.map((g) => [g.id, g.status]));
+      this.optimisticGames = this.optimisticGames.filter((g) => status.get(g.id) !== g.status);
     },
 
     /** Mazzo e versioni salvate (vedi `DataProvider.getDeck`). */

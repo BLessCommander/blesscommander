@@ -42,6 +42,12 @@ routes.push({
   component: () => import('./views/DeckDetailView.vue'),
   meta: { title: it.pages.decks.title },
 });
+routes.push({
+  path: '/partite/:id/chiudi',
+  name: 'closeGame',
+  component: () => import('./views/CloseGameView.vue'),
+  meta: { title: it.pages.closeGame.title },
+});
 routes.push({ path: '/:pathMatch(.*)*', redirect: '/' });
 
 // Routing in modalità hash: funziona su GitHub Pages e dentro le app Capacitor.

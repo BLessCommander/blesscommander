@@ -1,7 +1,7 @@
 // Action `recalc` (SPEC §6.5): valida i file, controlla le autorizzazioni dall'autore dei commit,
 // ricalcola da zero con il motore e restituisce i file di `derived/`. Funzione pura: niente rete,
 // niente disco, niente data corrente. Lo stesso storico dà sempre lo stesso risultato.
-import { recalculate } from '@blesscommander/tier-engine';
+import { buildConfig, recalculate } from '@blesscommander/tier-engine';
 import { validate } from '../../web/src/data/validate.js';
 
 /**
@@ -119,13 +119,19 @@ export function runRecalc({ files, authors = {}, unknownAuthor = 'deny', baselin
     });
   }
 
-  // Partite: una chiusura (stato `ufficiale`) vale solo se la fa il registratore.
+  // Partite: una chiusura (stato `ufficiale`) vale solo se la fa il registratore ed è completa.
+  const winTypes = Object.keys(buildConfig(group ?? {}).params.modificatoriVittoria);
   const games = [];
   for (const { path, json: game } of [...valid.values()].filter((f) => f.kind === 'game')) {
     if (game.status === 'ufficiale') {
       const who = actor(path, game);
       if (who !== null && who !== game.recorderLogin) {
         reject(path, 'Chiusura ignorata: solo il registratore può chiudere la partita');
+        continue;
+      }
+      const incomplete = incompleteClose(game, winTypes);
+      if (incomplete) {
+        reject(path, `Chiusura ignorata: ${incomplete}`);
         continue;
       }
     }
@@ -178,6 +184,18 @@ export function runRecalc({ files, authors = {}, unknownAuthor = 'deny', baselin
     derived[`derived/decks/${deck.id}.json`] = { tier: deck.tier, stats: deck.stats };
   }
   return { derived, errors };
+}
+
+/**
+ * Una partita ufficiale senza vincitore, turno o con un tipo di vittoria sconosciuto farebbe
+ * fallire il motore per tutti: si scarta prima. Restituisce il motivo, o `null` se è completa.
+ * @param {any} game @param {string[]} winTypes
+ */
+function incompleteClose(game, winTypes) {
+  if (!game.winners?.length && !game.winningTeam) return 'manca il vincitore';
+  if (!Number.isInteger(game.winTurn) || game.winTurn < 1) return 'manca il turno di vittoria';
+  if (!winTypes.includes(game.winType)) return 'manca il tipo di vittoria o non è noto';
+  return null;
 }
 
 /** Classifica per giocatore: partite ufficiali giocate e vinte. Ordine stabile. */
