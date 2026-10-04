@@ -19,18 +19,38 @@ export function lobbyFormats(group) {
   return LOBBY_FORMAT_IDS.map((id) => formats.find((f) => f.id === id)).filter(Boolean);
 }
 
+/** Fascia di un mazzo: quella ufficiale dello snapshot, altrimenti la dichiarata. */
+export const deckTier = (deck) => deck?.tier?.current ?? deck?.declaredTier ?? '';
+
+/**
+ * Mazzi che si possono usare a un tavolo di quella fascia: né più bassi né più alti.
+ * Senza fascia scelta non se ne può usare nessuno.
+ * @template {object} D
+ * @param {D[]} decks
+ * @param {string} tableTier
+ * @returns {D[]}
+ */
+export function decksForTier(decks, tableTier) {
+  return tableTier ? decks.filter((d) => deckTier(d) === tableTier) : [];
+}
+
 /**
  * Controlla il tavolo e restituisce i motivi per cui non si può iniziare (vuoto = tutto a posto).
  * @param {{ giocatoriMin: number, giocatoriMax: number }} format
  * @param {LobbyPick[]} picks giocatori scelti, con il mazzo (anche vuoto se non ancora scelto)
  * @param {string} recorderLogin
- * @returns {('players-few'|'players-many'|'no-deck'|'no-recorder')[]}
+ * @param {{ tableTier: string, decksById: Record<string, any> }} tier fascia del tavolo e mazzi noti
+ * @returns {('players-few'|'players-many'|'no-tier'|'no-deck'|'deck-tier'|'no-recorder')[]}
  */
-export function lobbyProblems(format, picks, recorderLogin) {
+export function lobbyProblems(format, picks, recorderLogin, { tableTier, decksById }) {
   const problems = [];
   if (picks.length < format.giocatoriMin) problems.push('players-few');
   if (picks.length > format.giocatoriMax) problems.push('players-many');
+  if (!tableTier) problems.push('no-tier');
   if (picks.some((p) => !p.deckId)) problems.push('no-deck');
+  else if (tableTier && picks.some((p) => deckTier(decksById[p.deckId]) !== tableTier)) {
+    problems.push('deck-tier');
+  }
   if (!picks.some((p) => p.login === recorderLogin)) problems.push('no-recorder');
   return problems;
 }
@@ -53,15 +73,25 @@ export function seatOrder(picks, firstLogin) {
  * che il motore userà per il peso del tavolo (SPEC 01).
  * @param {object} args
  * @param {{ id: string }} args.format
+ * @param {string} args.tableTier fascia del tavolo (F1–F5)
  * @param {LobbyPick[]} args.picks
  * @param {string} args.firstLogin
  * @param {string} args.recorderLogin
  * @param {Record<string, any>} args.decksById
  * @param {string} args.startedAt data e ora ISO di inizio
  */
-export function buildLobbyGame({ format, picks, firstLogin, recorderLogin, decksById, startedAt }) {
+export function buildLobbyGame({
+  format,
+  tableTier,
+  picks,
+  firstLogin,
+  recorderLogin,
+  decksById,
+  startedAt,
+}) {
   return {
     formatId: format.id,
+    tableTier,
     variants: [],
     recorderLogin,
     status: 'in_corso',
@@ -69,7 +99,7 @@ export function buildLobbyGame({ format, picks, firstLogin, recorderLogin, decks
     players: seatOrder(picks, firstLogin).map((p, i) => {
       const deck = decksById[p.deckId];
       const player = { login: p.login, deckId: p.deckId, seat: i + 1 };
-      const tier = deck?.tier?.current ?? deck?.declaredTier;
+      const tier = deckTier(deck);
       if (tier) player.tierAtGame = tier;
       return player;
     }),

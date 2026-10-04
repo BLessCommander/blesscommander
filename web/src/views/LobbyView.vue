@@ -1,6 +1,14 @@
 <script setup>
+import { TIER_IDS } from '@blesscommander/tier-engine';
 import { computed, onMounted, ref, watch } from 'vue';
-import { activeGameOf, buildLobbyGame, lobbyFormats, lobbyProblems } from '../domain/lobby.js';
+import {
+  activeGameOf,
+  buildLobbyGame,
+  deckTier,
+  decksForTier,
+  lobbyFormats,
+  lobbyProblems,
+} from '../domain/lobby.js';
 import { DECK_BUILDING, TABLE_MODES, TABLE_OPTIONS } from '../domain/lobby-catalog.js';
 import { it } from '../i18n/it.js';
 import { useDataStore } from '../stores/data.js';
@@ -10,6 +18,8 @@ const data = useDataStore();
 
 const config = ref(null);
 const formatId = ref('ffa4');
+/** Fascia del tavolo (F1–F5); vuota finché non si sceglie. */
+const tableTier = ref('');
 /** @type {import('vue').Ref<{ login: string, deckId: string }[]>} */
 const picks = ref([]);
 const firstLogin = ref('');
@@ -80,8 +90,19 @@ const decksByOwner = computed(() => {
 const decksById = computed(() =>
   Object.fromEntries((data.snapshotWithPending?.decks ?? []).map((d) => [d.id, d])),
 );
-const decksOf = (login) => decksByOwner.value[login] ?? [];
-const tierOf = (deck) => deck.tier?.current ?? deck.declaredTier ?? '';
+// Solo i mazzi della fascia del tavolo: né più bassi né più alti.
+// Nomi dei mazzi già visti: restano anche se lo store li ricarica (es. dopo il ricalcolo).
+const knownDeckNames = ref({});
+watch(
+  decksById,
+  (decks) => {
+    for (const [id, deck] of Object.entries(decks)) knownDeckNames.value[id] = deck.name;
+  },
+  { immediate: true },
+);
+const deckName = (id) => knownDeckNames.value[id] ?? t.deckMissing;
+const decksOf = (login) => decksForTier(decksByOwner.value[login] ?? [], tableTier.value);
+const tierOf = deckTier;
 
 const pickOf = (login) => picks.value.find((p) => p.login === login);
 const toggle = (login) => {
@@ -95,6 +116,14 @@ const toggle = (login) => {
 const setDeck = (login, deckId) => {
   picks.value = picks.value.map((p) => (p.login === login ? { ...p, deckId } : p));
 };
+
+// Cambiando fascia si tiene il mazzo se è ancora ammesso, altrimenti il primo ammesso (o nessuno).
+watch(tableTier, () => {
+  picks.value = picks.value.map((p) => {
+    const allowed = decksOf(p.login);
+    return allowed.some((d) => d.id === p.deckId) ? p : { ...p, deckId: allowed[0]?.id ?? '' };
+  });
+});
 
 // Il proprio nome è già al tavolo: di solito chi crea la lobby gioca.
 watch(
@@ -137,7 +166,12 @@ const recorder = computed({
 });
 
 const problems = computed(() =>
-  format.value ? lobbyProblems(format.value, picks.value, recorder.value) : ['players-few'],
+  format.value
+    ? lobbyProblems(format.value, picks.value, recorder.value, {
+        tableTier: tableTier.value,
+        decksById: decksById.value,
+      })
+    : ['players-few'],
 );
 const canAddMore = (login) =>
   Boolean(pickOf(login)) || picks.value.length < (format.value?.giocatoriMax ?? 0);
@@ -153,6 +187,7 @@ const reminder = computed(() => {
       game.recorderLogin === me.value
         ? t.reminderForRecorder(firstName)
         : t.reminderForOthers(nameOf(game.recorderLogin), firstName),
+    tier: game.tableTier ?? '',
     time: game.startedAt
       ? new Date(game.startedAt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
       : '',
@@ -167,6 +202,7 @@ const start = async () => {
   try {
     const game = buildLobbyGame({
       format: format.value,
+      tableTier: tableTier.value,
       picks: picks.value.map((p) => ({ login: p.login, deckId: p.deckId })),
       firstLogin: first.value,
       recorderLogin: recorder.value,
@@ -197,13 +233,15 @@ const start = async () => {
     <section v-else-if="reminder" class="card reminder" data-testid="lobby-reminder">
       <h2>{{ t.reminderTitle }}</h2>
       <p class="reminder__main" data-testid="dice-reminder">{{ reminder.text }}</p>
+      <p v-if="reminder.tier" class="reminder__tier" data-testid="reminder-tier">
+        {{ t.tableTier(reminder.tier) }}
+      </p>
       <p v-if="reminder.time" class="muted">{{ t.startedAt(reminder.time) }}</p>
       <p class="muted">{{ t.reminderInfo }}</p>
       <h3>{{ t.seats }}</h3>
       <ol class="reminder__seats">
         <li v-for="p in reminder.seats" :key="p.login">
-          <strong>{{ t.seat(p.seat) }}</strong> · {{ nameOf(p.login) }} ·
-          {{ decksById[p.deckId]?.name ?? '' }}
+          <strong>{{ t.seat(p.seat) }}</strong> · {{ nameOf(p.login) }} · {{ deckName(p.deckId) }}
         </li>
       </ol>
       <RouterLink to="/partite" class="btn btn--secondary">{{ t.toMatches }}</RouterLink>
@@ -219,6 +257,15 @@ const start = async () => {
             </option>
           </optgroup>
         </select>
+      </label>
+
+      <label class="field">
+        <span>{{ t.tier }}</span>
+        <select v-model="tableTier" name="tableTier" data-testid="lobby-tier">
+          <option value="" disabled>{{ t.tierPlaceholder }}</option>
+          <option v-for="id in TIER_IDS" :key="id" :value="id">{{ id }}</option>
+        </select>
+        <small class="muted field__hint">{{ t.tierHint }}</small>
       </label>
 
       <label class="field">
@@ -283,10 +330,12 @@ const start = async () => {
               :disabled="!decksOf(login).length"
               @change="setDeck(login, $event.target.value)"
             >
-              <option v-if="!decksOf(login).length" value="">{{ t.noDecks }}</option>
+              <option v-if="!decksOf(login).length" value="" disabled>
+                {{ tableTier ? t.noDecksInTier(tableTier) : t.chooseTierFirst }}
+              </option>
               <option v-else value="" disabled>{{ t.chooseDeck }}</option>
               <option v-for="d in decksOf(login)" :key="d.id" :value="d.id">
-                {{ d.name }}{{ tierOf(d) ? ` (${tierOf(d)})` : '' }}
+                {{ d.name }} ({{ tierOf(d) }})
               </option>
             </select>
           </label>
@@ -336,6 +385,10 @@ const start = async () => {
   gap: 0.375rem;
   min-width: 0;
   font-weight: 600;
+}
+
+.field__hint {
+  font-weight: 400;
 }
 
 .field select {
@@ -554,6 +607,10 @@ const start = async () => {
 
 .reminder__main {
   font-size: 1.375rem;
+  font-weight: 700;
+}
+
+.reminder__tier {
   font-weight: 700;
 }
 

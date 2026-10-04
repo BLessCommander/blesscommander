@@ -90,6 +90,8 @@ export const SCHEMAS = {
     {
       id,
       formatId: str,
+      // Fascia scelta per il tavolo in lobby: i mazzi dei giocatori sono tutti di questa fascia.
+      tableTier: tier,
       variants: strings,
       recorderLogin: str,
       createdBy: str,
