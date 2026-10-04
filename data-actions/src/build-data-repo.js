@@ -7,20 +7,24 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 import { SCHEMAS } from '../../web/src/data/schemas.js';
+import { sanarDeckFiles, testDeckId } from './test-decks.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../..');
 
+export const TEST_PLAYER_COUNT = 8;
 const TEST_USERS = [
   ['test-admin', 'Admin di prova', 'admin'],
-  ['test-giocatore1', 'Giocatore 1', 'giocatore'],
-  ['test-giocatore2', 'Giocatore 2', 'giocatore'],
-  ['test-giocatore3', 'Giocatore 3', 'giocatore'],
+  ...Array.from({ length: TEST_PLAYER_COUNT }, (_, i) => [
+    `test-giocatore${i + 1}`,
+    `Giocatore ${i + 1}`,
+    'giocatore',
+  ]),
 ];
 
 /**
  * Dati iniziali del repository di prova: `testMode`, il proprietario (login in `docs/progetto.json`)
- * come unico `testOperator` e admin, più 4 utenti finti (SPEC §6.7). Nessun account GitHub reale in più.
+ * come unico `testOperator` e admin, più un admin e 8 giocatori finti (SPEC §6.7). Nessun account GitHub reale in più.
  * @param {string} ownerLogin
  */
 export function testRepoConfig(ownerLogin) {
@@ -79,6 +83,14 @@ export async function buildDataRepo(
       `${JSON.stringify(members, null, 2)}
 `,
     );
+    // Un mazzo Sanar finto per ogni giocatore finto (solo per le prove dal vivo).
+    for (let n = 1; n <= TEST_PLAYER_COUNT; n += 1) {
+      const id = testDeckId(n);
+      const { deck, version } = sanarDeckFiles(`test-giocatore${n}`, n);
+      await mkdir(join(out, 'decks', id), { recursive: true });
+      await writeFile(join(out, 'decks', `${id}.json`), `${JSON.stringify(deck, null, 2)}\n`);
+      await writeFile(join(out, 'decks', id, 'v1.json'), `${JSON.stringify(version, null, 2)}\n`);
+    }
   }
 
   if (live && !test) {

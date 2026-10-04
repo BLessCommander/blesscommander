@@ -6,7 +6,10 @@ import { join } from 'node:path';
 import { buildSeed } from '../../tests/seed/seed.js';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
+import { validate } from '../../web/src/data/validate.js';
+import { ULID_PATTERN } from '../../web/src/data/ulid.js';
 import { buildDataRepo, liveRepoMembers, testRepoConfig } from './build-data-repo.js';
+import { testDeckId } from './test-decks.js';
 
 describe('UT-ACT-LIVE: repository dati reale', () => {
   it('con live: true il proprietario è l’unico membro, admin, e non c’è testMode', async () => {
@@ -62,18 +65,36 @@ describe('UT-ACT: repository dati iniziale', () => {
 });
 
 describe('UT-ACT-TEST: repository di prova iniziale', () => {
-  it('ha testMode, il proprietario come operatore e admin, e 4 utenti finti', () => {
+  it('ha testMode, il proprietario come operatore e admin, e 8 giocatori finti più un admin', () => {
     const { group, members } = testRepoConfig('G-E-M');
     expect(group).toMatchObject({ testMode: true, testOperators: ['G-E-M'] });
     expect(members['G-E-M'].role).toBe('admin');
     const fake = Object.keys(members).filter((l) => l.startsWith('test-'));
     expect(fake.sort()).toEqual([
       'test-admin',
-      'test-giocatore1',
-      'test-giocatore2',
-      'test-giocatore3',
+      ...Array.from({ length: 8 }, (_, i) => `test-giocatore${i + 1}`),
     ]);
   });
+
+  it('il pacchetto di prova ha un mazzo Sanar valido per ogni giocatore finto', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'bc-decks-'));
+    try {
+      await buildDataRepo(dir, { test: true });
+      for (let n = 1; n <= 8; n += 1) {
+        const id = testDeckId(n);
+        expect(id).toMatch(new RegExp(ULID_PATTERN));
+        const deck = JSON.parse(await readFile(join(dir, `decks/${id}.json`), 'utf8'));
+        const version = JSON.parse(await readFile(join(dir, `decks/${id}/v1.json`), 'utf8'));
+        expect(deck.ownerLogin).toBe(`test-giocatore${n}`);
+        expect(deck.commanders).toEqual(['Sanar, Innovative First-Year']);
+        expect(validate('deck', { id, ...deck }).valid).toBe(true);
+        expect(validate('deck-version', version).valid).toBe(true);
+        expect(version.cards.reduce((sum, c) => sum + c.qty, 0)).toBe(99);
+      }
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 30_000);
 
   it('con test: true scrive i file di prova; senza, il template reale resta senza testMode', async () => {
     const real = await mkdtemp(join(tmpdir(), 'bc-real-'));

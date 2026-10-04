@@ -324,6 +324,32 @@ for (const theme of THEMES) {
   });
 }
 
+// Lobby (C-09): tavolo da 4 compilato e promemoria del dado dopo «Inizia».
+for (const theme of THEMES) {
+  test(`screenshot lobby ${theme} @review`, async ({ page }, testInfo) => {
+    test.skip(
+      !['iphone', 'desktop-chrome'].includes(testInfo.project.name),
+      'solo iphone e desktop',
+    );
+    await page.emulateMedia({ colorScheme: theme });
+    await page.goto('/#/nuovo-tavolo');
+    for (const login of ['demo-giocatore1', 'demo-giocatore2', 'demo-giocatore3']) {
+      await page.getByTestId(`lobby-player-${login}`).locator('label.seat__main').click();
+    }
+    await mkdir('review-screenshots', { recursive: true });
+    await page.screenshot({
+      path: `review-screenshots/lobby-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+    await page.getByTestId('lobby-start').click();
+    await page.getByTestId('lobby-reminder').waitFor();
+    await page.screenshot({
+      path: `review-screenshots/lobby-promemoria-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+  });
+}
+
 // Aggiornamento di un mazzo da Archidekt (C-06c/S-02): lista mazzi con il tasto e l'esito (demo).
 for (const theme of THEMES) {
   test(`screenshot mazzi-aggiorna ${theme} @review`, async ({ page }, testInfo) => {

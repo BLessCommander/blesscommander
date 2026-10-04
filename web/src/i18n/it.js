@@ -87,6 +87,46 @@ export const it = {
     ruleText:
       "L'app si usa solo prima (lobby) e dopo (chiusura in 3 tocchi). Mentre si gioca, l'unica cosa da fare è girare un dado fisico per contare i turni.",
   },
+  lobby: {
+    intro:
+      'Scegli formato, giocatori e mazzi. Poi tocca «Inizia»: durante la partita non serve più il telefono.',
+    format: 'Formato',
+    formatOption: (f) =>
+      f.giocatoriMin === f.giocatoriMax
+        ? `${f.nome} (${f.giocatoriMin} giocatori)`
+        : `${f.nome} (${f.giocatoriMin}–${f.giocatoriMax} giocatori)`,
+    players: 'Giocatori e mazzi',
+    playersHint: (f) =>
+      f.giocatoriMin === f.giocatoriMax
+        ? `Servono ${f.giocatoriMin} giocatori.`
+        : `Servono da ${f.giocatoriMin} a ${f.giocatoriMax} giocatori.`,
+    me: 'Tu',
+    deck: 'Mazzo',
+    chooseDeck: 'Scegli il mazzo',
+    noDecks: 'Nessun mazzo',
+    first: 'Chi gioca per primo',
+    recorder: 'Registratore (gira il dado)',
+    recorderHint: 'Solo il registratore potrà chiudere la partita.',
+    start: 'Inizia',
+    starting: 'Avvio…',
+    loading: 'Carico il tavolo…',
+    problems: {
+      'players-few': 'Mancano dei giocatori.',
+      'players-many': 'Ci sono troppi giocatori per questo formato.',
+      'no-deck': 'Scegli un mazzo per ogni giocatore.',
+      'no-recorder': 'Il registratore deve essere uno dei giocatori.',
+    },
+    error: 'Non sono riuscito a creare la partita. Riprova.',
+    reminderTitle: 'Partita in corso',
+    reminderForRecorder: (first) => `Metti il dado su 1 accanto a ${first}.`,
+    reminderForOthers: (recorder, first) =>
+      `${recorder} è il registratore: metterà il dado su 1 accanto a ${first}.`,
+    reminderInfo: 'Da qui l’app non chiede più nulla. Alla fine il registratore chiude la partita.',
+    startedAt: (time) => `Iniziata alle ${time}`,
+    seats: 'Posti al tavolo',
+    seat: (n) => `Posto ${n}`,
+    toMatches: 'Vai alle partite',
+  },
   decks: {
     intro: 'Mazzi raggruppati per giocatore. Il tuo gruppo è aperto.',
     empty: 'Nessun mazzo ancora. Importane uno dalla pagina Importa.',

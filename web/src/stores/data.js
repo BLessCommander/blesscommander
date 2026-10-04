@@ -158,6 +158,12 @@ export const useDataStore = defineStore('data', {
       return provider.getDeck(id);
     },
 
+    /** Configurazione del gruppo (formati, parametri). */
+    async getConfig() {
+      if (!provider) throw new Error('Dati non ancora caricati');
+      return provider.getConfig();
+    },
+
     /** Stato di una richiesta di import (vedi `DataProvider.getImportRequest`). */
     async getImportRequest(id) {
       if (!provider) throw new Error('Dati non ancora caricati');
