@@ -29,6 +29,20 @@ export async function readInputFiles(dir) {
   return files;
 }
 
+/**
+ * Tutti i dati del gruppo da copiare in un altro archivio (migrazione): i file di input, lo stato
+ * personale (`users/`) e le notifiche generate. Il resto di `derived/` si ricalcola.
+ * @returns {Promise<Record<string, any>>} percorso → contenuto già letto come JSON
+ */
+export async function readMigrationFiles(dir) {
+  const root = resolve(dir);
+  const files = {};
+  for (const name of [...INPUT_DIRS, 'users', 'derived/notifications']) {
+    await walk(root, name, files);
+  }
+  return Object.fromEntries(Object.entries(files).map(([path, text]) => [path, JSON.parse(text)]));
+}
+
 /** Scrive `derived/` e toglie i file di `derived/` che il ricalcolo non produce più. */
 export async function writeDerived(dir, derived) {
   const root = resolve(dir);

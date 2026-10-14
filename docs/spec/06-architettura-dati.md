@@ -196,13 +196,38 @@ Per la pubblicazione sugli store servono, indicativamente: account sviluppatore 
 
 ### 6.10 Passaggio allo stadio 3 (Firebase)
 
-1. Implementare `FirebaseProvider` con la stessa interfaccia.
-2. Script di migrazione: ogni file JSON diventa un documento Firestore nello stesso percorso.
-3. La logica delle Actions (validazione, ricalcolo, import) si sposta in un backend (Render o Cloud Functions) usando lo stesso modulo del motore.
-4. Login con Firebase Auth (email, Google, Apple), collegando ogni account al vecchio login GitHub.
-5. Regole Firestore: fasce, metriche ed eventi scrivibili solo dal backend; chiusura partita solo dal registratore; riapertura solo all'unanimità.
+1. Implementare `FirebaseProvider` con la stessa interfaccia (E-02a).
+2. Script di migrazione: ogni file JSON diventa un documento Firestore (percorsi sotto).
+3. La logica delle Actions (validazione, ricalcolo, import) si sposta in Cloud Functions usando lo stesso modulo del motore (E-02b).
+4. Login con Firebase Auth, **Google** (E-04a); il token GitHub resta solo per lo sviluppo.
+5. Regole Firestore: fasce, metriche ed eventi scrivibili solo dal backend; chiusura partita solo dal registratore; riapertura solo all'unanimità (E-02b).
 
-L'interfaccia non cambia.
+L'interfaccia non cambia, salvo la pagina di accesso e la scelta del gruppo.
+
+**Percorsi in Firestore (decisione E-02a)**
+
+```
+users/{uid}                              displayName, avatarUrl, createdAt (profilo del solo utente)
+groups/{groupId}                         visibility: private|public, description, adminId, inviteCode, createdAt
+groups/{groupId}/config/group            come config/group.json (name, settings, formats[], variants[], testMode?, testOperators?)
+groups/{groupId}/members/{memberId}      displayName, avatarUrl, role: admin|giocatore, joinedAt, uid?
+groups/{groupId}/memberByUid/{uid}       { memberId }  (serve alle regole per riconoscere chi scrive)
+groups/{groupId}/decks/{deckId}          come §6.6, più shared: bool (default false, per la condivisione pubblica dei pod)
+groups/{groupId}/decks/{deckId}/versions/v{N}
+groups/{groupId}/games/{gameId}
+groups/{groupId}/votes/{targetId}__{memberId}
+groups/{groupId}/requests/{requestId}
+groups/{groupId}/joinRequests/{uid}      richieste di ingresso (pod/gruppi pubblici)
+groups/{groupId}/derived/{nome}          snapshot, events, stats, errors, deck__{id}, notifications__{memberId}
+                                         (le liste sono salvate come { items: […] }); scrive SOLO il backend
+groups/{groupId}/userState/{memberId}    stato personale (notifiche lette e risposte)
+```
+
+- **Identità:** nei documenti restano i campi `ownerLogin`, `recorderLogin`, `login` di §6.6, ma il loro valore è un **`memberId`** opaco. Per i dati migrati è il vecchio login GitHub, per i nuovi membri è l'uid. Così i dati non si riscrivono e il motore non cambia.
+- **Legame con l'account Google:** il campo `uid` del membro si compila quando la persona entra con Google (invito con codice o richiesta approvata dall'admin); `memberByUid` ne è lo specchio per le regole.
+- **Gruppi e pod:** un pod è un gruppo (`visibility`, `adminId` = master). Co-master, osservatori, bandi e inviti a scadenza si aggiungono in E-07/E-08 senza cambiare questi percorsi.
+- **Id delle partite e dei voti:** invariati (ULID); il voto usa `targetId__memberId` come id del documento.
+- **Test:** il `FirebaseProvider` passa `provider-contract.js` sull'emulatore; nessun test usa il progetto Firebase vero (regola 5).
 
 ### 6.11 Versione locale e pubblicazione su GitHub Pages
 

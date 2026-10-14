@@ -26,6 +26,26 @@ describe('resolveEnvironment', () => {
     }
   });
 
+  it("usa l'emulatore Firestore solo su indirizzo locale, anche con un token salvato", () => {
+    const env = resolveEnvironment(
+      { VITE_DATA_MODE: 'firebase-emulator', VITE_FIRESTORE_EMULATOR_HOST: '127.0.0.1:8081' },
+      { token: 'ghp_x' },
+    );
+    expect(env).toMatchObject({
+      mode: 'firebase-emulator',
+      emulatorHost: '127.0.0.1',
+      emulatorPort: 8081,
+      fakeLogin: 'test-owner',
+    });
+    for (const host of ['firestore.googleapis.com:443', 'example.com:8080', '']) {
+      const other = resolveEnvironment({
+        VITE_DATA_MODE: 'firebase-emulator',
+        VITE_FIRESTORE_EMULATOR_HOST: host,
+      });
+      expect(other.mode).toBe('demo');
+    }
+  });
+
   it('con un token salvato usa il repository reale', () => {
     expect(resolveEnvironment({}, { token: 'ghp_x' })).toMatchObject({
       mode: 'github',

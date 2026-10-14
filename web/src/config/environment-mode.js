@@ -1,11 +1,12 @@
 /**
- * @typedef {'demo' | 'fake-github' | 'github' | 'signed-out'} EnvironmentMode
- * @typedef {{ mode: EnvironmentMode, label: string, fakeGithubUrl: string | null, fakeLogin: string | null, testRepo: boolean }} Environment
+ * @typedef {'demo' | 'fake-github' | 'firebase-emulator' | 'github' | 'signed-out'} EnvironmentMode
+ * @typedef {{ mode: EnvironmentMode, label: string, fakeGithubUrl: string | null, fakeLogin: string | null, testRepo: boolean, emulatorHost?: string, emulatorPort?: number }} Environment
  */
 
 const LABELS = {
   demo: 'DEMO LOCALE',
   'fake-github': 'FINTA API GITHUB',
+  'firebase-emulator': 'EMULATORE FIREBASE',
   github: 'REPOSITORY REALE',
   'github-test': 'REPOSITORY DI PROVA',
   'signed-out': 'NON COLLEGATO',
@@ -30,6 +31,19 @@ export function resolveEnvironment(env, saved = {}) {
       fakeGithubUrl: url.replace(/\/$/, ''),
       fakeLogin: env.VITE_FAKE_GITHUB_LOGIN || 'test-owner',
       testRepo: false,
+    };
+  }
+  // Emulatore di Firestore: solo su indirizzo locale, come la finta API.
+  const emulator = /^(127\.0\.0\.1|localhost):(\d+)$/.exec(env.VITE_FIRESTORE_EMULATOR_HOST ?? '');
+  if (env.VITE_DATA_MODE === 'firebase-emulator' && emulator) {
+    return {
+      mode: 'firebase-emulator',
+      label: LABELS['firebase-emulator'],
+      fakeGithubUrl: null,
+      fakeLogin: env.VITE_FAKE_GITHUB_LOGIN || 'test-owner',
+      testRepo: false,
+      emulatorHost: emulator[1],
+      emulatorPort: Number(emulator[2]),
     };
   }
   if (saved.token && env.VITE_DATA_MODE !== 'fake-github') {

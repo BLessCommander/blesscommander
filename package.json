@@ -16,9 +16,11 @@
     "dev": "npm run dev -w web",
     "dev:lan": "npm run dev:lan -w web",
     "dev:fake-github": "node tests/dev/fake-github-dev.js",
+    "dev:firebase": "node tests/dev/firebase-dev.js",
     "preview": "npm run preview -w web",
     "build": "npm run build -w web",
     "test": "vitest run",
+    "test:firebase": "node tests/dev/firebase-test.js",
     "test:e2e": "playwright test",
     "seed:test": "node tests/seed/seed.js",
     "recalc": "node data-actions/src/cli.js",
@@ -33,9 +35,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@firebase/rules-unit-testing": "^6.0.0",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^10.0.0",
     "eslint-plugin-vue": "^10.0.0",
+    "firebase-tools": "^15.33.0",
     "globals": "^16.0.0",
     "prettier": "^3.0.0",
     "vitest": "^3.0.0"
