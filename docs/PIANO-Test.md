@@ -160,7 +160,8 @@ Ogni caso indica i passi principali e il risultato atteso. Tutti `@core @ui` sal
 | UC-28 | Pubblicazione | Build di produzione servita sotto `/<repo>/` | Tutte le risorse caricate, nessun riferimento a dati o token nel bundle, schermata di accesso mostrata senza token |
 | UC-24 | Conflitto | Due utenti modificano `config/group.json` quasi insieme | Entrambe le modifiche salvate grazie a rilettura e nuovo tentativo |
 | UC-20 | Silenzio in partita | Genera una notifica mentre l'utente è in una partita in corso | Nessuna notifica mostrata finché la partita non è chiusa |
-| UC-21 | Storico partite | Filtra per formato, mazzo, data | Risultati corretti; filtri usabili su telefono |
+| UC-21 | Storico partite | Filtra per formato, mazzo, data (e giocatore, fascia, tipo di vittoria, vinte/perse) | Risultati corretti e combinabili, contatore «N su M», «Azzera i filtri»; filtri usabili su telefono (pannello chiuso, controlli da 44px) |
+| UC-67 | Dettaglio partita | Dall’elenco Partite apri una partita | Data, formato e fascia del tavolo, turno (stimato se è una stima), tipo, combo/carte, giocatori con mazzo, vincitore ed eliminazioni; link per tornare all’elenco; partita inesistente → messaggio |
 | UC-22 | Regolamento e parametri | Admin cambia un modificatore | Regolamento aggiornato; il ricalcolo dello storico viene proposto |
 | UC-30 | Giro responsive | Visita tutte le pagine su tutti i 6 profili | Tutti i controlli di §3 verdi |
 | UC-31 | Navigazione mobile | Bottom nav, menu a scomparsa, tasto indietro con modale aperta | Il tasto indietro chiude la modale prima di cambiare pagina |

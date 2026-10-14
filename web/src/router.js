@@ -10,6 +10,7 @@ const views = {
   decks: () => import('./views/DecksView.vue'),
   importDeck: () => import('./views/ImportDeckView.vue'),
   lobby: () => import('./views/LobbyView.vue'),
+  matches: () => import('./views/MatchesView.vue'),
   liveGames: () => import('./views/LiveGamesView.vue'),
   group: () => import('./views/GroupView.vue'),
   rules: () => import('./views/RulesView.vue'),
@@ -42,6 +43,12 @@ routes.push({
   name: 'deck',
   component: () => import('./views/DeckDetailView.vue'),
   meta: { title: it.pages.decks.title },
+});
+routes.push({
+  path: '/partite/:id',
+  name: 'match',
+  component: () => import('./views/MatchDetailView.vue'),
+  meta: { title: it.pages.matches.title },
 });
 routes.push({
   path: '/partite/:id/chiudi',
