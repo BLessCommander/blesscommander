@@ -362,9 +362,42 @@ for (const theme of THEMES) {
     await page.getByTestId('close-game-link').click();
     await page.getByTestId('close-winner').getByRole('radio', { name: 'Giocatore 2' }).check();
     await page.getByTestId('close-turn-input').fill('7');
+    // Mazzo con molte combo (C-10d): elenco con gruppi, ricerca e chip con le scelte.
+    await page.evaluate(() => {
+      const store = document
+        .querySelector('#app')
+        .__vue_app__.config.globalProperties.$pinia._s.get('data');
+      const kinds = ['Win the game', 'Infinite mana', 'Draw a card'];
+      const combos = Array.from({ length: 15 }, (_, i) => ({
+        id: 'c' + i,
+        cards: ['Carta ' + (i + 1) + 'A', 'Carta ' + (i + 1) + 'B'],
+        produces: [kinds[i % 3]],
+      }));
+      store.getDeck = async () => ({
+        deck: { currentVersion: 1 },
+        versions: [
+          { version: 1, cards: [{ name: 'Sol Ring' }, { name: 'Finale of Devastation' }], combos },
+        ],
+      });
+    });
+    await page.getByTestId('close-winner').getByRole('radio', { name: 'Giocatore 3' }).check();
+    await page.getByTestId('close-winner').getByRole('radio', { name: 'Giocatore 2' }).check();
     await page.getByTestId('close-wintype').getByRole('radio', { name: 'Combo' }).check();
-    await page.getByTestId('close-wincards').getByRole('checkbox').first().check();
+    const openSheet = page.getByTestId('close-combo-open');
+    if (await openSheet.isVisible()) await openSheet.click();
     await mkdir('review-screenshots', { recursive: true });
+    await page.screenshot({
+      path: `review-screenshots/chiusura-combo-elenco-${testInfo.project.name}-${theme}.png`,
+    });
+    const list = page.getByTestId('close-combo-list');
+    await list.getByRole('checkbox').nth(0).check();
+    await list.getByRole('checkbox').nth(1).check();
+    await page.getByTestId('close-combo-search').fill('infinite');
+    await page.screenshot({
+      path: `review-screenshots/chiusura-combo-ricerca-${testInfo.project.name}-${theme}.png`,
+    });
+    const done = page.getByTestId('close-combo-done');
+    if (await done.isVisible()) await done.click();
     await page.screenshot({
       path: `review-screenshots/chiusura-combo-${testInfo.project.name}-${theme}.png`,
       fullPage: true,

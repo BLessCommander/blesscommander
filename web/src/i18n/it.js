@@ -83,6 +83,19 @@ export const it = {
     combosHint: 'Combo salvate nel mazzo quando è stato importato.',
     combosNone: 'Questo mazzo non ha combo salvate.',
     comboProduces: (text) => `Risultato: ${text}`,
+    comboSearchLabel: 'Cerca per carta o risultato',
+    comboNoMatch: 'Nessuna combo corrisponde alla ricerca.',
+    pickedCombos: 'Combo scelte',
+    removeCombo: (name) => `Togli la combo ${name}`,
+    comboOpen: (count) =>
+      count ? `Scegli le combo (${count} ${count === 1 ? 'scelta' : 'scelte'})` : 'Scegli le combo',
+    comboSheetTitle: 'Combo della vittoria',
+    comboDone: 'Fatto',
+    comboGroups: {
+      win: 'Vittoria diretta',
+      infinite: 'Risultati infiniti',
+      other: 'Altri risultati',
+    },
     searchLabel: 'Cerca una carta del mazzo',
     searchHint:
       'Compaiono solo le carte presenti nel mazzo del vincitore. Puoi sceglierne più di una.',

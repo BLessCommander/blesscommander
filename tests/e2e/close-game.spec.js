@@ -23,6 +23,38 @@ const gameIdOf = (page) => /\/partite\/([^/]+)\/chiudi/.exec(page.url())[1];
 
 const closeLink = (page) => page.getByTestId('close-game-link');
 
+/** Sul telefono le combo si scelgono in un foglio a tutto schermo: lo apre; su desktop non fa nulla. */
+async function openComboList(page) {
+  const open = page.getByTestId('close-combo-open');
+  if (await open.isVisible()) await open.click();
+  return page.getByTestId('close-combo-list');
+}
+
+/** Chiude il foglio con «Fatto» (solo telefono). */
+async function closeComboSheet(page) {
+  const done = page.getByTestId('close-combo-done');
+  if (await done.isVisible()) await done.click();
+}
+
+/** Sostituisce la lettura del mazzo con una versione da molte combo (15: Win the game / Infinite / altro). */
+async function manyCombos(page) {
+  await page.evaluate(() => {
+    const store = document
+      .querySelector('#app')
+      .__vue_app__.config.globalProperties.$pinia._s.get('data');
+    const kinds = ['Win the game', 'Infinite mana', 'Draw a card'];
+    const combos = Array.from({ length: 15 }, (_, i) => ({
+      id: 'c' + i,
+      cards: ['Carta ' + (i + 1) + 'A', 'Carta ' + (i + 1) + 'B'],
+      produces: [kinds[i % 3]],
+    }));
+    store.getDeck = async () => ({
+      deck: { currentVersion: 1 },
+      versions: [{ version: 1, cards: [], combos }],
+    });
+  });
+}
+
 test.describe('chiusura partita @core', () => {
   test('UC-10: il registratore chiude con il dado in tre scelte @ui', async ({ page }) => {
     await startGame(page);
@@ -169,13 +201,16 @@ test.describe('chiusura partita @core', () => {
     await expect(cards).toContainText('Non riesco a leggere il mazzo');
 
     await page.getByTestId('close-winner').getByRole('radio', { name: 'Giocatore 2' }).check();
-    const combos = cards.getByRole('checkbox');
+    const list = await openComboList(page);
+    const combos = list.getByRole('checkbox');
     await expect(combos).toHaveCount(2);
-    await expect(cards).toContainText('Thassa’s Oracle + Demonic Consultation');
-    await expect(cards).toContainText('Risultato: Win the game');
+    await expect(list).toContainText('Thassa’s Oracle + Demonic Consultation');
+    await expect(list).toContainText('Risultato: Win the game');
     await combos.nth(0).check();
     await combos.nth(1).check();
     await expect(combos.nth(0)).toBeChecked();
+    await closeComboSheet(page);
+    await expect(page.getByTestId('close-picked-combos').locator('li')).toHaveCount(2);
     await page.getByTestId('close-turn-input').fill('4');
     await page.getByTestId('close-save').click();
     await expect(page.getByTestId('close-done')).toBeVisible();
@@ -187,6 +222,72 @@ test.describe('chiusura partita @core', () => {
       'Tainted Pact',
       'Thassa’s Oracle',
     ]);
+  });
+
+  test('C-10d: molte combo: ricerca, gruppi e chip con le scelte', async ({ page }) => {
+    await startGame(page);
+    await closeLink(page).click();
+    await manyCombos(page);
+    await page.getByTestId('close-winner').getByRole('radio', { name: 'Giocatore 2' }).check();
+    await page.getByTestId('close-wintype').getByRole('radio', { name: 'Combo' }).check();
+    const list = await openComboList(page);
+    await expect(list.getByRole('checkbox')).toHaveCount(15);
+
+    // Ricerca, intestazioni e righe hanno la stessa larghezza (nessun bordo destro irregolare).
+    const widthOf = async (loc) => Math.round((await loc.first().boundingBox()).width);
+    const searchWidth = await widthOf(page.getByTestId('close-combo-search'));
+    expect(await widthOf(list.getByRole('button', { name: /Vittoria diretta/ }))).toBe(searchWidth);
+    expect(await widthOf(list.locator('.choice'))).toBe(searchWidth);
+
+    // Da 8 combo in su ci sono i gruppi per risultato, che si chiudono.
+    await expect(page.getByTestId('close-combo-group-win')).toContainText('(5)');
+    await expect(page.getByTestId('close-combo-group-infinite')).toContainText('(5)');
+    await expect(page.getByTestId('close-combo-group-other')).toContainText('(5)');
+    const winGroup = page.getByTestId('close-combo-group-win');
+    await winGroup.getByRole('button', { name: /Vittoria diretta/ }).click();
+    await expect(winGroup.getByRole('checkbox')).toHaveCount(0);
+    await winGroup.getByRole('button', { name: /Vittoria diretta/ }).click();
+    await expect(winGroup.getByRole('checkbox')).toHaveCount(5);
+
+    // La ricerca vale per nome di carta e per risultato; con pochi risultati niente gruppi.
+    const search = page.getByTestId('close-combo-search');
+    await search.fill('infinite mana');
+    await expect(list.getByRole('checkbox')).toHaveCount(5);
+    await search.fill('7b');
+    await expect(list.getByRole('checkbox')).toHaveCount(1);
+    await expect(page.getByTestId('close-combo-group-win')).toHaveCount(0);
+    await list.getByRole('checkbox').check();
+    await search.fill('zzz');
+    await expect(page.getByTestId('close-combo-nomatch')).toBeVisible();
+    await closeComboSheet(page);
+
+    // Le scelte restano come chip, anche fuori dal foglio, e si tolgono con la ×.
+    const picked = page.getByTestId('close-picked-combos');
+    await expect(picked.locator('li')).toHaveCount(1);
+    await expect(picked).toContainText('Carta 7A + Carta 7B');
+    await page.getByRole('button', { name: 'Togli la combo Carta 7A + Carta 7B' }).click();
+    await expect(page.getByTestId('close-picked-combos')).toHaveCount(0);
+  });
+
+  test('C-10d: sul telefono la scelta delle combo è un foglio con «Fatto»', async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      !['mobile-small', 'iphone', 'android'].includes(testInfo.project.name),
+      'solo telefono',
+    );
+    await startGame(page);
+    await closeLink(page).click();
+    await manyCombos(page);
+    await page.getByTestId('close-winner').getByRole('radio', { name: 'Giocatore 2' }).check();
+    await page.getByTestId('close-wintype').getByRole('radio', { name: 'Combo' }).check();
+    await expect(page.getByTestId('close-combo-list')).toHaveCount(0);
+    await page.getByTestId('close-combo-open').click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.getByRole('dialog').getByRole('checkbox').first().check();
+    await page.getByTestId('close-combo-done').click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.getByTestId('close-combo-open')).toContainText('1 scelta');
   });
 
   test('C-10b: con gli altri tipi si cerca tra le sole carte del mazzo, più carte insieme', async ({

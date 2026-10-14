@@ -6,8 +6,6 @@ import {
   buildClosePatch,
   closeProblems,
   comboChoices,
-  comboKey,
-  comboLabel,
   deckCardNames,
   estimateTurn,
   isValidTurn,
@@ -15,6 +13,7 @@ import {
   toggleCombo,
   winTypeIds,
 } from '../domain/game-close.js';
+import ComboPicker from '../components/ComboPicker.vue';
 import { it } from '../i18n/it.js';
 import { useDataStore } from '../stores/data.js';
 
@@ -72,7 +71,6 @@ const comboOptions = computed(() => comboChoices(deckVersion.value));
 const suggestions = computed(() =>
   searchDeckCards(deckCardNames(deckVersion.value), query.value, winCards.value),
 );
-const comboChosen = (combo) => winCombos.value.some((c) => comboKey(c) === comboKey(combo));
 
 let loadToken = 0;
 // Cambiando vincitore si cambia mazzo: la scelta si azzera e si leggono le carte del nuovo mazzo.
@@ -306,20 +304,12 @@ const save = async () => {
           <p v-if="!comboOptions.length" class="muted" data-testid="close-no-combos">
             {{ t.combosNone }}
           </p>
-          <label v-for="c in comboOptions" :key="comboKey(c)" class="choice choice--check">
-            <input
-              type="checkbox"
-              name="winCombo"
-              :checked="comboChosen(c)"
-              @change="pickCombo(c)"
-            />
-            <span class="choice__box">
-              <strong>{{ comboLabel(c) }}</strong>
-              <small v-if="c.produces?.length" class="muted">{{
-                t.comboProduces(c.produces.join(', '))
-              }}</small>
-            </span>
-          </label>
+          <ComboPicker
+            v-if="comboOptions.length"
+            :options="comboOptions"
+            :chosen="winCombos"
+            @toggle="pickCombo"
+          />
         </template>
         <template v-else>
           <label class="field">
