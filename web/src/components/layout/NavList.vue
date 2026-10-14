@@ -39,12 +39,11 @@ defineProps({
   position: relative;
 }
 
-/* Piccolo numero sull'angolo: sta bene sia nel menu esteso sia nella barra a sole icone. */
+/* Numero a destra della riga, centrato in verticale; nel menu a sole icone sta sull'angolo (_layout.scss). */
 .nav-badge {
-  position: absolute;
-  top: 2px;
-  right: 4px;
   display: inline-grid;
+  flex: none;
+  margin-left: auto;
   place-items: center;
   min-width: 1.25rem;
   height: 1.25rem;

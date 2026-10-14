@@ -385,6 +385,7 @@ for (const theme of THEMES) {
     await page.getByTestId('close-wintype').getByRole('radio', { name: 'Combo' }).check();
     const openSheet = page.getByTestId('close-combo-open');
     if (await openSheet.isVisible()) await openSheet.click();
+    else await page.getByTestId('close-combo-toggle').click();
     await mkdir('review-screenshots', { recursive: true });
     await page.screenshot({
       path: `review-screenshots/chiusura-combo-elenco-${testInfo.project.name}-${theme}.png`,

@@ -25,6 +25,8 @@ const wide = ref(media.wide);
 onBeforeUnmount(media.stop);
 
 const overlay = useOverlay('combos');
+/** Su schermo largo l'elenco sta in un riquadro, chiuso all'inizio. */
+const expanded = ref(false);
 </script>
 
 <template>
@@ -46,9 +48,22 @@ const overlay = useOverlay('combos');
       </ul>
     </template>
 
-    <div v-if="wide" data-testid="close-combo-list">
-      <ComboList :options="options" :chosen="chosen" @toggle="emit('toggle', $event)" />
-    </div>
+    <template v-if="wide">
+      <button
+        type="button"
+        class="btn btn--secondary picker__toggle"
+        :aria-expanded="expanded"
+        aria-controls="combo-panel"
+        data-testid="close-combo-toggle"
+        @click="expanded = !expanded"
+      >
+        <span>{{ t.comboOpen(chosen.length) }}</span>
+        <span class="chevron" :class="{ 'chevron--open': expanded }" aria-hidden="true"></span>
+      </button>
+      <div v-if="expanded" id="combo-panel" class="picker__panel" data-testid="close-combo-list">
+        <ComboList :options="options" :chosen="chosen" @toggle="emit('toggle', $event)" />
+      </div>
+    </template>
     <template v-else>
       <button
         type="button"
@@ -77,6 +92,35 @@ const overlay = useOverlay('combos');
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 0.5rem;
+}
+
+.picker__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.picker__panel {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.chevron {
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-right: 0.25rem;
+  border: solid currentColor;
+  border-width: 0 3px 3px 0;
+  transform: translateY(-25%) rotate(45deg);
+  transition: transform 0.15s;
+}
+
+.chevron--open {
+  transform: translateY(25%) rotate(-135deg);
 }
 
 .picker__title {

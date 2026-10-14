@@ -23,10 +23,12 @@ const gameIdOf = (page) => /\/partite\/([^/]+)\/chiudi/.exec(page.url())[1];
 
 const closeLink = (page) => page.getByTestId('close-game-link');
 
-/** Sul telefono le combo si scelgono in un foglio a tutto schermo: lo apre; su desktop non fa nulla. */
+/** Apre l'elenco delle combo: foglio a tutto schermo sul telefono, riquadro che si apre su desktop. */
 async function openComboList(page) {
   const open = page.getByTestId('close-combo-open');
+  const toggle = page.getByTestId('close-combo-toggle');
   if (await open.isVisible()) await open.click();
+  else await toggle.click();
   return page.getByTestId('close-combo-list');
 }
 
@@ -230,6 +232,9 @@ test.describe('chiusura partita @core', () => {
     await manyCombos(page);
     await page.getByTestId('close-winner').getByRole('radio', { name: 'Giocatore 2' }).check();
     await page.getByTestId('close-wintype').getByRole('radio', { name: 'Combo' }).check();
+    // L'elenco è chiuso finché non si apre (riquadro su desktop, foglio sul telefono).
+    await expect(page.getByTestId('close-combo-list')).toHaveCount(0);
+    await expect(page.getByTestId('close-combo-search')).toHaveCount(0);
     const list = await openComboList(page);
     await expect(list.getByRole('checkbox')).toHaveCount(15);
 

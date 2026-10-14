@@ -57,6 +57,16 @@ test.describe('partite in corso @core', () => {
     if (phone) await menuButton.click();
     const menu = phone ? page.getByRole('dialog', { name: 'Menu' }) : page.locator('.sidebar');
     await expect(menu.getByTestId('live-badge')).toHaveText('1');
+
+    // Con l'etichetta visibile il numero sta nella riga, centrato in verticale (nel menu a sole icone sta sull'angolo).
+    const link = menu.getByRole('link', { name: 'In corso' });
+    const labelBox = await link.locator('.nav-item__label').boundingBox();
+    if (labelBox && labelBox.width > 20) {
+      const badgeBox = await menu.getByTestId('live-badge').boundingBox();
+      const linkBox = await link.boundingBox();
+      const offset = badgeBox.y + badgeBox.height / 2 - (linkBox.y + linkBox.height / 2);
+      expect(Math.abs(offset)).toBeLessThanOrEqual(1);
+    }
     await menu.getByRole('link', { name: 'In corso' }).click();
     await expect(page.getByTestId('live-list')).toBeVisible();
   });

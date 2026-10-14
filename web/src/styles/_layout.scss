@@ -66,6 +66,13 @@
     @include sr-only;
   }
 
+  .nav-badge {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    margin: 0;
+  }
+
   .sidebar__toggle {
     align-self: center;
   }
@@ -117,6 +124,11 @@
     .nav-item {
       justify-content: flex-start;
       padding-inline: 12px;
+    }
+
+    .nav-badge {
+      position: static;
+      margin-left: auto;
     }
 
     .nav-item__label {
