@@ -1,7 +1,15 @@
 <script setup>
+import { onMounted } from 'vue';
 import { APP_NAME, ENVIRONMENT } from './config/environment.js';
+import { accountsEnabled } from './data/account.js';
+import AccountGate from './components/AccountGate.vue';
 import AppLayout from './layouts/AppLayout.vue';
+import { useAccountStore } from './stores/account.js';
 import AccessView from './views/AccessView.vue';
+
+// Con gli account (Google) l'app si apre solo dopo l'accesso e la scelta del gruppo.
+const account = accountsEnabled ? useAccountStore() : null;
+onMounted(() => account?.init());
 </script>
 
 <template>
@@ -13,6 +21,15 @@ import AccessView from './views/AccessView.vue';
   >
     <p class="signed-out__brand">{{ APP_NAME }}</p>
     <AccessView />
+  </main>
+  <main
+    v-else-if="account && account.status !== 'ready'"
+    id="main"
+    class="page signed-out"
+    data-testid="account-gate"
+  >
+    <p class="signed-out__brand">{{ APP_NAME }}</p>
+    <AccountGate />
   </main>
   <AppLayout v-else />
 </template>

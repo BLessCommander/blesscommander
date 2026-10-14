@@ -1,11 +1,16 @@
 <script setup>
 import { ref } from 'vue';
 import { DATA_REPO, ENVIRONMENT, LINKED_REPO, ORG } from '../config/environment.js';
+import { accountsEnabled } from '../data/account.js';
 import { signIn, signOut } from '../domain/session.js';
+import { useAccountStore } from '../stores/account.js';
 import { it } from '../i18n/it.js';
 import { openExternal } from '../platform/external-link.js';
 
 const t = it.access;
+const a = it.accounts;
+const accounts = accountsEnabled;
+const account = accounts ? useAccountStore() : null;
 const TOKEN_PAGE = 'https://github.com/settings/personal-access-tokens/new';
 const token = ref('');
 const testRepo = ref(false);
@@ -31,6 +36,21 @@ async function submit() {
 
     <section v-if="ENVIRONMENT.mode === 'fake-github'" class="card">
       <p class="muted" data-testid="access-locked">{{ t.fakeLocked }}</p>
+    </section>
+
+    <section v-else-if="accounts" class="card stack" data-testid="account-panel">
+      <p>
+        {{ a.signedInAs }} <strong>{{ account.account?.displayName }}</strong>
+      </p>
+      <p v-if="account.activeGroup" data-testid="current-group">
+        {{ a.currentGroup }}: <strong>{{ account.activeGroup.name }}</strong>
+      </p>
+      <button type="button" class="btn" data-testid="switch-group" @click="account.switchGroup()">
+        {{ a.switchGroup }}
+      </button>
+      <button type="button" class="btn btn--secondary" @click="account.signOut()">
+        {{ a.signOut }}
+      </button>
     </section>
 
     <section v-else-if="ENVIRONMENT.mode === 'github'" class="card">

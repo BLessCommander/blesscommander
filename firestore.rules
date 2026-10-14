@@ -52,6 +52,32 @@ service cloud.firestore {
     function same(field) {
       return request.resource.data[field] == resource.data[field];
     }
+    // Ingresso con il codice di invito (E-04a): il nuovo membro scrive, nello stesso batch,
+    // il proprio documento `members/<uid>` e il legame `memberByUid/<uid>`, citando il codice.
+    function joiningWithCode(g, u) {
+      return signedIn() && request.auth.uid == u && !exists(linkDoc(g, u)) &&
+        existsAfter(linkDoc(g, u)) && existsAfter(memberDoc(g, u)) &&
+        getAfter(memberDoc(g, u)).data.role == 'giocatore' &&
+        getAfter(memberDoc(g, u)).data.inviteCode == groupData(g).inviteCode;
+    }
+
+    // Profilo e elenco dei propri gruppi (`users/<uid>/groups/<groupId>`): solo dell'utente.
+    match /users/{u} {
+      allow read, write: if signedIn() && request.auth.uid == u;
+      match /groups/{g} {
+        allow read, write: if signedIn() && request.auth.uid == u;
+      }
+    }
+
+    // Da codice di invito a gruppo: si legge un codice alla volta (get), mai l'elenco.
+    match /inviteCodes/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() &&
+        getAfter(groupPath(request.resource.data.groupId)).data.inviteCode == code &&
+        getAfter(groupPath(request.resource.data.groupId)).data.adminId == request.auth.uid;
+      allow update, delete: if false;
+    }
 
     match /groups/{g} {
       allow read: if isMember(g) || (signedIn() && resource.data.visibility == 'public');
@@ -71,6 +97,7 @@ service cloud.firestore {
         allow read: if isMember(g);
         allow create: if (creatingGroup(g) && m == request.auth.uid &&
             request.resource.data.role == 'admin') ||
+          (joiningWithCode(g, m) && m == request.auth.uid) ||
           (isAdmin(g) && (request.resource.data.role != 'admin' || isOwnerAdmin(g)));
         // L'admin del gruppo non si tocca; il ruolo admin lo dà solo l'admin del gruppo.
         allow update: if m != groupData(g).adminId && (
@@ -82,7 +109,9 @@ service cloud.firestore {
       match /memberByUid/{u} {
         allow read: if isMember(g) || (signedIn() && request.auth.uid == u);
         allow create: if (creatingGroup(g) && u == request.auth.uid &&
-            request.resource.data.memberId == u) || isAdmin(g);
+            request.resource.data.memberId == u) ||
+          (joiningWithCode(g, u) && request.resource.data.memberId == u) ||
+          isAdmin(g);
         allow update, delete: if isAdmin(g) && resource.data.memberId != groupData(g).adminId;
       }
 

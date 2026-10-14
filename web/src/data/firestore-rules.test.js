@@ -104,6 +104,60 @@ describe.skipIf(!emulator)('UT-RULES regole di Firestore (E-02b)', () => {
     });
   });
 
+  describe('gruppi e codice di invito (E-04a)', () => {
+    const createGroup = async (uid, g, code) => {
+      const db = as(uid);
+      const batch = writeBatch(db);
+      batch.set(doc(db, 'groups', g), { adminId: uid, visibility: 'private', inviteCode: code });
+      batch.set(doc(db, 'groups', g, 'members', uid), { displayName: uid, role: 'admin' });
+      batch.set(doc(db, 'groups', g, 'memberByUid', uid), { memberId: uid });
+      batch.set(doc(db, 'inviteCodes', code), { groupId: g });
+      await batch.commit();
+    };
+    const join = (uid, g, code, role = 'giocatore') => {
+      const db = as(uid);
+      const batch = writeBatch(db);
+      batch.set(doc(db, 'groups', g, 'members', uid), {
+        displayName: uid,
+        role,
+        inviteCode: code,
+      });
+      batch.set(doc(db, 'groups', g, 'memberByUid', uid), { memberId: uid });
+      return batch.commit();
+    };
+
+    it('chi crea un gruppo pubblica anche il codice, e solo per il proprio gruppo', async () => {
+      await assertSucceeds(createGroup('nuovo', 'g2', 'ABC123'));
+      const db = as('altro');
+      await assertFails(setDoc(doc(db, 'inviteCodes', 'ZZZ999'), { groupId: 'g2' }));
+    });
+
+    it('un codice si legge uno alla volta, mai l’elenco', async () => {
+      await createGroup('nuovo', 'g2', 'ABC123');
+      await assertSucceeds(getDoc(doc(as('estraneo'), 'inviteCodes', 'ABC123')));
+      await assertFails(
+        getDoc(doc(env.unauthenticatedContext().firestore(), 'inviteCodes', 'ABC123')),
+      );
+    });
+
+    it('con il codice giusto si entra come giocatore', async () => {
+      await createGroup('nuovo', 'g2', 'ABC123');
+      await assertSucceeds(join('estraneo', 'g2', 'ABC123'));
+      await assertSucceeds(getDoc(doc(as('estraneo'), 'groups', 'g2', 'members', 'nuovo')));
+    });
+
+    it('con un codice sbagliato, o chiedendo di essere admin, si resta fuori', async () => {
+      await createGroup('nuovo', 'g2', 'ABC123');
+      await assertFails(join('estraneo', 'g2', 'SBAGLIATO'));
+      await assertFails(join('estraneo', 'g2', 'ABC123', 'admin'));
+    });
+
+    it('il profilo personale lo legge e lo scrive solo l’utente', async () => {
+      await assertSucceeds(setDoc(doc(as('anna'), 'users', 'anna'), { displayName: 'Anna' }));
+      await assertFails(getDoc(doc(as('bruno'), 'users', 'anna')));
+    });
+  });
+
   describe('dati derivati e configurazione', () => {
     it('derived/ non si scrive dal client, nemmeno da un admin', async () => {
       await assertFails(setDoc(ref(as('anna'), 'derived', 'snapshot'), { items: [1] }));

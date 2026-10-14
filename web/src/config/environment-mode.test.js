@@ -81,4 +81,18 @@ describe('resolveEnvironment', () => {
     );
     expect(env.mode).toBe('fake-github');
   });
+
+  it("l'accesso con gli account vale solo con l'emulatore di Auth su indirizzo locale", () => {
+    const base = {
+      VITE_DATA_MODE: 'firebase-emulator',
+      VITE_FIRESTORE_EMULATOR_HOST: '127.0.0.1:8081',
+    };
+    expect(
+      resolveEnvironment({ ...base, VITE_AUTH_EMULATOR_HOST: 'localhost:9099' }).authEmulatorUrl,
+    ).toBe('http://localhost:9099');
+    expect(
+      resolveEnvironment({ ...base, VITE_AUTH_EMULATOR_HOST: 'esempio.it:9099' }).authEmulatorUrl,
+    ).toBeUndefined();
+    expect(resolveEnvironment(base).authEmulatorUrl).toBeUndefined();
+  });
 });

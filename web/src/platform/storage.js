@@ -37,3 +37,13 @@ export function writeStorage(key, value) {
     // quota piena o accesso negato: resta la copia in memoria
   }
 }
+
+/** @param {string} key */
+export function removeStorage(key) {
+  fallback.delete(key);
+  try {
+    backend()?.removeItem(key);
+  } catch {
+    // accesso negato: resta cancellata la copia in memoria
+  }
+}

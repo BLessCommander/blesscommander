@@ -1,6 +1,6 @@
 /**
  * @typedef {'demo' | 'fake-github' | 'firebase-emulator' | 'github' | 'signed-out'} EnvironmentMode
- * @typedef {{ mode: EnvironmentMode, label: string, fakeGithubUrl: string | null, fakeLogin: string | null, testRepo: boolean, emulatorHost?: string, emulatorPort?: number }} Environment
+ * @typedef {{ mode: EnvironmentMode, label: string, fakeGithubUrl: string | null, fakeLogin: string | null, testRepo: boolean, emulatorHost?: string, emulatorPort?: number, authEmulatorUrl?: string }} Environment
  */
 
 const LABELS = {
@@ -36,6 +36,8 @@ export function resolveEnvironment(env, saved = {}) {
   // Emulatore di Firestore: solo su indirizzo locale, come la finta API.
   const emulator = /^(127\.0\.0\.1|localhost):(\d+)$/.exec(env.VITE_FIRESTORE_EMULATOR_HOST ?? '');
   if (env.VITE_DATA_MODE === 'firebase-emulator' && emulator) {
+    // Con l'emulatore di Auth si entra con un account Google finto (E-04a); senza, resta il membro fisso.
+    const auth = /^(127\.0\.0\.1|localhost):(\d+)$/.exec(env.VITE_AUTH_EMULATOR_HOST ?? '');
     return {
       mode: 'firebase-emulator',
       label: LABELS['firebase-emulator'],
@@ -44,6 +46,7 @@ export function resolveEnvironment(env, saved = {}) {
       testRepo: false,
       emulatorHost: emulator[1],
       emulatorPort: Number(emulator[2]),
+      ...(auth ? { authEmulatorUrl: `http://${auth[1]}:${auth[2]}` } : {}),
     };
   }
   if (saved.token && env.VITE_DATA_MODE !== 'fake-github') {

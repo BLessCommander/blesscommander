@@ -7,6 +7,7 @@
     "dev": "vite --mode live",
     "dev:lan": "vite --host --mode live",
     "dev:test": "vite --port 5174 --strictPort",
+    "dev:test-accounts": "vite --port 5175 --strictPort",
     "build": "vite build",
     "preview": "vite preview --host"
   },

@@ -2,6 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 // Porta propria dei test: non si mescola con `npm run dev` (che usa dati veri da Archidekt).
 const PORT = 5174;
+// Server per i test degli account (E-04a): emulatori indicati ma mai avviati, servizi finti nel browser.
+const ACCOUNTS_PORT = 5175;
 
 // I 6 profili obbligatori di docs/PIANO-Test.md §2.
 export default defineConfig({
@@ -33,10 +35,24 @@ export default defineConfig({
       use: { ...devices['Desktop Firefox'], viewport: { width: 1920, height: 1080 } },
     },
   ],
-  webServer: {
-    command: 'npm run dev:test -w web',
-    url: `http://localhost:${PORT}`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
-  },
+  webServer: [
+    {
+      command: 'npm run dev:test -w web',
+      url: `http://localhost:${PORT}`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
+    },
+    {
+      command: 'npm run dev:test-accounts -w web',
+      url: `http://localhost:${ACCOUNTS_PORT}`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
+      env: {
+        VITE_DATA_MODE: 'firebase-emulator',
+        VITE_FIRESTORE_EMULATOR_HOST: '127.0.0.1:8081',
+        VITE_AUTH_EMULATOR_HOST: '127.0.0.1:9099',
+        VITE_ACCOUNT_FAKE: 'true',
+      },
+    },
+  ],
 });

@@ -40,6 +40,8 @@ export class FirebaseProvider extends DataProvider {
    * @param {string} options.groupId
    * @param {string} [options.memberId] chi scrive (prove); altrimenti si ricava da `uid`
    * @param {string} [options.uid] utente di Firebase Auth
+   * @param {() => Promise<string | null>} [options.resolveUid] come `uid`, ma si ricava quando serve
+   *   (Firebase rilegge la sessione salvata in modo asincrono)
    * @param {() => string} [options.now]
    * @param {() => string} [options.newId]
    * @param {(event: { kind: string }) => Promise<void> | void} [options.onWrite]
@@ -49,6 +51,7 @@ export class FirebaseProvider extends DataProvider {
     groupId,
     memberId = null,
     uid = null,
+    resolveUid = null,
     now = () => new Date().toISOString(),
     newId = () => ulid(),
     onWrite = () => {},
@@ -58,6 +61,7 @@ export class FirebaseProvider extends DataProvider {
     this.groupId = groupId;
     this.memberId = memberId;
     this.uid = uid;
+    this.resolveUid = resolveUid;
     this.now = now;
     this.newId = newId;
     this.onWrite = onWrite;
@@ -112,6 +116,7 @@ export class FirebaseProvider extends DataProvider {
 
   async #memberIdOfUser() {
     if (this.memberId) return this.memberId;
+    this.uid ??= (await this.resolveUid?.()) ?? null;
     if (!this.uid) throw new DataError(DATA_ERROR.auth, 'Accesso non effettuato');
     const link = await this.#read('memberByUid', this.uid);
     if (!link) {

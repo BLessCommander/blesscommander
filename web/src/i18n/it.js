@@ -830,6 +830,48 @@ export const it = {
     signOut: 'Esci',
     signedOut: 'Esci da questo dispositivo: il token viene cancellato da qui.',
   },
+  accounts: {
+    googleIntro:
+      'Entra con il tuo account Google. Non ti chiediamo password: scegli l’account nella finestra di Google.',
+    google: 'Accedi con Google',
+    signingIn: 'Accesso in corso…',
+    loading: 'Controllo il tuo account…',
+    signedInAs: 'Hai fatto l’accesso come',
+    chooseTitle: 'Scegli il gruppo',
+    chooseIntro:
+      'Sei in più gruppi: scegli con quale giocare adesso. Potrai cambiarlo quando vuoi.',
+    noGroups:
+      'Non sei ancora in nessun gruppo. Creane uno nuovo oppure entra con un codice di invito.',
+    open: 'Apri',
+    role: { admin: 'Admin', giocatore: 'Giocatore' },
+    createTitle: 'Crea un nuovo gruppo',
+    createHelp: 'Ne sarai l’amministratore. Poi invita gli amici con il codice che ti daremo.',
+    groupName: 'Nome del gruppo',
+    yourName: 'Il tuo nome nel gruppo',
+    create: 'Crea il gruppo',
+    createdTitle: 'Gruppo creato',
+    createdHelp: 'Manda questo codice agli amici: serve per entrare nel gruppo.',
+    inviteCode: 'Codice di invito',
+    continue: 'Continua',
+    joinTitle: 'Entra con un codice',
+    joinHelp: 'Chiedi il codice a chi amministra il gruppo.',
+    code: 'Codice di invito',
+    join: 'Entra nel gruppo',
+    switchGroup: 'Cambia gruppo',
+    signOut: 'Esci dall’account',
+    currentGroup: 'Gruppo attuale',
+    errors: {
+      cancelled: 'Hai chiuso la finestra di Google: riprova quando vuoi.',
+      'popup-blocked': 'Il browser ha bloccato la finestra di Google. Consenti i popup e riprova.',
+      'not-found': 'Questo codice non esiste. Controlla di averlo scritto giusto.',
+      forbidden:
+        'Non è stato possibile: il codice potrebbe non essere valido, oppure sei già nel gruppo.',
+      invalid: 'Compila tutti i campi.',
+      network: 'Nessuna connessione. Controlla la rete e riprova.',
+      auth: 'L’accesso è scaduto: entra di nuovo.',
+      unknown: 'Qualcosa è andato storto. Riprova.',
+    },
+  },
   access: {
     intro:
       'Per usare i dati veri del gruppo serve un token personale di GitHub. È una password speciale che crei tu, vale solo per il repository dei dati e scade da sola. Resta salvato solo su questo dispositivo.',
