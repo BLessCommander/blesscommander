@@ -47,7 +47,7 @@ const child = spawn(
     '--config',
     `"${resolve(dir, 'firebase.json')}"`,
     // Con `shell: true` gli spazi spezzerebbero il comando: va tra virgolette.
-    '"vitest run web/src/data/firebase-provider.test.js"',
+    '"vitest run web/src/data/firebase-provider.test.js web/src/data/firestore-rules.test.js"',
   ],
   { stdio: 'inherit', shell: true },
 );

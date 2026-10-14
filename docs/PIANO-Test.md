@@ -192,6 +192,7 @@ Ogni caso indica i passi principali e il risultato atteso. Tutti `@core @ui` sal
 | UC-60 | App Capacitor | Build Android avviata su emulatore: accesso, lobby, chiusura; token nell'archivio sicuro |
 | UC-61 | Migrazione Firebase | Lo script copia il seed in Firestore (emulatore) e l'app con `FirebaseProvider` mostra gli stessi dati |
 | UC-62 | Backend stadio 3 | Stessi risultati delle Actions sullo stesso storico |
+| UC-64 | Cambio admin | Propone un giocatore; votano tutti tranne admin e candidato (il proponente conta sì); tutti sì = nuovo admin; un no chiude; una proposta alla volta; i client non scrivono `adminId` |
 | UC-63 | Login pubblico | Email, Google, Apple; collegamento al vecchio account GitHub |
 
 ---

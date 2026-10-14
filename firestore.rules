@@ -1,12 +1,188 @@
 rules_version = '2';
 
-// Provvisorio (E-02a): nega tutto. Le regole vere arrivano con E-02b (SPEC §6.10).
-// Finché non ci sono, nessuno deve pubblicare questo progetto: i test usano l'emulatore
-// con le regole disattivate.
+// Regole di sicurezza (E-02b, SPEC §6.10). Percorsi in docs/spec/06-architettura-dati.md.
+// - Entra nei dati di un gruppo solo chi è membro (`memberByUid` collega l'account Google al membro).
+// - `derived/` (fasce, metriche, eventi, notifiche) lo scrive solo il backend (Cloud Function):
+//   il backend usa l'Admin SDK, che non passa da queste regole.
+// - Una partita la apre e la chiude solo il registratore; una partita ufficiale non si tocca dal
+//   client e lo stato `riaperta` lo mette solo il backend (riapertura all'unanimità).
+// - L'admin del gruppo (`groups.adminId`) cambia solo con la proposta votata (`adminProposals`
+//   e `adminVotes`): lo applica il backend, i client non possono scrivere `adminId`.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false;
+    function groupPath(g) {
+      return /databases/$(database)/documents/groups/$(g);
+    }
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isMember(g) {
+      return signedIn() && exists(linkDoc(g, request.auth.uid));
+    }
+    function me(g) {
+      return get(linkDoc(g, request.auth.uid)).data.memberId;
+    }
+    function linkDoc(g, u) {
+      return /databases/$(database)/documents/groups/$(g)/memberByUid/$(u);
+    }
+    function memberDoc(g, m) {
+      return /databases/$(database)/documents/groups/$(g)/members/$(m);
+    }
+    function deckDoc(g, d) {
+      return /databases/$(database)/documents/groups/$(g)/decks/$(d);
+    }
+    function proposalDoc(g) {
+      return /databases/$(database)/documents/groups/$(g)/adminProposals/current;
+    }
+    function groupData(g) {
+      return get(groupPath(g)).data;
+    }
+    function isOwnerAdmin(g) {
+      return isMember(g) && me(g) == groupData(g).adminId;
+    }
+    function isAdmin(g) {
+      return isMember(g) &&
+        get(memberDoc(g, me(g))).data.role == 'admin';
+    }
+    // Il gruppo non esiste ancora: la scrittura fa parte della sua creazione (batch).
+    function creatingGroup(g) {
+      return signedIn() && !exists(groupPath(g)) &&
+        getAfter(groupPath(g)).data.adminId == request.auth.uid;
+    }
+    function same(field) {
+      return request.resource.data[field] == resource.data[field];
+    }
+
+    match /groups/{g} {
+      allow read: if isMember(g) || (signedIn() && resource.data.visibility == 'public');
+      allow create: if signedIn() &&
+        request.resource.data.adminId == request.auth.uid &&
+        request.resource.data.visibility in ['private', 'public'];
+      // `adminId` non si cambia dal client.
+      allow update: if isAdmin(g) && same('adminId');
+      allow delete: if false;
+
+      match /config/{name} {
+        allow read: if isMember(g);
+        allow write: if isAdmin(g) || (name == 'group' && creatingGroup(g));
+      }
+
+      match /members/{m} {
+        allow read: if isMember(g);
+        allow create: if (creatingGroup(g) && m == request.auth.uid &&
+            request.resource.data.role == 'admin') ||
+          (isAdmin(g) && (request.resource.data.role != 'admin' || isOwnerAdmin(g)));
+        // L'admin del gruppo non si tocca; il ruolo admin lo dà solo l'admin del gruppo.
+        allow update: if m != groupData(g).adminId && (
+          (isAdmin(g) && (request.resource.data.role != 'admin' || isOwnerAdmin(g))) ||
+          (isMember(g) && me(g) == m && same('role')));
+        allow delete: if m != groupData(g).adminId && (isAdmin(g) || (isMember(g) && me(g) == m));
+      }
+
+      match /memberByUid/{u} {
+        allow read: if isMember(g) || (signedIn() && request.auth.uid == u);
+        allow create: if (creatingGroup(g) && u == request.auth.uid &&
+            request.resource.data.memberId == u) || isAdmin(g);
+        allow update, delete: if isAdmin(g) && resource.data.memberId != groupData(g).adminId;
+      }
+
+      match /decks/{d} {
+        allow read: if isMember(g);
+        allow create: if isMember(g) && request.resource.data.ownerLogin == me(g);
+        allow update, delete: if isAdmin(g) ||
+          (isMember(g) && resource.data.ownerLogin == me(g) && same('ownerLogin'));
+
+        match /versions/{v} {
+          allow read: if isMember(g);
+          allow create: if isAdmin(g) ||
+            (isMember(g) && get(deckDoc(g, d)).data.ownerLogin == me(g));
+          allow update, delete: if isAdmin(g);
+        }
+      }
+
+      match /games/{id} {
+        allow read: if isMember(g);
+        allow create: if isMember(g) &&
+          request.resource.data.recorderLogin == me(g) &&
+          request.resource.data.createdBy == me(g) &&
+          request.resource.data.status in ['lobby', 'in_corso'];
+        // Chiude solo il registratore; una partita ufficiale o riaperta non si scrive dal client.
+        allow update: if isMember(g) &&
+          resource.data.recorderLogin == me(g) &&
+          resource.data.status in ['lobby', 'in_corso'] &&
+          same('recorderLogin') &&
+          request.resource.data.status in ['lobby', 'in_corso', 'ufficiale', 'annullata'];
+        allow delete: if isMember(g) && resource.data.recorderLogin == me(g) &&
+          resource.data.status in ['lobby', 'in_corso'];
+      }
+
+      // L'id è `<partita>__<membro>`: ognuno scrive solo il proprio voto.
+      match /votes/{id} {
+        allow read: if isMember(g);
+        allow create, update, delete: if isMember(g) && id.split('__')[1] == me(g);
+      }
+
+      match /requests/{id} {
+        allow read: if isMember(g);
+        allow create: if isMember(g) &&
+          request.resource.data.requestedBy == me(g) &&
+          request.resource.data.status == 'pending';
+        // L'esito lo scrive il backend.
+        allow update, delete: if false;
+      }
+
+      match /joinRequests/{u} {
+        allow read: if isAdmin(g) || (signedIn() && request.auth.uid == u);
+        allow create: if signedIn() && request.auth.uid == u && exists(groupPath(g)) &&
+          !exists(linkDoc(g, u));
+        allow delete: if isAdmin(g) || (signedIn() && request.auth.uid == u);
+        allow update: if false;
+      }
+
+      // Fasce, metriche, eventi, errori: solo il backend scrive. Le notifiche sono personali.
+      match /derived/{name} {
+        allow read: if isMember(g) &&
+          (!name.matches('notifications__.*') || name == 'notifications__' + me(g));
+        allow write: if false;
+      }
+
+      match /userState/{m} {
+        allow read, write: if isMember(g) && me(g) == m;
+      }
+
+      // Cambio di admin: una proposta alla volta, i voti li conta il backend.
+      match /adminProposals/{id} {
+        allow read: if isMember(g);
+        allow create, update: if id == 'current' && isMember(g) &&
+          !(resource != null && resource.data.status == 'open' && !(
+            // Unica modifica concessa su una proposta aperta: chi l'ha fatta la annulla.
+            resource.data.proposedBy == me(g) &&
+            request.resource.data.status == 'cancelled' &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+          )) &&
+          (resource != null && resource.data.status == 'open' ||
+            (request.resource.data.status == 'open' &&
+              request.resource.data.proposedBy == me(g) &&
+              me(g) != groupData(g).adminId &&
+              request.resource.data.candidateId != me(g) &&
+              request.resource.data.candidateId != groupData(g).adminId &&
+              exists(memberDoc(g, request.resource.data.candidateId)) &&
+              request.resource.data.proposalId is string));
+        allow delete: if false;
+      }
+
+      match /adminVotes/{m} {
+        allow read: if isMember(g);
+        allow create, update: if isMember(g) && me(g) == m &&
+          get(proposalDoc(g)).data.status == 'open' &&
+          m != groupData(g).adminId &&
+          m != get(proposalDoc(g)).data.candidateId &&
+          m != get(proposalDoc(g)).data.proposedBy &&
+          request.resource.data.proposalId ==
+            get(proposalDoc(g)).data.proposalId &&
+          request.resource.data.value is bool;
+        allow delete: if isMember(g) && me(g) == m;
+      }
     }
   }
 }
