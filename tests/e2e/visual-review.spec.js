@@ -340,6 +340,15 @@ for (const theme of THEMES) {
       path: `review-screenshots/lobby-${testInfo.project.name}-${theme}.png`,
       fullPage: true,
     });
+    // Menu «Carte e opzioni di tavolo» aperto (C-09b).
+    const wide = (page.viewportSize()?.width ?? 0) >= 768;
+    await page.getByTestId(wide ? 'lobby-options-toggle' : 'lobby-options-open').click();
+    await page.getByTestId('lobby-options-list').waitFor();
+    await page.screenshot({
+      path: `review-screenshots/lobby-opzioni-${testInfo.project.name}-${theme}.png`,
+      fullPage: !wide ? false : true,
+    });
+    if (!wide) await page.getByTestId('lobby-options-done').click();
     await page.getByTestId('lobby-start').click();
     await page.getByTestId('lobby-reminder').waitFor();
     await page.screenshot({

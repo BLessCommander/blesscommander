@@ -244,6 +244,14 @@ export const it = {
       'Le voci «in arrivo» ci sono già ma non si possono scegliere: il motore delle fasce per ora calcola solo il Commander classico a 3 e 4 giocatori.',
     deckBuilding: 'Costruzione del mazzo',
     optionsTitle: 'Carte e opzioni di tavolo',
+    optionsPicked: 'Opzioni scelte',
+    optionsNone: 'Nessuna opzione scelta',
+    removeOption: (name) => `Togli l’opzione ${name}`,
+    optionsOpen: (count) =>
+      count
+        ? `Scegli le opzioni (${count} ${count === 1 ? 'scelta' : 'scelte'})`
+        : 'Scegli le opzioni',
+    optionsDone: 'Fatto',
     groups: { table: 'Modalità di tavolo', roles: 'Ruoli nascosti' },
     catalog: {
       tableModes: {

@@ -143,11 +143,34 @@ test.describe('lobby @core', () => {
     await expect(building.locator('option')).toHaveCount(16);
     await expect(building.locator('option:not([disabled])')).toHaveText(['Commander (EDH)']);
 
-    // Carte e opzioni di tavolo: 7 caselle, tutte spente e non selezionabili.
-    const boxes = page.getByTestId('lobby-options').getByRole('checkbox');
+    // Carte e opzioni di tavolo: menu chiuso, nessuna scelta; dentro 7 caselle tutte non selezionabili.
+    await expect(page.getByTestId('lobby-no-options')).toBeVisible();
+    await expect(page.getByTestId('lobby-options-list')).toHaveCount(0);
+    const wide = (page.viewportSize()?.width ?? 0) >= 768;
+    await page.getByTestId(wide ? 'lobby-options-toggle' : 'lobby-options-open').click();
+    const boxes = page.getByTestId('lobby-options-list').getByRole('checkbox');
     await expect(boxes).toHaveCount(7);
-    for (const box of await boxes.all()) await expect(box).toBeDisabled();
+    for (const box of await boxes.all()) {
+      await expect(box).toBeDisabled();
+      const rect = await box.boundingBox();
+      expect(rect.height).toBeGreaterThanOrEqual(44);
+    }
+    await expect(page.getByTestId('lobby-no-options')).toBeVisible();
+    if (!wide) {
+      await page.getByTestId('lobby-options-done').click();
+      await expect(page.getByTestId('lobby-options-list')).toHaveCount(0);
+    }
     await expect(page.getByTestId('lobby-soon-hint')).toContainText('Commander classico a 3 e 4');
+  });
+
+  test('il tasto indietro chiude il menu delle opzioni (telefono)', async ({ page }) => {
+    test.skip((page.viewportSize()?.width ?? 0) >= 768, 'solo telefono');
+    await page.goto('/#/nuovo-tavolo');
+    await page.getByTestId('lobby-options-open').click();
+    await expect(page.getByTestId('lobby-options-list')).toBeVisible();
+    await page.goBack();
+    await expect(page.getByTestId('lobby-options-list')).toHaveCount(0);
+    await expect(page).toHaveURL(/nuovo-tavolo/);
   });
 
   test('il formato a 3 non accetta un quarto giocatore', async ({ page }) => {
