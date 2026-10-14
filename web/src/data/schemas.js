@@ -107,6 +107,9 @@ export const SCHEMAS = {
       turnSource: { enum: ['dado', 'stima'] },
       estimatedTurn: { type: 'integer', minimum: 1 },
       winType: str,
+      // Carte (nomi) e combo che hanno portato alla vittoria, scelte tra quelle del mazzo del vincitore.
+      winCards: { type: 'array', items: { type: 'string', minLength: 1 }, maxItems: 60 },
+      winCombos: { type: 'array', items: { type: 'object' }, maxItems: 20 },
       notRepresentative: bool,
       notes: { type: 'string' },
       actingAs: str,

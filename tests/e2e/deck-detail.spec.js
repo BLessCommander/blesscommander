@@ -116,4 +116,50 @@ test.describe('scheda mazzo @core', () => {
     await expect(art.locator('img')).toHaveCount(0);
     await expect(art).toContainText('Comandante');
   });
+
+  test('mostra lo storico delle partite del mazzo @ui', async ({ page }) => {
+    await page.goto('/#/mazzi');
+    await page.evaluate(() => {
+      const pinia = document.querySelector('#app').__vue_app__.config.globalProperties.$pinia;
+      const snapshot = pinia.state.value.data.snapshot;
+      const deck = snapshot.decks.find((d) => d.name === 'Mazzo Ottimizzato');
+      const other = snapshot.games[0];
+      snapshot.games.push({
+        ...other,
+        id: 'g-storico',
+        endedAt: '2026-03-01T22:00:00Z',
+        winners: [other.players.find((p) => p.deckId !== deck.id)].map(({ login, deckId }) => ({
+          login,
+          deckId,
+        })),
+        winTurn: 5,
+        turnSource: 'stima',
+        winType: 'combo',
+        winCombos: [{ cards: ['Carta A', 'Carta B'] }],
+        winCards: ['Carta A', 'Carta B'],
+      });
+    });
+    await page.getByRole('link', { name: 'Mazzo Ottimizzato' }).click();
+
+    const games = page.getByTestId('deck-games');
+    const rows = games.getByTestId('deck-game');
+    await expect(rows).toHaveCount(2);
+    // La più recente (marzo) è persa; quella demo (febbraio) è vinta.
+    await expect(rows.nth(0)).toContainText('Persa');
+    await expect(rows.nth(0)).toContainText('2026-03-01');
+    await expect(rows.nth(0)).toContainText('turno 5 (stimato)');
+    await expect(rows.nth(0)).toContainText('Combo');
+    await expect(rows.nth(0)).toContainText('Carta A + Carta B');
+    await expect(rows.nth(1)).toContainText('Vinta');
+  });
+
+  test('senza partite lo storico spiega che non ce ne sono', async ({ page }) => {
+    await page.goto('/#/mazzi');
+    await page.evaluate(() => {
+      const pinia = document.querySelector('#app').__vue_app__.config.globalProperties.$pinia;
+      pinia.state.value.data.snapshot.games = [];
+    });
+    await page.getByRole('link', { name: 'Mazzo Ottimizzato' }).click();
+    await expect(page.getByTestId('deck-games')).toContainText('Nessuna partita ufficiale');
+  });
 });

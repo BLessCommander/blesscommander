@@ -8,7 +8,7 @@ import DeckTags from '../components/DeckTags.vue';
 import TierStepChart from '../components/TierStepChart.vue';
 import WinTypeDonut from '../components/WinTypeDonut.vue';
 import { useCardData } from '../composables/use-card-data.js';
-import { opponentTables, tierHistory, winTypeList } from '../domain/deck-stats.js';
+import { deckGameHistory, opponentTables, tierHistory, winTypeList } from '../domain/deck-stats.js';
 import { it } from '../i18n/it.js';
 import { sharedCardCache } from '../platform/card-cache.js';
 import { cardKey } from '../platform/scryfall.js';
@@ -26,6 +26,8 @@ const winTypes = computed(() => (deck.value ? winTypeList(deck.value) : []));
 const opponents = computed(() =>
   deck.value ? opponentTables(snapshot.value, deck.value.id) : { beaten: [], beatenBy: [] },
 );
+const games = computed(() => (deck.value ? deckGameHistory(snapshot.value, deck.value.id) : []));
+const winTypeLabel = (id) => it.closeGame.winTypes[id] ?? id;
 const canEditTags = computed(
   () => deck.value?.ownerLogin === data.user?.login || data.user?.role === 'admin',
 );
@@ -235,6 +237,32 @@ const comboLabel = (combo) =>
           </div>
         </div>
       </section>
+
+      <section class="card" data-testid="deck-games">
+        <h2>{{ t.gamesTitle }}</h2>
+        <p v-if="games.length === 0" class="muted">{{ t.gamesNone }}</p>
+        <ul v-else class="games">
+          <li v-for="g in games" :key="g.id" class="game" data-testid="deck-game">
+            <div class="game__head">
+              <span class="game__result" :data-won="g.won">{{
+                g.won ? t.gameWon : t.gameLost
+              }}</span>
+              <span class="muted">{{ g.date }}</span>
+              <span v-if="g.turn">· {{ t.gameTurn(g.turn, g.estimatedTurn) }}</span>
+              <span v-if="g.winType">· {{ winTypeLabel(g.winType) }}</span>
+            </div>
+            <p v-if="g.combos.length" class="game__line">
+              <strong>{{ t.gameCombos }}:</strong> {{ g.combos.join(' · ') }}
+            </p>
+            <p v-if="g.cards.length" class="game__line">
+              <strong>{{ t.gameCards }}:</strong> {{ g.cards.join(', ') }}
+            </p>
+            <p v-if="g.opponents.length" class="game__line muted">
+              {{ t.gameOpponents }}: {{ g.opponents.join(', ') }}
+            </p>
+          </li>
+        </ul>
+      </section>
     </template>
   </div>
 </template>
@@ -348,6 +376,44 @@ const comboLabel = (combo) =>
   margin: 0.375rem 0 1rem;
   list-style: none;
   overflow-wrap: anywhere;
+}
+
+.games {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.game {
+  min-width: 0;
+  padding: 0.75rem;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.game__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  align-items: baseline;
+}
+
+.game__result {
+  padding: 0.125rem 0.5rem;
+  font-weight: 700;
+  border: 1px solid currentcolor;
+  border-radius: 999px;
+}
+
+.game__result[data-won='true'] {
+  color: var(--success-text, var(--text));
+}
+
+.game__line {
+  margin: 0.375rem 0 0;
 }
 
 .opponents {

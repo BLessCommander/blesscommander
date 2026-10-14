@@ -154,6 +154,101 @@ test.describe('chiusura partita @core', () => {
     });
   });
 
+  test('C-10b: con «combo» si scelgono solo le combo salvate del mazzo (anche più di una)', async ({
+    page,
+  }) => {
+    await startGame(page);
+    await closeLink(page).click();
+    const cards = page.getByTestId('close-wincards');
+    await expect(cards).toContainText('Scegli prima il vincitore');
+
+    // Il mazzo di Giocatore 3 (aggiunto dal test, non esiste nell'archivio) non si può leggere:
+    // si può chiudere lo stesso. Quello di Giocatore 2 ha due combo salvate.
+    await page.getByTestId('close-winner').getByRole('radio', { name: 'Giocatore 3' }).check();
+    await page.getByTestId('close-wintype').getByRole('radio', { name: 'Combo' }).check();
+    await expect(cards).toContainText('Non riesco a leggere il mazzo');
+
+    await page.getByTestId('close-winner').getByRole('radio', { name: 'Giocatore 2' }).check();
+    const combos = cards.getByRole('checkbox');
+    await expect(combos).toHaveCount(2);
+    await expect(cards).toContainText('Thassa’s Oracle + Demonic Consultation');
+    await expect(cards).toContainText('Risultato: Win the game');
+    await combos.nth(0).check();
+    await combos.nth(1).check();
+    await expect(combos.nth(0)).toBeChecked();
+    await page.getByTestId('close-turn-input').fill('4');
+    await page.getByTestId('close-save').click();
+    await expect(page.getByTestId('close-done')).toBeVisible();
+
+    const saved = await gameInStore(page, gameIdOf(page));
+    expect(saved.winCombos).toHaveLength(2);
+    expect(saved.winCards.sort()).toEqual([
+      'Demonic Consultation',
+      'Tainted Pact',
+      'Thassa’s Oracle',
+    ]);
+  });
+
+  test('C-10b: con gli altri tipi si cerca tra le sole carte del mazzo, più carte insieme', async ({
+    page,
+  }) => {
+    await startGame(page);
+    await closeLink(page).click();
+    await page.getByTestId('close-winner').getByRole('radio', { name: 'Giocatore 2' }).check();
+    await page
+      .getByTestId('close-wintype')
+      .getByRole('radio', { name: 'Danni con le creature' })
+      .check();
+    await page.getByTestId('close-turn-input').fill('9');
+
+    const search = page.getByTestId('close-card-search');
+    // Una carta che non è nel mazzo non viene proposta.
+    await search.fill('black lotus');
+    await expect(page.getByTestId('close-card-nomatch')).toBeVisible();
+    await expect(page.getByTestId('close-card-suggestions')).toHaveCount(0);
+
+    await search.fill('finale');
+    const suggestions = page.getByTestId('close-card-suggestions').getByRole('button');
+    await expect(suggestions).toHaveText(['Finale of Devastation']);
+    await suggestions.first().click();
+    await search.fill('sol');
+    await page
+      .getByTestId('close-card-suggestions')
+      .getByRole('button', { name: 'Sol Ring' })
+      .click();
+    const picked = page.getByTestId('close-picked');
+    await expect(picked.locator('li')).toHaveCount(2);
+
+    // Una carta già scelta non si ripropone; la × la toglie.
+    await search.fill('sol ring');
+    await expect(page.getByTestId('close-card-suggestions')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Togli Sol Ring' }).click();
+    await expect(picked.locator('li')).toHaveCount(1);
+
+    await page.getByTestId('close-save').click();
+    await expect(page.getByTestId('close-done')).toBeVisible();
+    const saved = await gameInStore(page, gameIdOf(page));
+    expect(saved.winCards).toEqual(['Finale of Devastation']);
+    expect(saved).not.toHaveProperty('winCombos');
+  });
+
+  test('C-10b: cambiando vincitore o passando a «combo» la scelta si azzera', async ({ page }) => {
+    await startGame(page);
+    await closeLink(page).click();
+    await page.getByTestId('close-winner').getByRole('radio', { name: 'Giocatore 2' }).check();
+    await page
+      .getByTestId('close-wintype')
+      .getByRole('radio', { name: 'Danni con le creature' })
+      .check();
+    await page.getByTestId('close-card-search').fill('finale');
+    await page.getByTestId('close-card-suggestions').getByRole('button').first().click();
+    await expect(page.getByTestId('close-picked').locator('li')).toHaveCount(1);
+
+    await page.getByTestId('close-wintype').getByRole('radio', { name: 'Combo' }).check();
+    await page.getByTestId('close-wintype').getByRole('radio', { name: 'Veleno' }).check();
+    await expect(page.getByTestId('close-picked')).toHaveCount(0);
+  });
+
   test('UC-13: a 3 giocatori la partita si chiude con il formato giusto', async ({ page }) => {
     await page.goto('/#/nuovo-tavolo');
     await setupTableF2Three(page);

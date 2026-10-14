@@ -3,8 +3,14 @@ import {
   MAX_TURN,
   buildClosePatch,
   closeProblems,
+  comboChoices,
+  comboKey,
+  comboLabel,
+  deckCardNames,
   estimateTurn,
   isValidTurn,
+  searchDeckCards,
+  toggleCombo,
   winTypeIds,
 } from './game-close.js';
 
@@ -161,5 +167,128 @@ describe('buildClosePatch', () => {
     const copy = structuredClone(game);
     buildClosePatch(game, { ...input, eliminations: [{ login: 'c', by: 'a', turn: 5 }] }, ended);
     expect(game).toEqual(copy);
+  });
+});
+
+describe('carte e combo della vittoria', () => {
+  const version = {
+    cards: [
+      { name: 'Sol Ring', qty: 1 },
+      { name: 'Finale of Devastation', qty: 1 },
+      { name: 'Thassa’s Oracle', qty: 1 },
+      { name: 'Demonic Consultation', qty: 1 },
+      { name: 'Sol Ring', qty: 1 },
+    ],
+    combos: [
+      { id: 'c1', cards: ['Thassa’s Oracle', 'Demonic Consultation'], produces: ['Win the game'] },
+      { cards: ['Sol Ring', 'Finale of Devastation'] },
+      { id: 'vuota', cards: [] },
+    ],
+  };
+  const names = deckCardNames(version);
+
+  it('deckCardNames: nomi senza doppioni nell’ordine della lista', () => {
+    expect(names).toEqual([
+      'Sol Ring',
+      'Finale of Devastation',
+      'Thassa’s Oracle',
+      'Demonic Consultation',
+    ]);
+    expect(deckCardNames(null)).toEqual([]);
+  });
+
+  it('searchDeckCards: solo carte del mazzo, senza accenti/maiuscole/apostrofi', () => {
+    expect(searchDeckCards(names, 'finale')).toEqual(['Finale of Devastation']);
+    expect(searchDeckCards(names, 'THASSAS')).toEqual(['Thassa’s Oracle']);
+    expect(searchDeckCards(names, 'black lotus')).toEqual([]);
+    expect(searchDeckCards(names, '')).toEqual([]);
+    expect(searchDeckCards(names, '   ')).toEqual([]);
+  });
+
+  it('searchDeckCards: prima chi inizia con il testo, esclude le già scelte, massimo 8', () => {
+    const list = ['Dark Ritual', 'Ritual of Soot', 'Carrion Ritual', 'Rite'];
+    expect(searchDeckCards(list, 'rit')).toEqual([
+      'Ritual of Soot',
+      'Rite',
+      'Dark Ritual',
+      'Carrion Ritual',
+    ]);
+    expect(searchDeckCards(list, 'rit', ['dark ritual'])).not.toContain('Dark Ritual');
+    const many = Array.from({ length: 20 }, (_, i) => `Carta ${i}`);
+    expect(searchDeckCards(many, 'carta')).toHaveLength(8);
+  });
+
+  it('comboChoices tiene solo le combo con carte; label e chiave', () => {
+    const choices = comboChoices(version);
+    expect(choices).toHaveLength(2);
+    expect(comboLabel(choices[0])).toBe('Thassa’s Oracle + Demonic Consultation');
+    expect(comboKey(choices[0])).toBe('c1');
+    // senza id la chiave non dipende dall'ordine delle carte
+    expect(comboKey({ cards: ['B', 'A'] })).toBe(comboKey({ cards: ['a', 'b'] }));
+    expect(comboChoices(null)).toEqual([]);
+  });
+
+  it('toggleCombo: con più combo si aggiungono e si tolgono', () => {
+    const [a, b] = comboChoices(version);
+    let sel = toggleCombo([], a, true);
+    sel = toggleCombo(sel, b, true);
+    expect(sel).toEqual([a, b]);
+    expect(toggleCombo(sel, a, true)).toEqual([b]);
+  });
+
+  it('toggleCombo: con l’interruttore spento ne resta una sola', () => {
+    const [a, b] = comboChoices(version);
+    expect(toggleCombo([a], b, false)).toEqual([b]);
+    expect(toggleCombo([a], a, false)).toEqual([]);
+  });
+
+  describe('nel patch di chiusura', () => {
+    const base = { winnerLogin: 'b', turn: 7, turnSource: 'dado' };
+    const [c1, c2] = comboChoices(version);
+
+    it('«combo»: salva le combo e l’unione delle loro carte, senza doppioni', () => {
+      const patch = buildClosePatch(game, { ...base, winType: 'combo', winCombos: [c1, c2] }, 'x');
+      expect(patch.winCombos).toHaveLength(2);
+      expect(patch.winCards).toEqual([
+        'Thassa’s Oracle',
+        'Demonic Consultation',
+        'Sol Ring',
+        'Finale of Devastation',
+      ]);
+    });
+
+    it('«combo»: il patch è una copia semplice, senza riferimenti alle combo di partenza', () => {
+      const patch = buildClosePatch(game, { ...base, winType: 'combo', winCombos: [c1] }, 'x');
+      expect(() => structuredClone(patch)).not.toThrow();
+      expect(patch.winCombos[0]).not.toBe(c1);
+      expect(patch.winCombos[0].produces).not.toBe(c1.produces);
+      expect(patch.winCombos[0]).toEqual(c1);
+    });
+
+    it('«combo»: ignora le carte cercate', () => {
+      const patch = buildClosePatch(
+        game,
+        { ...base, winType: 'combo', winCards: ['Sol Ring'] },
+        'x',
+      );
+      expect(patch).not.toHaveProperty('winCards');
+      expect(patch).not.toHaveProperty('winCombos');
+    });
+
+    it('altri tipi: salva le carte scelte e ignora le combo', () => {
+      const patch = buildClosePatch(
+        game,
+        { ...base, winType: 'creature', winCards: ['Finale of Devastation'], winCombos: [c1] },
+        'x',
+      );
+      expect(patch.winCards).toEqual(['Finale of Devastation']);
+      expect(patch).not.toHaveProperty('winCombos');
+    });
+
+    it('senza scelte non scrive nulla; la scelta è facoltativa', () => {
+      const patch = buildClosePatch(game, { ...base, winType: 'creature' }, 'x');
+      expect(patch).not.toHaveProperty('winCards');
+      expect(closeProblems(game, { ...base, winType: 'creature' }, types)).toEqual([]);
+    });
   });
 });

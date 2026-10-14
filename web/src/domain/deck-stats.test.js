@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { opponentTables, tierHistory, tierLevel, winTypeList } from './deck-stats.js';
+import {
+  deckGameHistory,
+  opponentTables,
+  tierHistory,
+  tierLevel,
+  winTypeList,
+} from './deck-stats.js';
 
 const deck = (id, name, extra = {}) => ({ id, name, declaredTier: 'F2', ...extra });
 const game = (id, players, winners, status = 'ufficiale') => ({
@@ -102,5 +108,60 @@ describe('opponentTables', () => {
 describe('tierLevel', () => {
   it('F1 = 1 … F5 = 5', () => {
     expect(['F1', 'F3', 'F5'].map(tierLevel)).toEqual([1, 3, 5]);
+  });
+});
+
+describe('deckGameHistory', () => {
+  const full = (id, endedAt, extra = {}) => ({
+    ...game(id, ['a', 'b'], ['a']),
+    createdAt: '2026-01-01T10:00:00Z',
+    endedAt,
+    ...extra,
+  });
+  const snapshot = {
+    decks: [deck('a', 'A'), deck('b', 'B'), deck('c', 'C')],
+    games: [
+      full('g1', '2026-02-01T22:00:00Z', { winTurn: 7, winType: 'combo' }),
+      full('g2', '2026-03-01T22:00:00Z', {
+        winners: [{ deckId: 'b' }],
+        turnSource: 'stima',
+        winTurn: 5,
+      }),
+      full('g3', '2026-04-01T22:00:00Z', {
+        winCombos: [{ cards: ['X', 'Y'] }],
+        winCards: ['X', 'Y'],
+      }),
+      { ...game('g4', ['a', 'b'], ['a'], 'in_corso'), createdAt: '2026-05-01T10:00:00Z' },
+      full('g5', '2026-06-01T22:00:00Z', { players: [{ deckId: 'b' }, { deckId: 'c' }] }),
+    ],
+  };
+
+  it('prende solo le partite ufficiali del mazzo, dalla più recente', () => {
+    expect(deckGameHistory(snapshot, 'a').map((g) => g.id)).toEqual(['g3', 'g2', 'g1']);
+  });
+
+  it('dice se il mazzo ha vinto e contro chi ha giocato', () => {
+    const rows = deckGameHistory(snapshot, 'a');
+    expect(rows.map((g) => g.won)).toEqual([true, false, true]);
+    expect(rows[0].opponents).toEqual(['B']);
+  });
+
+  it('porta tipo, turno (stimato o no), combo e carte della vittoria', () => {
+    const [g3, g2, g1] = deckGameHistory(snapshot, 'a');
+    expect(g1).toMatchObject({
+      winType: 'combo',
+      turn: 7,
+      estimatedTurn: false,
+      date: '2026-02-01',
+    });
+    expect(g2).toMatchObject({ turn: 5, estimatedTurn: true });
+    expect(g3.combos).toEqual(['X + Y']);
+    expect(g3.cards).toEqual(['X', 'Y']);
+    expect(g1.combos).toEqual([]);
+    expect(g1.cards).toEqual([]);
+  });
+
+  it('è vuoto per un mazzo senza partite', () => {
+    expect(deckGameHistory(snapshot, 'zzz')).toEqual([]);
   });
 });

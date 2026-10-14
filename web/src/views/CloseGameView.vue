@@ -1,12 +1,18 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   MAX_TURN,
   buildClosePatch,
   closeProblems,
+  comboChoices,
+  comboKey,
+  comboLabel,
+  deckCardNames,
   estimateTurn,
   isValidTurn,
+  searchDeckCards,
+  toggleCombo,
   winTypeIds,
 } from '../domain/game-close.js';
 import { it } from '../i18n/it.js';
@@ -26,6 +32,13 @@ const notRepresentative = ref(false);
 const notes = ref('');
 /** login → { by, turn }: eliminazioni (facoltative). */
 const eliminations = reactive({});
+/** Combo salvate scelte (tipo «combo») e carte scelte con la ricerca (gli altri tipi). */
+const winCombos = ref([]);
+const winCards = ref([]);
+const query = ref('');
+/** Versione del mazzo del vincitore, da cui vengono combo e carte proposte. */
+const deckVersion = ref(null);
+const deckState = ref('idle');
 const busy = ref(false);
 const error = ref('');
 /** Partita chiusa da questa pagina: serve per il riepilogo finale. */
@@ -54,7 +67,58 @@ const canClose = computed(() => open.value && game.value.recorderLogin === me.va
 const winTypes = computed(() => winTypeIds(config.value));
 const winTypeLabel = (id) => t.winTypes[id] ?? id;
 
+const isCombo = computed(() => winType.value === 'combo');
+const comboOptions = computed(() => comboChoices(deckVersion.value));
+const suggestions = computed(() =>
+  searchDeckCards(deckCardNames(deckVersion.value), query.value, winCards.value),
+);
+const comboChosen = (combo) => winCombos.value.some((c) => comboKey(c) === comboKey(combo));
+
+let loadToken = 0;
+// Cambiando vincitore si cambia mazzo: la scelta si azzera e si leggono le carte del nuovo mazzo.
+watch(winnerLogin, async (login) => {
+  winCombos.value = [];
+  winCards.value = [];
+  query.value = '';
+  deckVersion.value = null;
+  const deckId = game.value?.players.find((p) => p.login === login)?.deckId;
+  if (!deckId) {
+    deckState.value = 'idle';
+    return;
+  }
+  const token = ++loadToken;
+  deckState.value = 'loading';
+  try {
+    const { deck, versions } = await data.getDeck(deckId);
+    if (token !== loadToken) return;
+    deckVersion.value =
+      versions.find((v) => v.version === deck.currentVersion) ?? versions.at(-1) ?? null;
+    deckState.value = 'ready';
+  } catch {
+    if (token === loadToken) deckState.value = 'failed';
+  }
+});
+// Combo e carte sono scelte diverse: passando da «combo» a un altro tipo (o viceversa) si azzerano.
+watch(isCombo, () => {
+  winCombos.value = [];
+  winCards.value = [];
+  query.value = '';
+});
+
+const pickCombo = (combo) => {
+  winCombos.value = toggleCombo(winCombos.value, combo);
+};
+const addCard = (name) => {
+  winCards.value = [...winCards.value, name];
+  query.value = '';
+};
+const removeCard = (name) => {
+  winCards.value = winCards.value.filter((n) => n !== name);
+};
+
 const input = computed(() => ({
+  winCombos: winCombos.value,
+  winCards: winCards.value,
   winnerLogin: winnerLogin.value,
   turn: turn.value,
   turnSource: turnSource.value,
@@ -228,6 +292,77 @@ const save = async () => {
         </div>
       </fieldset>
 
+      <fieldset class="group" data-testid="close-wincards">
+        <legend>{{ t.winCards }}</legend>
+        <p v-if="!winnerLogin" class="muted">{{ t.winCardsChooseWinner }}</p>
+        <p v-else-if="deckState === 'loading'" class="muted" role="status">
+          {{ t.winCardsLoading }}
+        </p>
+        <p v-else-if="deckState === 'failed'" class="muted" role="status">
+          {{ t.winCardsFailed }}
+        </p>
+        <template v-else-if="isCombo">
+          <p class="muted">{{ t.combosHint }}</p>
+          <p v-if="!comboOptions.length" class="muted" data-testid="close-no-combos">
+            {{ t.combosNone }}
+          </p>
+          <label v-for="c in comboOptions" :key="comboKey(c)" class="choice choice--check">
+            <input
+              type="checkbox"
+              name="winCombo"
+              :checked="comboChosen(c)"
+              @change="pickCombo(c)"
+            />
+            <span class="choice__box">
+              <strong>{{ comboLabel(c) }}</strong>
+              <small v-if="c.produces?.length" class="muted">{{
+                t.comboProduces(c.produces.join(', '))
+              }}</small>
+            </span>
+          </label>
+        </template>
+        <template v-else>
+          <label class="field">
+            <span>{{ t.searchLabel }}</span>
+            <input
+              v-model="query"
+              type="search"
+              name="cardSearch"
+              autocomplete="off"
+              data-testid="close-card-search"
+            />
+            <small class="muted field__hint">{{ t.searchHint }}</small>
+          </label>
+          <ul v-if="suggestions.length" class="suggest" data-testid="close-card-suggestions">
+            <li v-for="name in suggestions" :key="name">
+              <button type="button" class="suggest__btn" @click="addCard(name)">{{ name }}</button>
+            </li>
+          </ul>
+          <p v-else-if="query.trim()" class="muted" data-testid="close-card-nomatch">
+            {{ t.searchNoMatch }}
+          </p>
+          <p v-if="winCards.length" class="picked-title">{{ t.pickedCards }}</p>
+          <ul
+            v-if="winCards.length"
+            class="chips"
+            :aria-label="t.pickedCards"
+            data-testid="close-picked"
+          >
+            <li v-for="name in winCards" :key="name" class="chip">
+              <span>{{ name }}</span>
+              <button
+                type="button"
+                class="chip__x"
+                :aria-label="t.removeCard(name)"
+                @click="removeCard(name)"
+              >
+                ×
+              </button>
+            </li>
+          </ul>
+        </template>
+      </fieldset>
+
       <details class="card details" data-testid="close-details">
         <summary>{{ t.details }}</summary>
         <div class="stack">
@@ -335,6 +470,7 @@ const save = async () => {
   inset: 0;
   width: 100%;
   height: 100%;
+  z-index: 1;
   margin: 0;
   opacity: 0;
   cursor: pointer;
@@ -366,6 +502,102 @@ const save = async () => {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 0.5rem;
+}
+
+.suggest,
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.suggest {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.suggest__btn {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: var(--tap);
+  padding-left: 0.75rem;
+  border: 2px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  overflow-wrap: anywhere;
+}
+
+.chip__x {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  font: inherit;
+  font-size: 1.25rem;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+/* Caselle a scelta multipla: un quadratino con la spunta, così lo stato non dipende solo dal colore. */
+.choice--check .choice__box {
+  position: relative;
+  padding-left: 3rem;
+}
+
+.choice--check .choice__box::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0.75rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  transform: translateY(-50%);
+  border: 2px solid var(--text-muted);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.choice--check input:checked + .choice__box::before {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.choice--check input:checked + .choice__box::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 1.3rem;
+  width: 0.4rem;
+  height: 0.8rem;
+  border: solid var(--surface);
+  border-width: 0 2px 2px 0;
+  transform: translateY(-65%) rotate(45deg);
+}
+
+.picked-title {
+  margin: 0.5rem 0 0;
+  font-weight: 700;
+}
+
+.field__hint {
+  font-weight: 400;
 }
 
 .stepper {

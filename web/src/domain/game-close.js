@@ -40,6 +40,8 @@ export const isValidTurn = (turn) => Number.isInteger(turn) && turn >= 1 && turn
  * @property {{ login: string, turn: number | null, by: string }[]} [eliminations]
  * @property {boolean} [notRepresentative]
  * @property {string} [notes]
+ * @property {string[]} [winCards] carte scelte con la ricerca (tipi di vittoria diversi da «combo»)
+ * @property {any[]} [winCombos] combo salvate scelte (tipo «combo»)
  */
 
 /**
@@ -91,9 +93,78 @@ export function buildClosePatch(game, input, endedAt) {
         : rest;
     }),
   };
+  const combos = input.winType === 'combo' ? (input.winCombos ?? []) : [];
+  const cards = input.winType === 'combo' ? combos.flatMap((c) => c.cards) : (input.winCards ?? []);
+  const uniqueCards = [...new Set(cards)];
+  // Copia semplice (JSON): le combo scelte arrivano da oggetti reattivi di Vue, che structuredClone non regge.
+  if (combos.length) patch.winCombos = JSON.parse(JSON.stringify(combos));
+  if (uniqueCards.length) patch.winCards = uniqueCards;
   if (input.turnSource === 'stima') patch.estimatedTurn = input.turn;
   if (input.notRepresentative) patch.notRepresentative = true;
   const notes = (input.notes ?? '').trim();
   if (notes) patch.notes = notes;
   return patch;
+}
+
+/**
+ * Più combo per partita? Un unico interruttore: con `false` se ne sceglie una sola
+ * (scegliendone un'altra la prima si toglie). Il resto del codice non cambia.
+ */
+export const MULTI_COMBO = true;
+
+/** Numero massimo di suggerimenti mostrati nella ricerca delle carte. */
+const MAX_SUGGESTIONS = 8;
+
+const plain = (text) =>
+  String(text).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’']/g, '').toLowerCase();
+
+/** Chiave stabile di una combo: l'`id` di Spellbook, altrimenti i nomi delle carte in ordine. */
+export const comboKey = (combo) => combo.id ?? [...(combo.cards ?? [])].map(plain).sort().join('+');
+
+/** Testo di una combo: «Carta A + Carta B». */
+export const comboLabel = (combo) => (combo.cards ?? []).join(' + ');
+
+/**
+ * Combo che si possono scegliere: quelle salvate nella versione del mazzo (le sole con carte).
+ * @param {{ combos?: any[] } | null | undefined} version
+ */
+export const comboChoices = (version) =>
+  (version?.combos ?? []).filter((c) => Array.isArray(c?.cards) && c.cards.length > 0);
+
+/**
+ * Aggiunge o toglie una combo dalla scelta, secondo `MULTI_COMBO`.
+ * @param {any[]} selected combo già scelte
+ * @param {any} combo
+ * @param {boolean} [multi]
+ */
+export function toggleCombo(selected, combo, multi = MULTI_COMBO) {
+  const key = comboKey(combo);
+  const has = selected.some((c) => comboKey(c) === key);
+  if (has) return selected.filter((c) => comboKey(c) !== key);
+  return multi ? [...selected, combo] : [combo];
+}
+
+/**
+ * Nomi delle carte del mazzo (senza doppioni), nell'ordine della lista.
+ * @param {{ cards?: { name: string }[] } | null | undefined} version
+ */
+export const deckCardNames = (version) => [
+  ...new Set((version?.cards ?? []).map((c) => c.name).filter(Boolean)),
+];
+
+/**
+ * Suggerimenti della ricerca: solo carte del mazzo, senza accenti né maiuscole, che non sono già
+ * scelte. Prima i nomi che iniziano con il testo cercato, poi gli altri; mai più di `MAX_SUGGESTIONS`.
+ * @param {string[]} names carte del mazzo
+ * @param {string} query
+ * @param {string[]} [selected]
+ */
+export function searchDeckCards(names, query, selected = []) {
+  const q = plain(query).trim();
+  if (!q) return [];
+  const taken = new Set(selected.map(plain));
+  const found = names.filter((n) => !taken.has(plain(n)) && plain(n).includes(q));
+  const starts = found.filter((n) => plain(n).startsWith(q));
+  const rest = found.filter((n) => !plain(n).startsWith(q));
+  return [...starts, ...rest].slice(0, MAX_SUGGESTIONS);
 }

@@ -70,10 +70,42 @@ export function createDemoState() {
     declaredTier,
     selfAssessment: { mld: false, extraTurns: false, notes: '' },
   }));
+  // Il mazzo F2 ha qualche carta e una combo salvata: serve a provare le «carte della vittoria».
+  const richDeck = {
+    version: 1,
+    cards: [
+      'Sol Ring',
+      'Finale of Devastation',
+      'Arcane Signet',
+      'Thassa’s Oracle',
+      'Demonic Consultation',
+      'Tainted Pact',
+    ].map((name) => ({ name, qty: 1 })),
+    gameChangers: [],
+    combos: [
+      {
+        id: 'demo-combo-1',
+        cards: ['Thassa’s Oracle', 'Demonic Consultation'],
+        produces: ['Win the game'],
+        manaValue: 4,
+      },
+      {
+        id: 'demo-combo-2',
+        cards: ['Thassa’s Oracle', 'Tainted Pact'],
+        produces: ['Win the game'],
+        manaValue: 4,
+      },
+    ],
+    flags: {},
+  };
   const versions = Object.fromEntries(
-    decks.map((d) => [
+    decks.map((d, i) => [
       d.id,
-      [{ version: 1, cards: [{ name: 'Sol Ring', qty: 1 }], gameChangers: [], flags: {} }],
+      [
+        i === 1
+          ? richDeck
+          : { version: 1, cards: [{ name: 'Sol Ring', qty: 1 }], gameChangers: [], flags: {} },
+      ],
     ]),
   );
   const game = {

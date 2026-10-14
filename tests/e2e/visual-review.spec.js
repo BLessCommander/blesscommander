@@ -362,6 +362,23 @@ for (const theme of THEMES) {
     await page.getByTestId('close-winner').getByRole('radio', { name: 'Giocatore 2' }).check();
     await page.getByTestId('close-turn-input').fill('7');
     await page.getByTestId('close-wintype').getByRole('radio', { name: 'Combo' }).check();
+    await page.getByTestId('close-wincards').getByRole('checkbox').first().check();
+    await mkdir('review-screenshots', { recursive: true });
+    await page.screenshot({
+      path: `review-screenshots/chiusura-combo-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+    await page
+      .getByTestId('close-wintype')
+      .getByRole('radio', { name: 'Danni con le creature' })
+      .check();
+    await page.getByTestId('close-card-search').fill('s');
+    await page.getByTestId('close-card-suggestions').getByRole('button').first().click();
+    await page.getByTestId('close-card-search').fill('fin');
+    await page.screenshot({
+      path: `review-screenshots/chiusura-carte-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
     await page.getByTestId('close-details').locator('summary').click();
     await mkdir('review-screenshots', { recursive: true });
     await page.screenshot({
@@ -462,4 +479,42 @@ for (const screen of SCREENS) {
       });
     });
   }
+}
+
+// Storico partite nella scheda mazzo (C-08j): una vinta e una persa con combo e carte.
+for (const theme of THEMES) {
+  test(`screenshot mazzo-storico ${theme} @review`, async ({ page }, testInfo) => {
+    test.skip(
+      !['iphone', 'desktop-chrome'].includes(testInfo.project.name),
+      'solo iphone e desktop',
+    );
+    await mockScryfall(page);
+    await page.emulateMedia({ colorScheme: theme });
+    await page.goto('/#/mazzi');
+    await page.evaluate(() => {
+      const pinia = document.querySelector('#app').__vue_app__.config.globalProperties.$pinia;
+      const snapshot = pinia.state.value.data.snapshot;
+      const deck = snapshot.decks.find((d) => d.name === 'Mazzo Ottimizzato');
+      const other = snapshot.games[0];
+      const loser = other.players.find((p) => p.deckId !== deck.id);
+      snapshot.games.push({
+        ...other,
+        id: 'g-storico',
+        endedAt: '2026-03-01T22:00:00Z',
+        winners: [{ login: loser.login, deckId: loser.deckId }],
+        winTurn: 5,
+        turnSource: 'stima',
+        winType: 'combo',
+        winCombos: [{ cards: ['Carta A', 'Carta B'] }],
+        winCards: ['Carta A', 'Carta B'],
+      });
+    });
+    await page.getByRole('link', { name: 'Mazzo Ottimizzato' }).click();
+    const section = page.getByTestId('deck-games');
+    await section.waitFor();
+    await mkdir('review-screenshots', { recursive: true });
+    await section.screenshot({
+      path: `review-screenshots/mazzo-storico-${testInfo.project.name}-${theme}.png`,
+    });
+  });
 }

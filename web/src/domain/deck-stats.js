@@ -77,5 +77,47 @@ export function opponentTables(snapshot, deckId, limit = 5) {
   return { beaten: toList(beaten), beatenBy: toList(beatenBy) };
 }
 
+/**
+ * @typedef {object} DeckGameRow
+ * @property {string} id
+ * @property {string} date  data (AAAA-MM-GG) di fine partita, altrimenti di creazione
+ * @property {boolean} won
+ * @property {string | null} winType
+ * @property {number | null} turn
+ * @property {boolean} estimatedTurn
+ * @property {string[]} combos  combo della vittoria, come testo
+ * @property {string[]} cards   carte della vittoria
+ * @property {string[]} opponents  nomi dei mazzi avversari
+ */
+
+const comboText = (combo) =>
+  Array.isArray(combo?.cards) ? combo.cards.join(' + ') : String(combo?.name ?? combo);
+
+/**
+ * Partite ufficiali giocate dal mazzo, dalla più recente.
+ * @param {Snapshot} snapshot
+ * @param {string} deckId
+ * @returns {DeckGameRow[]}
+ */
+export function deckGameHistory(snapshot, deckId) {
+  const names = new Map(snapshot.decks.map((d) => [d.id, d.name]));
+  return snapshot.games
+    .filter((g) => g.status === 'ufficiale' && g.players.some((p) => p.deckId === deckId))
+    .map((g) => ({
+      id: g.id,
+      date: String(g.endedAt ?? g.createdAt).slice(0, 10),
+      won: (g.winners ?? []).some((w) => w.deckId === deckId),
+      winType: g.winType ?? null,
+      turn: g.winTurn ?? null,
+      estimatedTurn: g.turnSource === 'stima',
+      combos: (g.winCombos ?? []).map(comboText),
+      cards: g.winCards ?? [],
+      opponents: g.players
+        .filter((p) => p.deckId !== deckId)
+        .map((p) => names.get(p.deckId) ?? p.deckId),
+    }))
+    .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+}
+
 /** Posizione di una fascia sull'asse del grafico (F1 = 1 … F5 = 5). */
 export const tierLevel = (tier) => TIER_IDS.indexOf(tier) + 1;
