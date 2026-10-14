@@ -25,8 +25,11 @@ export async function addF2Decks(page) {
 
 export const PLAYERS = ['demo-giocatore1', 'demo-giocatore2', 'demo-giocatore3'];
 
-export const seat = (page, login) =>
-  page.getByTestId(`lobby-player-${login}`).locator('label.seat__main');
+/** Aggiunge un giocatore al tavolo dalla ricerca (cerca il login e tocca il risultato). */
+export async function seat(page, login) {
+  await page.getByTestId('lobby-search').fill(login);
+  await page.getByTestId(`lobby-add-${login}`).click();
+}
 
 /** Apre la lobby, aggiunge i mazzi F2 e sceglie la fascia F2. */
 export async function openLobbyF2(page) {
@@ -39,5 +42,5 @@ export async function openLobbyF2(page) {
 /** Come `openLobbyF2` e poi siede i tre giocatori demo. */
 export async function setupTableF2(page) {
   await openLobbyF2(page);
-  for (const login of PLAYERS) await seat(page, login).click();
+  for (const login of PLAYERS) await seat(page, login);
 }

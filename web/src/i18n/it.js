@@ -202,6 +202,13 @@ export const it = {
         ? `Servono ${f.giocatoriMin} giocatori.`
         : `Servono da ${f.giocatoriMin} a ${f.giocatoriMax} giocatori.`,
     me: 'Tu',
+    seated: 'Giocatori al tavolo',
+    remove: 'Togli',
+    add: 'Aggiungi',
+    addPlayer: 'Aggiungi un giocatore',
+    searchPlaceholder: 'Cerca per nome',
+    noResults: 'Nessun giocatore trovato.',
+    tableFull: 'Tavolo al completo: togli un giocatore per aggiungerne un altro.',
     deck: 'Mazzo',
     chooseDeck: 'Scegli il mazzo',
     tier: 'Fascia del tavolo',

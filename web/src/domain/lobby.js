@@ -19,6 +19,27 @@ export function lobbyFormats(group) {
   return LOBBY_FORMAT_IDS.map((id) => formats.find((f) => f.id === id)).filter(Boolean);
 }
 
+const plain = (text) => String(text).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+
+/** Quanti risultati mostra al massimo la ricerca dei giocatori. */
+export const SEARCH_LIMIT = 6;
+
+/**
+ * Giocatori da proporre nella ricerca: chi non è già al tavolo e ha il testo nel nome o nel login
+ * (senza badare a maiuscole e accenti). Senza testo si propongono i primi, nell'ordine dato.
+ * @param {{ login: string, name: string }[]} people
+ * @param {string} query
+ * @param {string[]} seated login già al tavolo
+ * @returns {{ login: string, name: string }[]}
+ */
+export function searchPlayers(people, query, seated) {
+  const needle = plain(query);
+  return people
+    .filter((p) => !seated.includes(p.login))
+    .filter((p) => !needle || plain(p.name).includes(needle) || plain(p.login).includes(needle))
+    .slice(0, SEARCH_LIMIT);
+}
+
 /** Fascia di un mazzo: quella ufficiale dello snapshot, altrimenti la dichiarata. */
 export const deckTier = (deck) => deck?.tier?.current ?? deck?.declaredTier ?? '';
 

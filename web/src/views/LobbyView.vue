@@ -7,6 +7,7 @@ import {
   decksForTier,
   lobbyFormats,
   lobbyProblems,
+  searchPlayers,
 } from '../domain/lobby.js';
 import { DECK_BUILDING, TABLE_MODES, TABLE_OPTIONS } from '../domain/lobby-catalog.js';
 import TableOptionsPicker from '../components/TableOptionsPicker.vue';
@@ -173,8 +174,24 @@ const problems = computed(() =>
       })
     : ['players-few'],
 );
-const canAddMore = (login) =>
-  Boolean(pickOf(login)) || picks.value.length < (format.value?.giocatoriMax ?? 0);
+const isFull = computed(() => picks.value.length >= (format.value?.giocatoriMax ?? 0));
+
+const query = ref('');
+const results = computed(() =>
+  searchPlayers(
+    people.value.map((login) => ({ login, name: nameOf(login) })),
+    query.value,
+    pickedLogins.value,
+  ),
+);
+const addPlayer = (login) => {
+  if (isFull.value || pickOf(login)) return;
+  toggle(login);
+  query.value = '';
+};
+const removePlayer = (login) => {
+  if (login !== me.value) toggle(login);
+};
 
 // Il promemoria compare solo subito dopo «Inizia»: le partite aperte si riprendono da «In corso»,
 // così si può preparare un altro tavolo mentre una partita è in corso.
@@ -330,44 +347,79 @@ const start = async () => {
       <fieldset class="players">
         <legend>{{ t.players }}</legend>
         <p class="muted">{{ format ? t.playersHint(format) : '' }}</p>
-        <div
-          v-for="login in people"
-          :key="login"
-          class="seat"
-          :class="{ 'seat--on': pickOf(login) }"
-          :data-testid="`lobby-player-${login}`"
-        >
-          <label class="seat__main">
+
+        <ul class="seated" data-testid="lobby-seated" :aria-label="t.seated">
+          <li
+            v-for="p in picks"
+            :key="p.login"
+            class="seat seat--on"
+            :data-testid="`lobby-player-${p.login}`"
+          >
+            <div class="seat__main">
+              <span class="seat__name">
+                {{ nameOf(p.login) }}<span v-if="p.login === me" class="muted"> ({{ t.me }})</span>
+              </span>
+              <button
+                v-if="p.login !== me"
+                type="button"
+                class="btn btn--secondary seat__remove"
+                :data-testid="`lobby-remove-${p.login}`"
+                :aria-label="`${t.remove} ${nameOf(p.login)}`"
+                @click="removePlayer(p.login)"
+              >
+                {{ t.remove }}
+              </button>
+            </div>
+            <label class="field seat__deck">
+              <span>{{ t.deck }}</span>
+              <select
+                :value="p.deckId"
+                name="deck"
+                :aria-label="`${t.deck} di ${nameOf(p.login)}`"
+                :disabled="!decksOf(p.login).length"
+                @change="setDeck(p.login, $event.target.value)"
+              >
+                <option v-if="!decksOf(p.login).length" value="" disabled>
+                  {{ tableTier ? t.noDecksInTier(tableTier) : t.chooseTierFirst }}
+                </option>
+                <option v-else value="" disabled>{{ t.chooseDeck }}</option>
+                <option v-for="d in decksOf(p.login)" :key="d.id" :value="d.id">
+                  {{ d.name }} ({{ tierOf(d) }})
+                </option>
+              </select>
+            </label>
+          </li>
+        </ul>
+
+        <p v-if="isFull" class="notice" data-testid="lobby-full" role="status">{{ t.tableFull }}</p>
+        <div v-else class="search">
+          <label class="field">
+            <span>{{ t.addPlayer }}</span>
             <input
-              type="checkbox"
-              name="player"
-              :checked="Boolean(pickOf(login))"
-              :disabled="!canAddMore(login)"
-              @change="toggle(login)"
+              v-model="query"
+              type="search"
+              name="playerSearch"
+              autocomplete="off"
+              :placeholder="t.searchPlaceholder"
+              data-testid="lobby-search"
             />
-            <span class="seat__box" aria-hidden="true"></span>
-            <span class="seat__name">
-              {{ nameOf(login) }}<span v-if="login === me" class="muted"> ({{ t.me }})</span>
-            </span>
           </label>
-          <label v-if="pickOf(login)" class="field seat__deck">
-            <span>{{ t.deck }}</span>
-            <select
-              :value="pickOf(login).deckId"
-              name="deck"
-              :aria-label="`${t.deck} di ${nameOf(login)}`"
-              :disabled="!decksOf(login).length"
-              @change="setDeck(login, $event.target.value)"
-            >
-              <option v-if="!decksOf(login).length" value="" disabled>
-                {{ tableTier ? t.noDecksInTier(tableTier) : t.chooseTierFirst }}
-              </option>
-              <option v-else value="" disabled>{{ t.chooseDeck }}</option>
-              <option v-for="d in decksOf(login)" :key="d.id" :value="d.id">
-                {{ d.name }} ({{ tierOf(d) }})
-              </option>
-            </select>
-          </label>
+          <ul v-if="results.length" class="results" data-testid="lobby-results">
+            <li v-for="r in results" :key="r.login">
+              <button
+                type="button"
+                class="results__item"
+                :data-testid="`lobby-add-${r.login}`"
+                @click="addPlayer(r.login)"
+              >
+                <span>{{ r.name }}</span>
+                <span class="muted">{{ t.add }}</span>
+              </button>
+            </li>
+          </ul>
+          <p v-else class="muted" data-testid="lobby-no-results" role="status">
+            {{ t.noResults }}
+          </p>
         </div>
       </fieldset>
 
@@ -453,6 +505,14 @@ const start = async () => {
   font-weight: 600;
 }
 
+.seated {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .seat {
   display: grid;
   gap: 0.5rem;
@@ -468,59 +528,69 @@ const start = async () => {
 }
 
 .seat__main {
-  position: relative;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   min-height: var(--tap);
-  cursor: pointer;
 }
 
-/* La casella vera copre tutta la riga (zona di tocco ≥ 44 px); il quadratino è solo disegno. */
-.seat__main input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.seat__box {
-  position: relative;
+.seat__remove {
   flex: none;
-  width: 24px;
-  height: 24px;
-  border: 2px solid var(--text-muted);
-  border-radius: 6px;
+  min-height: var(--tap);
+  padding: 0 1rem;
+  color: var(--text);
   background: var(--surface);
+  border: 2px solid var(--text-muted);
 }
 
-.seat__main input:checked + .seat__box {
-  border-color: var(--accent);
-  background: var(--accent);
+.search input {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  font-weight: 400;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--text-muted);
+  border-radius: var(--radius-sm);
 }
 
-.seat__main input:checked + .seat__box::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 7px;
-  width: 6px;
-  height: 12px;
-  border: solid var(--surface);
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+.search {
+  display: grid;
+  gap: 0.5rem;
 }
 
-.seat__main input:focus-visible + .seat__box {
+.results {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.results__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 0.75rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.results__item:focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 2px;
-}
-
-.seat__main input:disabled + .seat__box {
-  opacity: 0.5;
 }
 
 .seat__name {

@@ -2,7 +2,7 @@ import { mkdir } from 'node:fs/promises';
 import { mockScryfall } from '../fixtures/scryfall-fake.js';
 import { mockSpellbook } from '../fixtures/spellbook-fake.js';
 import { test } from './fixtures.js';
-import { setupTableF2 } from './lobby-helpers.js';
+import { openLobbyF2, PLAYERS, seat, setupTableF2 } from './lobby-helpers.js';
 
 // Screenshot per la revisione del subagent `ui-reviewer` (PIANO-Test §5).
 // Si lancia con `npm run test:visual-review` (profili iphone e desktop-chrome, tema chiaro e scuro).
@@ -334,8 +334,17 @@ for (const theme of THEMES) {
       'solo iphone e desktop',
     );
     await page.emulateMedia({ colorScheme: theme });
-    await setupTableF2(page);
+    await openLobbyF2(page);
     await mkdir('review-screenshots', { recursive: true });
+    // Ricerca giocatori (C-09c): tavolo non ancora pieno, con risultati.
+    await page.getByTestId('lobby-search').fill('demo');
+    await page.getByTestId('lobby-results').waitFor();
+    await page.screenshot({
+      path: `review-screenshots/lobby-ricerca-${testInfo.project.name}-${theme}.png`,
+      fullPage: true,
+    });
+    await page.getByTestId('lobby-search').fill('');
+    for (const login of PLAYERS) await seat(page, login);
     await page.screenshot({
       path: `review-screenshots/lobby-${testInfo.project.name}-${theme}.png`,
       fullPage: true,

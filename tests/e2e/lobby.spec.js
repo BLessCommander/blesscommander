@@ -21,7 +21,7 @@ test.describe('lobby @core', () => {
     await page.getByTestId('lobby-tier').waitFor();
     await addF2Decks(page);
     await page.getByTestId('lobby-tier').selectOption('F2');
-    for (const login of PLAYERS) await seat(page, login).click();
+    for (const login of PLAYERS) await seat(page, login);
     await expect(page.getByTestId('lobby-problems')).toHaveCount(0);
     await expect(start).toBeEnabled();
 
@@ -52,7 +52,7 @@ test.describe('lobby @core', () => {
     await page.goto('/#/nuovo-tavolo');
     await page.getByTestId('lobby-start').waitFor();
     await addF2Decks(page);
-    await seat(page, 'demo-giocatore1').click();
+    await seat(page, 'demo-giocatore1');
 
     // Senza fascia non si può scegliere nessun mazzo.
     await expect(deckOptions(page, 'Admin demo')).toHaveCount(0);
@@ -106,7 +106,7 @@ test.describe('lobby @core', () => {
     await expect(page.getByTestId('lobby-start')).toBeVisible();
     await addF2Decks(page);
     await page.getByTestId('lobby-tier').selectOption('F2');
-    for (const login of PLAYERS) await seat(page, login).click();
+    for (const login of PLAYERS) await seat(page, login);
     await page.getByTestId('lobby-start').click();
     await expect(page.getByTestId('lobby-reminder')).toBeVisible();
 
@@ -179,10 +179,35 @@ test.describe('lobby @core', () => {
     await addF2Decks(page);
     await page.getByTestId('lobby-tier').selectOption('F2');
     await page.getByTestId('lobby-format').selectOption('ffa3');
-    for (const login of ['demo-giocatore1', 'demo-giocatore2']) await seat(page, login).click();
-    await expect(
-      page.getByTestId('lobby-player-demo-giocatore3').getByRole('checkbox'),
-    ).toBeDisabled();
+    for (const login of ['demo-giocatore1', 'demo-giocatore2']) await seat(page, login);
+    await expect(page.getByTestId('lobby-full')).toBeVisible();
+    await expect(page.getByTestId('lobby-search')).toHaveCount(0);
     await expect(page.getByTestId('lobby-start')).toBeEnabled();
+  });
+
+  test('la ricerca propone pochi giocatori e toglie chi è già seduto (UC-09)', async ({ page }) => {
+    await page.goto('/#/nuovo-tavolo');
+    await page.getByTestId('lobby-start').waitFor();
+    const search = page.getByTestId('lobby-search');
+    await search.fill('GIOCATORE 2');
+    await expect(page.getByTestId('lobby-add-demo-giocatore2')).toBeVisible();
+    await expect(page.getByTestId('lobby-add-demo-giocatore1')).toHaveCount(0);
+    await search.fill('zzzz');
+    await expect(page.getByTestId('lobby-no-results')).toBeVisible();
+    await search.fill('demo-giocatore2');
+    await page.getByTestId('lobby-add-demo-giocatore2').click();
+    await expect(page.getByTestId('lobby-player-demo-giocatore2')).toBeVisible();
+    await search.fill('demo-giocatore2');
+    await expect(page.getByTestId('lobby-add-demo-giocatore2')).toHaveCount(0);
+  });
+
+  test('si può togliere un giocatore, ma non chi crea il tavolo (UC-09)', async ({ page }) => {
+    await page.goto('/#/nuovo-tavolo');
+    await page.getByTestId('lobby-start').waitFor();
+    await seat(page, 'demo-giocatore1');
+    await page.getByTestId('lobby-remove-demo-giocatore1').click();
+    await expect(page.getByTestId('lobby-player-demo-giocatore1')).toHaveCount(0);
+    await expect(page.getByTestId('lobby-seated').locator('li')).toHaveCount(1);
+    await expect(page.locator('[data-testid^="lobby-remove-"]')).toHaveCount(0);
   });
 });

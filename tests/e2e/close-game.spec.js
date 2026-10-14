@@ -387,5 +387,5 @@ async function setupTableF2Three(page) {
   await addF2Decks(page);
   await page.getByTestId('lobby-format').selectOption('ffa3');
   await page.getByTestId('lobby-tier').selectOption('F2');
-  for (const login of ['demo-giocatore1', 'demo-giocatore3']) await seat(page, login).click();
+  for (const login of ['demo-giocatore1', 'demo-giocatore3']) await seat(page, login);
 }

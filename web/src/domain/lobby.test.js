@@ -8,6 +8,8 @@ import {
   decksForTier,
   lobbyFormats,
   lobbyProblems,
+  SEARCH_LIMIT,
+  searchPlayers,
   seatOrder,
 } from './lobby.js';
 
@@ -175,5 +177,31 @@ describe('activeGameOf', () => {
   it('ignora le partite chiuse e chi non gioca', () => {
     expect(activeGameOf({ games }, 'a')).toBeNull();
     expect(activeGameOf(null, 'a')).toBeNull();
+  });
+});
+
+describe('searchPlayers', () => {
+  const people = [
+    { login: 'demo-admin', name: 'Admin demo' },
+    { login: 'demo-zoe', name: 'Zoë Müller' },
+    { login: 'demo-luca', name: 'Luca' },
+  ];
+
+  it('ignora maiuscole e accenti, e cerca anche nel login', () => {
+    expect(searchPlayers(people, 'ZOE MULLER', []).map((p) => p.login)).toEqual(['demo-zoe']);
+    expect(searchPlayers(people, 'demo-luc', []).map((p) => p.login)).toEqual(['demo-luca']);
+  });
+
+  it('esclude chi è già al tavolo', () => {
+    expect(searchPlayers(people, 'demo', ['demo-admin']).map((p) => p.login)).toEqual([
+      'demo-zoe',
+      'demo-luca',
+    ]);
+  });
+
+  it('senza testo propone i primi, con un tetto', () => {
+    const many = Array.from({ length: 20 }, (_, i) => ({ login: `u${i}`, name: `Utente ${i}` }));
+    expect(searchPlayers(many, '', [])).toHaveLength(SEARCH_LIMIT);
+    expect(searchPlayers(many, 'nessuno', [])).toEqual([]);
   });
 });
